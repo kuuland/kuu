@@ -1,11 +1,22 @@
 package kuu
 
 import (
+	"bytes"
 	"log"
+	"os"
 	"reflect"
 
 	"github.com/gin-gonic/gin"
 )
+
+func init() {
+	env := os.Getenv("KUU_ENV") // KUU_ENV = 'dev' | 'test' | 'prod'
+	if env == "" {
+		env = "dev"
+	} else if env == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
 
 // H 映射集合的别名
 type H map[string]interface{}
@@ -17,7 +28,7 @@ var plugins = map[string]*Plugin{}
 var contexts = map[string]*Kuu{}
 
 // methods 插件API
-var methods = map[string]func(...interface{}) interface{}{}
+var methods = Methods{}
 
 // Kuu 应用
 type Kuu struct {
@@ -26,7 +37,7 @@ type Kuu struct {
 	Config  H
 	Port    int16
 	Env     string
-	methods map[string]func(*Kuu, ...interface{}) interface{}
+	methods InstMethods
 }
 
 // Model 模型注册
@@ -43,6 +54,10 @@ func (k *Kuu) Model(m interface{}) {
 // loadPlugins 加载插件
 func (k *Kuu) loadPlugins() {
 	for _, p := range plugins {
+		// 插件名不能为空
+		if p.Name == "" {
+			break
+		}
 		// 挂载中间件
 		for key, value := range p.Middleware {
 			if key == "" ||
@@ -69,13 +84,22 @@ func (k *Kuu) loadPlugins() {
 				value == nil {
 				break
 			}
-			k.methods[key] = value
+			k.methods[Join(p.Name, ":", key)] = value
 		}
 		// 触发Onload
 		if p.Onload != nil {
 			p.Onload(k)
 		}
 	}
+}
+
+// Join 基于字节实现的字符串拼接
+func Join(args ...string) string {
+	b := bytes.Buffer{}
+	for _, item := range args {
+		b.WriteString(item)
+	}
+	return b.String()
 }
 
 // D 调用插件实例API
@@ -91,8 +115,9 @@ func (k *Kuu) D(name string, args ...interface{}) interface{} {
 func New(cfg H) *Kuu {
 	k := Kuu{
 		Engine:  gin.New(),
-		methods: make(map[string]func(*Kuu, ...interface{}) interface{}),
+		methods: make(InstMethods),
 	}
+	k.Use(gin.Logger(), gin.Recovery())
 	if cfg == nil {
 		cfg = H{}
 	}
@@ -110,8 +135,11 @@ func New(cfg H) *Kuu {
 
 // Import 导入插件
 func Import(ps ...*Plugin) {
-	for i := 0; i < len(ps); i++ {
-		p := ps[i]
+	for _, p := range ps {
+		// 插件名不能为空
+		if p.Name == "" {
+			break
+		}
 		// 缓存插件
 		plugins[p.Name] = p
 		// 加载插件全局API
@@ -119,7 +147,7 @@ func Import(ps ...*Plugin) {
 			if key == "" || value == nil {
 				break
 			}
-			methods[key] = value
+			methods[Join(p.Name, ":", key)] = value
 		}
 	}
 }

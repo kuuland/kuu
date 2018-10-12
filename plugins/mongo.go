@@ -2,105 +2,122 @@ package plugins
 
 import (
 	"log"
+	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
+
+	"github.com/globalsign/mgo"
 )
 
-// Mongo 数据源
-type Mongo struct {
-	Str     string
-	Opts    map[string]interface{}
-	Session *mgo.Session
+// defaultName 默认连接名
+const defaultName = "default"
+
+// connections 连接实例缓存
+var connections = map[string]*Connection{}
+
+var index = 0
+
+// Connection 数据库连接
+type Connection struct {
+	Name    string
+	URI     string
+	UseDB   string
+	session *mgo.Session
 }
 
-// Connect 实现数据库连接
-func (m *Mongo) Connect() *mgo.Session {
-	session, err := mgo.DialWithTimeout(m.Str, 10*time.Second)
+// Connect 数据库连接
+func Connect(uri string) *mgo.Session {
+	m := &Connection{
+		URI: uri,
+	}
+	return New(m)
+}
+
+// New 创建数据库连接
+func New(m *Connection) *mgo.Session {
+	session, err := mgo.DialWithTimeout(m.URI, 10*time.Second)
 	if err != nil {
 		log.Fatalln(err)
 		panic(err)
 	}
-	log.Println("MongoDB is connected.")
-	m.Session = session
+	if m.UseDB == "" {
+		m.UseDB = useDB(m.URI)
+	}
+	if m.Name == "" {
+		m.Name = defaultName
+	}
+	m.session = session
+	connections[m.Name] = m
+
+	log.Println(kuu.Join("MongoDB '", m.UseDB, "' is connected."))
 	return session
 }
 
-// if cfg["mongo"] != nil {
-// 	mongo := &Mongo{
-// 		Str: cfg["mongo"].(string),
-// 	}
-// 	mongo.Connect()
-// 	k.mongo = mongo
-// }
-
-// // Sess 获取数据库会话的拷贝实例
-// func (k *Kuu) Sess() *mgo.Session {
-// 	return k.mongo.Session.Clone()
-// }
-
-// // Model 获取数据库会话的拷贝实例
-// func (k *Kuu) Model(sess *mgo.Session, name string) *mgo.Collection {
-// 	return sess.DB("k11-central").C(name)
-// }
-
-// A 插件A
-func A(opts gin.H) *kuu.Plugin {
-	return &kuu.Plugin{
-		Name:        "A",
-		Routes:      routes(),
-		Middleware:  middleware(),
-		Methods:     methods(),
-		InstMethods: instMethods(),
+// useDB 从URI中截取数据库名
+func useDB(uri string) string {
+	s := strings.LastIndex(uri, "/") + 1
+	e := strings.Index(uri, "?")
+	if e == -1 {
+		e = len(uri)
 	}
+	db := uri[s:e]
+	return db
 }
 
-// routes 插件路由
-func routes() map[string]*kuu.Route {
-	return kuu.R{
-		"list": &kuu.Route{
-			Path: "/list",
-			Handler: func(c *gin.Context) {
-				c.String(200, "插件A list")
+// SN 根据连接名获取会话
+func SN(name string) *mgo.Session {
+	if m := connections[name]; m != nil {
+		return m.session.Clone()
+	}
+	return nil
+}
+
+// S 获取会话
+func S() *mgo.Session {
+	return SN(defaultName)
+}
+
+// C 获取集合对象
+func C(name string) *mgo.Collection {
+	if m := connections[defaultName]; m != nil {
+		if s := m.session.Clone(); s != nil {
+			return s.DB(m.UseDB).C(name)
+		}
+	}
+	return nil
+}
+
+// Mongo 导出插件
+func Mongo() *kuu.Plugin {
+	return &kuu.Plugin{
+		Name: "mgo",
+		Methods: kuu.Methods{
+			"Connect": func(args ...interface{}) interface{} {
+				uri := args[0].(string)
+				return Connect(uri)
+			},
+			"New": func(args ...interface{}) interface{} {
+				m := args[0].(*Connection)
+				return New(m)
+			},
+			"C": func(args ...interface{}) interface{} {
+				name := args[0].(string)
+				return C(name)
+			},
+			"S": func(args ...interface{}) interface{} {
+				return S()
+			},
+			"SN": func(args ...interface{}) interface{} {
+				name := args[0].(string)
+				return SN(name)
 			},
 		},
-	}
-}
-
-// middleware 插件中间件
-func middleware() map[string]gin.HandlerFunc {
-	return kuu.M{
-		"ma": func(c *gin.Context) {
-			t := time.Now()
-			c.Set("example", "12345")
-			c.Next()
-			latency := time.Since(t)
-			log.Print(latency, "alslfkj")
-			status := c.Writer.Status()
-			log.Println(status)
-		},
-	}
-}
-
-func methods() map[string]func(...interface{}) interface{} {
-	return kuu.Method{
-		"sessA": func(args ...interface{}) interface{} {
-			for _, v := range args {
-				log.Println("sessA", v)
+		Onload: func(k *kuu.Kuu) {
+			if c := k.Config["mongo"]; c != nil {
+				uri := c.(string)
+				Connect(uri)
 			}
-			return 555
-		},
-	}
-}
-
-func instMethods() map[string]func(*kuu.Kuu, ...interface{}) interface{} {
-	return kuu.InstMethod{
-		"sessB": func(k *kuu.Kuu, args ...interface{}) interface{} {
-			val := args[0]
-			log.Println("instMethod----dlksjfljfls", k.Name, val)
-			return 666
 		},
 	}
 }

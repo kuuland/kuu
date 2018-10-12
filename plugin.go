@@ -10,19 +10,19 @@ type R map[string]*Route
 // M 中间件集合
 type M map[string]gin.HandlerFunc
 
-// Method 全局API集合
-type Method map[string]func(...interface{}) interface{}
+// Methods 全局API集合
+type Methods map[string]func(...interface{}) interface{}
 
-// InstMethod 实例API集合
-type InstMethod map[string]func(*Kuu, ...interface{}) interface{}
+// InstMethods 实例API集合
+type InstMethods map[string]func(*Kuu, ...interface{}) interface{}
 
 // Plugin 插件
 type Plugin struct {
 	Name        string
 	Routes      R
 	Middleware  M
-	Methods     Method
-	InstMethods InstMethod
+	Methods     Methods
+	InstMethods InstMethods
 	Onload      func(k *Kuu)
 }
 
