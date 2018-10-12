@@ -29,8 +29,8 @@ type Kuu struct {
 	methods map[string]func(*Kuu, ...interface{}) interface{}
 }
 
-// AddM 模型注册
-func (k *Kuu) AddM(m interface{}) {
+// Model 模型注册
+func (k *Kuu) Model(m interface{}) {
 	s := reflect.TypeOf(m).Elem()
 	log.Println(s.Name())
 	for i := 0; i < s.NumField(); i++ {
@@ -78,7 +78,7 @@ func (k *Kuu) loadPlugins() {
 	}
 }
 
-// D 调用实例上的插件API
+// D 调用插件实例API
 func (k *Kuu) D(name string, args ...interface{}) interface{} {
 	fn := k.methods[name]
 	if fn == nil {
@@ -124,17 +124,14 @@ func Import(ps ...*Plugin) {
 	}
 }
 
-// Context 获取应用实例
-func Context(name string) *Kuu {
-	if name == "" {
-		name = "kuu"
-	}
+// App 通过应用名获取应用实例
+func App(name string) *Kuu {
 	return contexts[name]
 }
 
-// Ctx 获取应用实例（快捷方式）
-func Ctx() *Kuu {
-	return Context("")
+// K 获取应用实例（获取不指定Name所创建的应用）
+func K() *Kuu {
+	return App("kuu")
 }
 
 // D 调用插件API

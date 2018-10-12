@@ -7,7 +7,7 @@ import (
 )
 
 func TestApp(t *testing.T) {
-	k := Default()
+	k := New(nil)
 	k.GET("/", func(c *gin.Context) {
 		c.String(200, "hello")
 	})
