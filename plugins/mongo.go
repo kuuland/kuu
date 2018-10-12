@@ -91,7 +91,7 @@ func C(name string) *mgo.Collection {
 // Mongo 导出插件
 func Mongo() *kuu.Plugin {
 	return &kuu.Plugin{
-		Name: "mgo",
+		Name: "mongo",
 		Methods: kuu.Methods{
 			"Connect": func(args ...interface{}) interface{} {
 				uri := args[0].(string)

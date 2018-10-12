@@ -31,7 +31,7 @@ func TestImport(t *testing.T) {
 		"mongo": "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50",
 	})
 	k.GET("/", func(c *gin.Context) {
-		user := kuu.D("mgo:C", "user").(*mgo.Collection)
+		user := kuu.D("mongo:C", "user").(*mgo.Collection)
 		n, err := user.Count()
 		if err == nil {
 			c.String(200, string(n))
