@@ -38,7 +38,7 @@ func Connect(uri string) *mgo.Session {
 func New(m *Connection) *mgo.Session {
 	session, err := mgo.DialWithTimeout(m.URI, 10*time.Second)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		panic(err)
 	}
 	if m.UseDB == "" {
