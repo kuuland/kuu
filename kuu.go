@@ -2,9 +2,10 @@ package kuu
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,17 +38,52 @@ type Kuu struct {
 	Config  H
 	Port    int16
 	Env     string
+	Schemas map[string]*Schema
 	methods InstMethods
 }
 
 // Model 模型注册
 func (k *Kuu) Model(m interface{}) {
 	s := reflect.TypeOf(m).Elem()
-	log.Println(s.Name())
+	schema := &Schema{
+		Name:   s.Name(),
+		Fields: make([]*SchemaField, s.NumField()),
+	}
 	for i := 0; i < s.NumField(); i++ {
 		field := s.Field(i)
 		tags := field.Tag
-		log.Println(field.Name, tags)
+		sField := &SchemaField{}
+		sField.Code = strings.ToLower(field.Name)
+		sField.Name = tags.Get("name")
+		sField.Default = tags.Get("default")
+		sField.Alias = tags.Get("alias")
+		if tags.Get("type") != "" {
+			sField.Type = tags.Get("type")
+		} else {
+			sField.Type = field.Type.Name()
+		}
+		if tags.Get("required") != "" {
+			required, err := strconv.ParseBool(tags.Get("required"))
+			if err != nil {
+				sField.Required = required
+			} else {
+				sField.Required = false
+			}
+		}
+		schema.Fields[i] = sField
+	}
+	k.Schemas[schema.Name] = schema
+	k.eachPlugins(func(p *Plugin) {
+		// 触发OnModel
+		if p.OnModel != nil {
+			p.OnModel(k, schema)
+		}
+	})
+}
+
+func (k *Kuu) eachPlugins(cb func(*Plugin)) {
+	for _, p := range plugins {
+		cb(p)
 	}
 }
 
@@ -86,9 +122,9 @@ func (k *Kuu) loadPlugins() {
 			}
 			k.methods[Join(p.Name, ":", key)] = value
 		}
-		// 触发Onload
-		if p.Onload != nil {
-			p.Onload(k)
+		// 触发OnLoad
+		if p.OnLoad != nil {
+			p.OnLoad(k)
 		}
 	}
 }
@@ -111,10 +147,22 @@ func (k *Kuu) D(name string, args ...interface{}) interface{} {
 	return fn(k, args...)
 }
 
+// Run 重写启动函数
+func (k *Kuu) Run(addr ...string) (err error) {
+	k.eachPlugins(func(p *Plugin) {
+		// 触发OnModel
+		if p.BeforeRun != nil {
+			p.BeforeRun(k)
+		}
+	})
+	return k.Engine.Run(addr...)
+}
+
 // New 创建新应用
 func New(cfg H) *Kuu {
 	k := Kuu{
 		Engine:  gin.New(),
+		Schemas: make(map[string]*Schema),
 		methods: make(InstMethods),
 	}
 	k.Use(gin.Logger(), gin.Recovery())

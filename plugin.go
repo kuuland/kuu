@@ -23,7 +23,9 @@ type Plugin struct {
 	Middleware  M
 	Methods     Methods
 	InstMethods InstMethods
-	Onload      func(k *Kuu)
+	OnLoad      func(k *Kuu)
+	OnModel     func(k *Kuu, schema *Schema)
+	BeforeRun   func(k *Kuu)
 }
 
 // Route 路由描述体

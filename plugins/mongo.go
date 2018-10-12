@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kuuland/kuu"
-
 	"github.com/globalsign/mgo"
+	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/rest"
 )
 
 // defaultName 默认连接名
@@ -113,11 +113,24 @@ func Mongo() *kuu.Plugin {
 				return SN(name)
 			},
 		},
-		Onload: func(k *kuu.Kuu) {
+		OnLoad: func(k *kuu.Kuu) {
 			if c := k.Config["mongo"]; c != nil {
 				uri := c.(string)
 				Connect(uri)
 			}
 		},
+		OnModel: func(k *kuu.Kuu, schema *kuu.Schema) {
+			mountRESTful(k, schema)
+		},
 	}
+}
+
+// mountRESTful 挂载模型RESTful接口
+func mountRESTful(k *kuu.Kuu, schema *kuu.Schema) {
+	path := kuu.Join("/", strings.ToLower(schema.Name))
+	k.POST(path, rest.Create(schema.Name))
+	k.DELETE(path, rest.Remove(schema.Name))
+	k.PUT(path, rest.Update(schema.Name))
+	k.GET(path, rest.List(schema.Name))
+	k.GET(kuu.Join(path, "/:id"), rest.ID(schema.Name))
 }
