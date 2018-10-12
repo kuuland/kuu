@@ -6,8 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
-	"github.com/kuuland/hello/models"
-	"github.com/kuuland/hello/routes"
 	"github.com/kuuland/kuu"
 )
 
@@ -41,8 +39,6 @@ func TestImport(t *testing.T) {
 			c.String(200, err.Error())
 		}
 	})
-	models.L()
-	routes.L()
 
 	k.Run(":8080")
 }
