@@ -22,7 +22,7 @@ func Remove(name string) func(*gin.Context) {
 			cond = body["cond"].(map[string]interface{})
 			all  = false
 		)
-		if body["all"] != "" {
+		if body["all"] != nil {
 			all = body["all"].(bool)
 		}
 		if cond["_id"] != nil {

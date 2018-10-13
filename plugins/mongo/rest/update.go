@@ -23,11 +23,16 @@ func Update(name string) func(*gin.Context) {
 			doc  = body["doc"].(map[string]interface{})
 			all  = false
 		)
-		if body["all"] != "" {
+		if body["all"] != nil {
 			all = body["all"].(bool)
 		}
 		if cond["_id"] != nil {
 			cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
+		}
+		if doc["$set"] == nil {
+			doc = kuu.H{
+				"$set": doc,
+			}
 		}
 		// 执行查询
 		C := kuu.D("mongo:C", name).(*mgo.Collection)
