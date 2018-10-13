@@ -113,6 +113,13 @@ func Plugin() *kuu.Plugin {
 				return SN(name)
 			},
 		},
+		InstMethods: kuu.InstMethods{
+			"MountRESTful": func(k *kuu.Kuu, args ...interface{}) interface{} {
+				name := args[0].(string)
+				MountRESTful(k, name)
+				return nil
+			},
+		},
 		OnLoad: func(k *kuu.Kuu) {
 			if c := k.Config["mongo"]; c != nil {
 				uri := c.(string)
@@ -120,17 +127,17 @@ func Plugin() *kuu.Plugin {
 			}
 		},
 		OnModel: func(k *kuu.Kuu, schema *kuu.Schema) {
-			mountRESTful(k, schema)
+			MountRESTful(k, schema.Name)
 		},
 	}
 }
 
-// mountRESTful 挂载模型RESTful接口
-func mountRESTful(k *kuu.Kuu, schema *kuu.Schema) {
-	path := kuu.Join("/", strings.ToLower(schema.Name))
-	k.POST(path, rest.Create(schema.Name))
-	k.DELETE(path, rest.Remove(schema.Name))
-	k.PUT(path, rest.Update(schema.Name))
-	k.GET(path, rest.List(schema.Name))
-	k.GET(kuu.Join(path, "/:id"), rest.ID(schema.Name))
+// MountRESTful 挂载模型RESTful接口
+func MountRESTful(k *kuu.Kuu, name string) {
+	path := kuu.Join("/", strings.ToLower(name))
+	k.POST(path, rest.Create(name))
+	k.DELETE(path, rest.Remove(name))
+	k.PUT(path, rest.Update(name))
+	k.GET(path, rest.List(name))
+	k.GET(kuu.Join(path, "/:id"), rest.ID(name))
 }
