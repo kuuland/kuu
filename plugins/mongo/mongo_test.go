@@ -1,4 +1,4 @@
-package plugins
+package mongo
 
 import (
 	"fmt"

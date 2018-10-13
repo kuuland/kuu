@@ -1,4 +1,4 @@
-package plugins
+package mongo
 
 import (
 	"log"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/rest"
+	"github.com/kuuland/kuu/plugins/mongo/rest"
 )
 
 // defaultName 默认连接名
@@ -88,8 +88,8 @@ func C(name string) *mgo.Collection {
 	return nil
 }
 
-// Mongo 导出插件
-func Mongo() *kuu.Plugin {
+// Plugin 导出插件
+func Plugin() *kuu.Plugin {
 	return &kuu.Plugin{
 		Name: "mongo",
 		Methods: kuu.Methods{
