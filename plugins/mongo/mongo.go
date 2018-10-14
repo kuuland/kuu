@@ -88,8 +88,8 @@ func C(name string) *mgo.Collection {
 	return nil
 }
 
-// Plugin 导出插件
-func Plugin() *kuu.Plugin {
+// Install 导出插件
+func Install() *kuu.Plugin {
 	return &kuu.Plugin{
 		Name: "mongo",
 		Methods: kuu.Methods{
