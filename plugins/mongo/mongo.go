@@ -115,8 +115,12 @@ func Plugin() *kuu.Plugin {
 		},
 		InstMethods: kuu.InstMethods{
 			"MountRESTful": func(k *kuu.Kuu, args ...interface{}) interface{} {
-				name := args[0].(string)
-				MountRESTful(k, name)
+				if args != nil {
+					for _, item := range args {
+						name := item.(string)
+						MountRESTful(k, name)
+					}
+				}
 				return nil
 			},
 		},
