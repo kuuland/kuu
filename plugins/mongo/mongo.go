@@ -88,52 +88,50 @@ func C(name string) *mgo.Collection {
 	return nil
 }
 
-// Install 导出插件
-func Install() *kuu.Plugin {
-	return &kuu.Plugin{
-		Name: "mongo",
-		Methods: kuu.Methods{
-			"Connect": func(args ...interface{}) interface{} {
-				uri := args[0].(string)
-				return Connect(uri)
-			},
-			"New": func(args ...interface{}) interface{} {
-				m := args[0].(*Connection)
-				return New(m)
-			},
-			"C": func(args ...interface{}) interface{} {
-				name := args[0].(string)
-				return C(name)
-			},
-			"S": func(args ...interface{}) interface{} {
-				return S()
-			},
-			"SN": func(args ...interface{}) interface{} {
-				name := args[0].(string)
-				return SN(name)
-			},
+// P 插件声明
+var P = &kuu.Plugin{
+	Name: "mongo",
+	OnLoad: func(k *kuu.Kuu) {
+		if c := k.Config["mongo"]; c != nil {
+			uri := c.(string)
+			Connect(uri)
+		}
+	},
+	OnModel: func(k *kuu.Kuu, schema *kuu.Schema) {
+		MountRESTful(k, schema.Name)
+	},
+	Methods: kuu.Methods{
+		"Connect": func(args ...interface{}) interface{} {
+			uri := args[0].(string)
+			return Connect(uri)
 		},
-		InstMethods: kuu.InstMethods{
-			"MountRESTful": func(k *kuu.Kuu, args ...interface{}) interface{} {
-				if args != nil {
-					for _, item := range args {
-						name := item.(string)
-						MountRESTful(k, name)
-					}
+		"New": func(args ...interface{}) interface{} {
+			m := args[0].(*Connection)
+			return New(m)
+		},
+		"C": func(args ...interface{}) interface{} {
+			name := args[0].(string)
+			return C(name)
+		},
+		"S": func(args ...interface{}) interface{} {
+			return S()
+		},
+		"SN": func(args ...interface{}) interface{} {
+			name := args[0].(string)
+			return SN(name)
+		},
+	},
+	InstMethods: kuu.InstMethods{
+		"rest": func(k *kuu.Kuu, args ...interface{}) interface{} {
+			if args != nil {
+				for _, item := range args {
+					name := item.(string)
+					MountRESTful(k, name)
 				}
-				return nil
-			},
-		},
-		OnLoad: func(k *kuu.Kuu) {
-			if c := k.Config["mongo"]; c != nil {
-				uri := c.(string)
-				Connect(uri)
 			}
+			return nil
 		},
-		OnModel: func(k *kuu.Kuu, schema *kuu.Schema) {
-			MountRESTful(k, schema.Name)
-		},
-	}
+	},
 }
 
 // MountRESTful 挂载模型RESTful接口

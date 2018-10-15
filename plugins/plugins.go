@@ -1,17 +1,14 @@
 package plugins
 
 import (
-	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/plugins/accounts"
 	"github.com/kuuland/kuu/plugins/mongo"
+	"github.com/kuuland/kuu/plugins/task"
 )
 
-// Mongo MongoDB插件别名
-func Mongo() *kuu.Plugin {
-	return mongo.Install()
-}
-
-// Accounts 账户插件别名
-func Accounts() *kuu.Plugin {
-	return accounts.Install()
-}
+// 汇总导出
+var (
+	Mongo    = mongo.P
+	Accounts = accounts.P
+	Task     = task.P
+)
