@@ -169,15 +169,6 @@ func Join(args ...string) string {
 	return b.String()
 }
 
-// D 调用插件实例API
-func (k *Kuu) D(name string, args ...interface{}) interface{} {
-	fn := k.methods[name]
-	if fn == nil {
-		return nil
-	}
-	return fn(k, args...)
-}
-
 // Run 重写启动函数
 func (k *Kuu) Run(addr ...string) (err error) {
 	k.eachPlugins(func(p *Plugin) {
@@ -241,13 +232,4 @@ func App(name string) *Kuu {
 // K 获取应用实例（获取不指定Name所创建的应用）
 func K() *Kuu {
 	return App("kuu")
-}
-
-// D 调用插件API
-func D(name string, args ...interface{}) interface{} {
-	fn := methods[name]
-	if fn == nil {
-		return nil
-	}
-	return fn(args...)
 }

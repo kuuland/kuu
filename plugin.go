@@ -34,3 +34,61 @@ type Route struct {
 	Path    string
 	Handler gin.HandlerFunc
 }
+
+// D 调用插件API
+func D(name string, args ...interface{}) interface{} {
+	fn := methods[name]
+	if fn == nil {
+		return nil
+	}
+	return fn(args...)
+}
+
+// DStr 返回字符串
+func DStr(name string, args ...interface{}) string {
+	return D(name, args...).(string)
+}
+
+// DInt 返回整型
+func DInt(name string, args ...interface{}) int {
+	return D(name, args...).(int)
+}
+
+// DBool 返回布尔值
+func DBool(name string, args ...interface{}) bool {
+	return D(name, args...).(bool)
+}
+
+// DFloat 返回浮点值
+func DFloat(name string, args ...interface{}) float64 {
+	return D(name, args...).(float64)
+}
+
+// D 调用插件实例API
+func (k *Kuu) D(name string, args ...interface{}) interface{} {
+	fn := k.methods[name]
+	if fn == nil {
+		return nil
+	}
+	return fn(k, args...)
+}
+
+// DStr 返回字符串
+func (k *Kuu) DStr(name string, args ...interface{}) string {
+	return k.D(name, args...).(string)
+}
+
+// DInt 返回整型
+func (k *Kuu) DInt(name string, args ...interface{}) int {
+	return k.D(name, args...).(int)
+}
+
+// DBool 返回布尔值
+func (k *Kuu) DBool(name string, args ...interface{}) bool {
+	return k.D(name, args...).(bool)
+}
+
+// DFloat 返回浮点值
+func (k *Kuu) DFloat(name string, args ...interface{}) float64 {
+	return k.D(name, args...).(float64)
+}

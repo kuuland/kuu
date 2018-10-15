@@ -29,30 +29,30 @@ func init() {
 	})
 }
 func TestLang(t *testing.T) {
-	fmt.Println(L("signup"))
-	fmt.Println(L("signup", "zh-CN"))
-	fmt.Println(L("signup", "zh-TW"))
+	fmt.Println(L(nil, "signup"))
+	fmt.Println(L(nil, "signup", "zh-CN"))
+	fmt.Println(L(nil, "signup", "zh-TW"))
 }
 
 func TestTemplate(t *testing.T) {
-	fmt.Println(L("success", nil, H{
+	fmt.Println(L(nil, "success", nil, H{
 		"username": "kuu",
 	}))
-	fmt.Println(L("success", "zh-CN", H{
+	fmt.Println(L(nil, "success", "zh-CN", H{
 		"username": "kuu",
 	}))
-	fmt.Println(L("success", "zh-TW", H{
+	fmt.Println(L(nil, "success", "zh-TW", H{
 		"username": "kuu",
 	}))
 }
 
 func TestSetLang(t *testing.T) {
 	// default lang=en
-	fmt.Println("en", L("signup"))
+	fmt.Println("en", L(nil, "signup"))
 	// lang=zh-CN
 	SetLang("zh-CN")
-	fmt.Println("zh-CN", L("signup"))
+	fmt.Println("zh-CN", L(nil, "signup"))
 	// lang=zh-TW
 	SetLang("zh-TW")
-	fmt.Println("zh-CN", L("signup"))
+	fmt.Println("zh-CN", L(nil, "signup"))
 }

@@ -3,6 +3,9 @@ package kuu
 import (
 	"bytes"
 	"html/template"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // LangMessageMap 语言配置集合
@@ -45,28 +48,49 @@ func init() {
 // L Locale的快捷调用
 func L(args ...interface{}) string {
 	var (
+		c    *gin.Context
 		key  string
 		data H
 		lang string
 	)
-	switch len(args) {
-	case 1:
-		key = args[0].(string)
-	case 2:
-		key = args[0].(string)
-		if args[1] != nil {
-			lang = args[1].(string)
+	if len(args) > 1 {
+		if args[0] != nil {
+			c = args[0].(*gin.Context)
 		}
-	case 3:
-		key = args[0].(string)
 		if args[1] != nil {
-			lang = args[1].(string)
+			key = args[1].(string)
 		}
+	}
+	if len(args) > 2 {
 		if args[2] != nil {
-			data = args[2].(H)
+			lang = args[2].(string)
+		}
+	}
+	if len(args) > 3 {
+		if args[3] != nil {
+			data = args[3].(H)
+		}
+	}
+	if c != nil {
+		// 解析Accept-Language
+		if l := parseAcceptLanguage(c); l != "" {
+			lang = l
 		}
 	}
 	return Locale(key, lang, data)
+}
+
+// parseAcceptLanguage 解析Accept-Language并转换成lang
+func parseAcceptLanguage(c *gin.Context) string {
+	header := c.GetHeader("Accept-Language")
+	split := strings.Split(header, ",")
+	// zh-CN,zh;q=0.9,zh-TW;q=0.8,en;q=0.7
+	for _, item := range split {
+		item = strings.TrimSpace(item)
+		s := strings.TrimSpace(strings.Split(item, ";")[0])
+		return s
+	}
+	return ""
 }
 
 // Locale 获取指定语言的国际化内容
