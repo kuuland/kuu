@@ -8,30 +8,50 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// log 日志实例
-var log = logrus.New()
+var (
+	log        = logrus.New()
+	dateFormat = time.Now().Format("2006-01-02")
+	dateFile   *os.File
+)
 
 func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
-	path := Join("kuu.", time.Now().Format("2006-01-02"), ".log")
+	setLogOut(dateFormat)
+	log.AddHook(new(outputHook))
+}
 
+func setLogOut(f string) {
+	path := Join("kuu.", f, ".log")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		log.Out = file
+		if dateFile != nil {
+			dateFile.Close()
+		}
+		dateFile = file
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	log.AddHook(&hook{})
 }
 
-type hook struct{}
+func dateCheck() {
+	f := time.Now().Format("2006-01-02")
+	if dateFormat != f {
+		dateFormat = f
+		setLogOut(dateFormat)
+	}
+}
 
-func (h *hook) Levels() []logrus.Level {
+// 钩子
+type outputHook struct{}
+
+func (h *outputHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
 
-func (h *hook) Fire(entry *logrus.Entry) error {
+func (h *outputHook) Fire(entry *logrus.Entry) error {
+	dateCheck()
 	fmt.Println(Join("[Kuu-", entry.Level.String(), "] ", time.Now().Format("2006-01-02 15:04:05"), " ", entry.Message))
 	return nil
 }
