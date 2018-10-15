@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -21,9 +22,21 @@ func init() {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
+	log.AddHook(&hook{})
 }
 
-func splitArgs(args ...interface{}) (string, []interface{}) {
+type hook struct{}
+
+func (h *hook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *hook) Fire(entry *logrus.Entry) error {
+	fmt.Println(Join("[Kuu-", entry.Level.String(), "] ", time.Now().Format("2006-01-02 15:04:05"), " ", entry.Message))
+	return nil
+}
+
+func split(args ...interface{}) (string, []interface{}) {
 	format := args[0].(string)
 	var a []interface{}
 	if len(args) > 1 {
@@ -34,43 +47,43 @@ func splitArgs(args ...interface{}) (string, []interface{}) {
 
 // Debug Logger.Debug别名
 func Debug(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Debugf(format, a...)
 }
 
 // Info Logger.Info别名
 func Info(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Infof(format, a...)
 }
 
 // Print Logger.Print别名
 func Print(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Printf(format, a...)
 }
 
 // Warn Logger.Warn别名
 func Warn(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Warnf(format, a...)
 }
 
 // Error Logger.Error别名
 func Error(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Errorf(format, a...)
 }
 
 // Fatal Logger.Fatal别名
 func Fatal(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Fatalf(format, a...)
 }
 
 // Panic Logger.Panic别名
 func Panic(args ...interface{}) {
-	format, a := splitArgs(args...)
+	format, a := split(args...)
 	log.Panicf(format, a...)
 }
 
