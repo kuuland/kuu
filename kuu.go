@@ -2,7 +2,10 @@ package kuu
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -10,12 +13,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ROOT 应用运行目录
+var ROOT string
+
 func init() {
 	env := os.Getenv("KUU_ENV") // KUU_ENV = 'dev' | 'test' | 'prod'
 	if env == "" {
 		env = "dev"
 	} else if env == "prod" {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	if path, err := filepath.Abs(os.Args[0]); err == nil {
+		ROOT = filepath.Dir(path)
 	}
 }
 
@@ -84,6 +94,27 @@ func (k *Kuu) Model(m interface{}) {
 func (k *Kuu) eachPlugins(cb func(*Plugin)) {
 	for _, p := range plugins {
 		cb(p)
+	}
+}
+
+// loadConfigFile 加载配置文件（配置文件优先）
+func (k *Kuu) loadConfigFile() {
+	path := os.Getenv("KUU_CONFIG")
+	if path == "" || !strings.HasSuffix(path, ".json") {
+		path = "kuu.json"
+	}
+	var config H
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return
+	}
+	if config != nil {
+		for key, value := range config {
+			k.Config[key] = value
+		}
 	}
 }
 
@@ -177,7 +208,9 @@ func New(cfg H) *Kuu {
 	contexts[k.Name] = &k
 
 	k.Config = cfg
+	k.loadConfigFile()
 	k.loadPlugins()
+	FireHooks("OnNew", &k, cfg)
 	return contexts[k.Name]
 }
 

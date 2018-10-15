@@ -5,8 +5,38 @@ import (
 	"html/template"
 )
 
+// LangMessageMap 语言配置集合
+type LangMessageMap map[string]string
+
+// LangMap 语言集合
+type LangMap map[string](LangMessageMap)
+
 var lang = "en"
-var langs = map[string](map[string]string){}
+var langs = LangMap{}
+
+// LocaleHook 国际化钩子
+type LocaleHook struct {
+	Fired bool
+}
+
+// Fire 国际化钩子触发函数
+func (hook *LocaleHook) Fire(k *Kuu, args ...interface{}) error {
+	var config LangMap
+	if k.Config["i18n"] != nil {
+		config = k.Config["i18n"].(LangMap)
+	}
+	if config != nil {
+		for key, value := range config {
+			langs[key] = value
+		}
+	}
+	hook.Fired = true
+	return nil
+}
+
+func init() {
+	AddHook("OnNew", new(LocaleHook))
+}
 
 // 加载语言库的方式：
 // 1.应用配置
@@ -66,7 +96,7 @@ func SetLang(l string) {
 }
 
 // AddLang 添加语言配置
-func AddLang(l string, data map[string]string) {
+func AddLang(l string, data LangMessageMap) {
 	if l != "" && data != nil {
 		langs[l] = data
 	}
