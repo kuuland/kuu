@@ -17,6 +17,7 @@ func Create(name string) func(*gin.Context) {
 			handleError(err, c)
 			return
 		}
+		c.Set("body", &docs)
 		// 执行查询
 		C := kuu.D("mongo:C", name).(*mgo.Collection)
 		defer C.Database.Session.Close()

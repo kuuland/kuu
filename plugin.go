@@ -44,8 +44,8 @@ func D(name string, args ...interface{}) interface{} {
 	return fn(args...)
 }
 
-// DStr 返回字符串
-func DStr(name string, args ...interface{}) string {
+// DString 返回字符串
+func DString(name string, args ...interface{}) string {
 	return D(name, args...).(string)
 }
 
@@ -73,8 +73,8 @@ func (k *Kuu) D(name string, args ...interface{}) interface{} {
 	return fn(k, args...)
 }
 
-// DStr 返回字符串
-func (k *Kuu) DStr(name string, args ...interface{}) string {
+// DString 返回字符串
+func (k *Kuu) DString(name string, args ...interface{}) string {
 	return k.D(name, args...).(string)
 }
 

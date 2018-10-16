@@ -18,6 +18,7 @@ func Update(name string) func(*gin.Context) {
 			handleError(err, c)
 			return
 		}
+		c.Set("body", &body)
 		var (
 			cond = body["cond"].(map[string]interface{})
 			doc  = body["doc"].(map[string]interface{})

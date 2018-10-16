@@ -3,9 +3,11 @@ package accounts
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/kuuland/kuu"
 )
 
@@ -40,16 +42,18 @@ func Decoded(tokenString string, secret string) jwt.MapClaims {
 func tokenFromRequest(c *gin.Context) string {
 	// querystring > body > header > cookie
 	tokenKey := "token"
+	ct := strings.ToLower(strings.TrimSpace(c.ContentType()))
 	var token string
 	token = c.Query(tokenKey)
-	if token == "" {
-		var docs map[string]interface{}
+	if token == "" && strings.Contains(ct, binding.MIMEJSON) {
+		var docs kuu.H
 		c.ShouldBindJSON(&docs)
+		c.Set("body", &docs)
 		if docs != nil && docs[tokenKey] != nil {
 			token = docs[tokenKey].(string)
 		}
 	}
-	if token == "" {
+	if token == "" && (strings.Contains(ct, binding.MIMEPOSTForm) || strings.Contains(ct, binding.MIMEMultipartPOSTForm)) {
 		token = c.PostForm(tokenKey)
 	}
 	if token == "" {
@@ -64,7 +68,8 @@ func tokenFromRequest(c *gin.Context) string {
 // AuthMiddleware 鉴权中间件
 func AuthMiddleware(c *gin.Context) {
 	token := tokenFromRequest(c)
-	log.Println(token)
+	log.Println("token: " + token)
+	log.Println("message: " + c.PostForm("message"))
 }
 
 // P 插件声明
