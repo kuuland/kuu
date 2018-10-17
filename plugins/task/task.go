@@ -130,11 +130,13 @@ var Plugin = &kuu.Plugin{
 	},
 	Routes: kuu.Routes{
 		kuu.RouteInfo{
-			Method: "GET",
-			Path:   "/tasks",
-			Handler: func(c *gin.Context) {
-				c.JSON(http.StatusOK, kuu.StdDataOK(tasks))
-			},
+			Method:  "GET",
+			Path:    "/tasks",
+			Handler: tasksHandler,
 		},
 	},
+}
+
+func tasksHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, kuu.StdDataOK(tasks))
 }

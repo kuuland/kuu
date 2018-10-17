@@ -101,18 +101,16 @@ func (k *Kuu) loadConfigFile() {
 }
 
 func (k *Kuu) loadPlugins() {
+	// 优先挂载中间件
 	for _, p := range plugins {
-		// 插件名不能为空
-		if p.Name == "" {
-			break
-		}
-		// 挂载中间件
 		for _, value := range p.Middleware {
 			if value == nil {
 				break
 			}
 			k.Use(value)
 		}
+	}
+	for _, p := range plugins {
 		// 挂载路由
 		for _, value := range p.Routes {
 			if value.Path == "" || value.Handler == nil {
@@ -131,8 +129,8 @@ func (k *Kuu) loadPlugins() {
 			}
 			k.appMethods[Join(p.Name, ":", key)] = value
 		}
-		Emit("OnPluginLoad", k)
 	}
+	Emit("OnPluginLoad", k)
 }
 
 // Run 重写启动函数
@@ -200,7 +198,7 @@ func K() *Kuu {
 func StdData(data interface{}, msg string, code int) H {
 	json := H{}
 	if data != nil {
-		json["data"] = msg
+		json["data"] = data
 	}
 	if msg != "" {
 		json["msg"] = msg

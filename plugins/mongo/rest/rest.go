@@ -10,10 +10,19 @@ import (
 	"github.com/kuuland/kuu"
 )
 
+const (
+	// ALL 全量模式
+	ALL = "ALL"
+	// PAGE 分页模式
+	PAGE = "PAGE"
+)
+
 var (
 	defaultMessages = map[string]string{
 		"request_error": "Request failed.",
 	}
+	k    *kuu.Kuu
+	name string
 )
 
 // params 请求参数
@@ -97,8 +106,19 @@ func parseParams(c *gin.Context) *params {
 	return &p
 }
 
-// handleError 错误处理
 func handleError(err error, c *gin.Context) {
 	kuu.Error(err)
 	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "request_error")))
+}
+
+// Mount 挂载模型RESTful接口
+func Mount(app *kuu.Kuu, n string) {
+	k = app
+	name = n
+	path := kuu.Join("/", strings.ToLower(name))
+	k.POST(path, create)
+	k.DELETE(path, remove)
+	k.PUT(path, update)
+	k.GET(path, list)
+	k.GET(kuu.Join(path, "/:id"), id)
 }

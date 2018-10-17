@@ -26,7 +26,7 @@ func init() {
 	kuu.Emit("OnModel", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		schema := args[0].(*kuu.Schema)
-		MountRESTful(k, schema.Name)
+		rest.Mount(k, schema.Name)
 	})
 }
 
@@ -129,20 +129,10 @@ var Plugin = &kuu.Plugin{
 			if args != nil {
 				for _, item := range args {
 					name := item.(string)
-					MountRESTful(k, name)
+					rest.Mount(k, name)
 				}
 			}
 			return nil
 		},
 	},
-}
-
-// MountRESTful 挂载模型RESTful接口
-func MountRESTful(k *kuu.Kuu, name string) {
-	path := kuu.Join("/", strings.ToLower(name))
-	k.POST(path, rest.Create(name))
-	k.DELETE(path, rest.Remove(name))
-	k.PUT(path, rest.Update(name))
-	k.GET(path, rest.List(name))
-	k.GET(kuu.Join(path, "/:id"), rest.ID(name))
 }

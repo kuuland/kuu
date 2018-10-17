@@ -93,11 +93,11 @@ func encodeData(c *gin.Context) jwt.MapClaims {
 func whilelistFilter(c *gin.Context) bool {
 	wl := false
 	if len(whilelist) > 0 {
-		value := kuu.Join(c.Request.Method, " ", c.Request.URL.String())
+		value := kuu.Join(c.Request.Method, " ", c.Request.URL.Path)
 		value = strings.ToLower(value)
 		for _, item := range whilelist {
 			item = strings.ToLower(item)
-			if strings.Contains(value, item) {
+			if value == item {
 				wl = true
 				break
 			}
@@ -117,8 +117,8 @@ func AuthMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-// login 登录路由
-func login(c *gin.Context) {
+// loginHandler 登录路由
+func loginHandler(c *gin.Context) {
 	userData, secret := loginFunc(c)
 	var token string
 	if secret == "" {
@@ -150,8 +150,8 @@ func login(c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdDataOK(userData))
 }
 
-// logout 退出登录路由
-func logout(c *gin.Context) {
+// logoutHandler 退出登录路由
+func logoutHandler(c *gin.Context) {
 	jwtData := encodeData(c)
 	if jwtData != nil && secretResetFunc != nil {
 		token := parseToken(c)
@@ -164,8 +164,8 @@ func logout(c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "logout")))
 }
 
-// valid 验证路由
-func valid(c *gin.Context) {
+// validHandler 验证路由
+func validHandler(c *gin.Context) {
 	data := encodeData(c)
 	if data == nil {
 		c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "auth_error")))
@@ -208,17 +208,17 @@ func Plugin(
 			kuu.RouteInfo{
 				Method:  "POST",
 				Path:    "/login",
-				Handler: login,
+				Handler: loginHandler,
 			},
 			kuu.RouteInfo{
 				Method:  "POST",
 				Path:    "/logout",
-				Handler: logout,
+				Handler: logoutHandler,
 			},
 			kuu.RouteInfo{
 				Method:  "GET",
 				Path:    "/valid",
-				Handler: valid,
+				Handler: validHandler,
 			},
 		},
 		KuuMethods: kuu.KuuMethods{
@@ -238,7 +238,7 @@ func Plugin(
 				}
 				return nil
 			},
-			"whilelist": func(args ...interface{}) interface{} {
+			"wl": func(args ...interface{}) interface{} {
 				list := args[0].([]string)
 				replace := false
 				if len(args) > 1 {
