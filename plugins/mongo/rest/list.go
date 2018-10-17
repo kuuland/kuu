@@ -69,6 +69,6 @@ func List(name string) func(*gin.Context) {
 		if p._range != "" {
 			data["range"] = p._range
 		}
-		c.JSON(http.StatusOK, data)
+		c.JSON(http.StatusOK, kuu.StdDataOK(data))
 	}
 }

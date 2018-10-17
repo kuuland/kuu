@@ -2,13 +2,18 @@ package rest
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
+)
+
+var (
+	defaultMessages = map[string]string{
+		"request_error": "Request failed.",
+	}
 )
 
 // params 请求参数
@@ -94,10 +99,6 @@ func parseParams(c *gin.Context) *params {
 
 // handleError 错误处理
 func handleError(err error, c *gin.Context) {
-	log.Println(err)
-	c.JSON(http.StatusOK, kuu.H{
-		"errcode":  500,
-		"errmsg":   "Request failed.",
-		"errstack": err.Error(),
-	})
+	kuu.Error(err)
+	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "request_error")))
 }

@@ -12,8 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ROOT 应用运行目录
-var ROOT string
+var (
+	ROOT       string
+	plugins    = map[string]*Plugin{}
+	contexts   = map[string]*Kuu{}
+	kuuMethods = KuuMethods{}
+)
 
 func init() {
 	env := os.Getenv("KUU_ENV") // KUU_ENV = 'dev' | 'test' | 'prod'
@@ -31,24 +35,15 @@ func init() {
 // H 映射集合的别名
 type H map[string]interface{}
 
-// plugins 插件集合
-var plugins = map[string]*Plugin{}
-
-// contexts 应用缓存
-var contexts = map[string]*Kuu{}
-
-// methods 插件API
-var methods = Methods{}
-
 // Kuu 应用
 type Kuu struct {
 	*gin.Engine
-	Name    string
-	Config  H
-	Port    int16
-	Env     string
-	Schemas map[string]*Schema
-	methods InstMethods
+	Name       string
+	Config     H
+	Port       int16
+	Env        string
+	Schemas    map[string]*Schema
+	appMethods AppMethods
 }
 
 // Model 模型注册
@@ -82,21 +77,9 @@ func (k *Kuu) Model(m interface{}) {
 		schema.Fields[i] = sField
 	}
 	k.Schemas[schema.Name] = schema
-	k.eachPlugins(func(p *Plugin) {
-		// 触发OnModel
-		if p.OnModel != nil {
-			p.OnModel(k, schema)
-		}
-	})
+	Emit("OnModel", k, schema)
 }
 
-func (k *Kuu) eachPlugins(cb func(*Plugin)) {
-	for _, p := range plugins {
-		cb(p)
-	}
-}
-
-// loadConfigFile 加载配置文件（配置文件优先）
 func (k *Kuu) loadConfigFile() {
 	path := os.Getenv("KUU_CONFIG")
 	if path == "" || !strings.HasSuffix(path, ".json") {
@@ -117,7 +100,6 @@ func (k *Kuu) loadConfigFile() {
 	}
 }
 
-// loadPlugins 加载插件
 func (k *Kuu) loadPlugins() {
 	for _, p := range plugins {
 		// 插件名不能为空
@@ -125,18 +107,15 @@ func (k *Kuu) loadPlugins() {
 			break
 		}
 		// 挂载中间件
-		for key, value := range p.Middleware {
-			if key == "" ||
-				value == nil {
+		for _, value := range p.Middleware {
+			if value == nil {
 				break
 			}
 			k.Use(value)
 		}
 		// 挂载路由
-		for key, value := range p.Routes {
-			if key == "" ||
-				value.Path == "" ||
-				value.Handler == nil {
+		for _, value := range p.Routes {
+			if value.Path == "" || value.Handler == nil {
 				break
 			}
 			if value.Method == "" {
@@ -145,37 +124,29 @@ func (k *Kuu) loadPlugins() {
 			k.Handle(value.Method, value.Path, value.Handler)
 		}
 		// 加载API
-		for key, value := range p.InstMethods {
+		for key, value := range p.AppMethods {
 			if key == "" ||
 				value == nil {
 				break
 			}
-			k.methods[Join(p.Name, ":", key)] = value
+			k.appMethods[Join(p.Name, ":", key)] = value
 		}
-		// 触发OnLoad
-		if p.OnLoad != nil {
-			p.OnLoad(k)
-		}
+		Emit("OnPluginLoad", k)
 	}
 }
 
 // Run 重写启动函数
 func (k *Kuu) Run(addr ...string) (err error) {
-	k.eachPlugins(func(p *Plugin) {
-		// 触发OnModel
-		if p.BeforeRun != nil {
-			p.BeforeRun(k)
-		}
-	})
+	Emit("BeforeRun", k)
 	return k.Engine.Run(addr...)
 }
 
 // New 创建新应用
 func New(cfg H) *Kuu {
 	k := Kuu{
-		Engine:  gin.New(),
-		Schemas: make(map[string]*Schema),
-		methods: make(InstMethods),
+		Engine:     gin.New(),
+		Schemas:    make(map[string]*Schema),
+		appMethods: make(AppMethods),
 	}
 	k.Use(gin.Logger(), gin.Recovery())
 	if cfg == nil {
@@ -191,13 +162,14 @@ func New(cfg H) *Kuu {
 	k.Config = cfg
 	k.loadConfigFile()
 	k.loadPlugins()
-	FireHooks("OnNew", &k, cfg)
+	Emit("OnNew", &k)
 	return contexts[k.Name]
 }
 
 // Import 导入插件
 func Import(ps ...*Plugin) {
 	for _, p := range ps {
+		Emit("OnImport", p)
 		// 插件名不能为空
 		if p.Name == "" {
 			break
@@ -205,11 +177,11 @@ func Import(ps ...*Plugin) {
 		// 缓存插件
 		plugins[p.Name] = p
 		// 加载插件全局API
-		for key, value := range p.Methods {
+		for key, value := range p.KuuMethods {
 			if key == "" || value == nil {
 				break
 			}
-			methods[Join(p.Name, ":", key)] = value
+			kuuMethods[Join(p.Name, ":", key)] = value
 		}
 	}
 }

@@ -43,7 +43,6 @@ func dateCheck() {
 	}
 }
 
-// 钩子
 type outputHook struct{}
 
 func (h *outputHook) Levels() []logrus.Level {

@@ -11,20 +11,6 @@ import (
 	"github.com/kuuland/kuu"
 )
 
-func safeL(c *gin.Context, key string) string {
-	defaultMessages := map[string]string{
-		"login_error": "Login failed, please contact the administrator or try again later.",
-		"auth_error":  "Your session has expired, please log in again.",
-		"logout":      "Logout successful.",
-	}
-	value := kuu.L(c, key)
-	if value == "" {
-		value = defaultMessages[key]
-	}
-	return value
-}
-
-// 全局配置
 var (
 	tokenKey   = "token"
 	loginFunc  func(*gin.Context) (kuu.H, string)
@@ -33,7 +19,12 @@ var (
 		return false
 	}
 	errorHandler = func(c *gin.Context) {
-		c.JSON(http.StatusOK, kuu.StdDataError(safeL(c, "auth_error")))
+		c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "auth_error")))
+	}
+	defaultMessages = map[string]string{
+		"login_error": "Login failed, please contact the administrator or try again later.",
+		"auth_error":  "Your session has expired, please log in again.",
+		"logout":      "Logout successful.",
 	}
 )
 
@@ -112,7 +103,7 @@ func login(c *gin.Context) {
 		}
 	}
 	if userData == nil || secret == "" {
-		c.JSON(http.StatusOK, kuu.StdDataError(safeL(c, "login_error")))
+		c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "login_error")))
 		return
 	}
 	if b, err := json.Marshal(userData); err == nil {
@@ -128,14 +119,14 @@ func login(c *gin.Context) {
 
 // logout 退出登录路由
 func logout(c *gin.Context) {
-	c.JSON(http.StatusOK, kuu.StdDataError(safeL(c, "logout")))
+	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "logout")))
 }
 
 // valid 验证路由
 func valid(c *gin.Context) {
 	data := encodeData(c)
 	if data == nil {
-		c.JSON(http.StatusOK, kuu.StdDataError(safeL(c, "auth_error")))
+		c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "auth_error")))
 	} else {
 		c.JSON(http.StatusOK, kuu.StdDataOK(data))
 	}
@@ -161,27 +152,27 @@ func Plugin(l func(*gin.Context) (kuu.H, string), s func(string) string, f func(
 	}
 	return &kuu.Plugin{
 		Name: "ac",
-		Middleware: kuu.M{
-			"auth": AuthMiddleware,
+		Middleware: kuu.Middleware{
+			AuthMiddleware,
 		},
-		Routes: kuu.R{
-			"login": &kuu.Route{
+		Routes: kuu.Routes{
+			kuu.RouteInfo{
 				Method:  "POST",
 				Path:    "/login",
 				Handler: login,
 			},
-			"logout": &kuu.Route{
+			kuu.RouteInfo{
 				Method:  "POST",
 				Path:    "/logout",
 				Handler: logout,
 			},
-			"valid": &kuu.Route{
+			kuu.RouteInfo{
 				Method:  "GET",
 				Path:    "/valid",
 				Handler: valid,
 			},
 		},
-		Methods: kuu.Methods{
+		KuuMethods: kuu.KuuMethods{
 			"encoded": func(args ...interface{}) interface{} {
 				if args != nil && len(args) == 2 {
 					data := args[0].(jwt.MapClaims)

@@ -17,35 +17,34 @@ type LangMap map[string](LangMessageMap)
 var lang = "en"
 var langs = LangMap{}
 
-// LocaleHook 国际化钩子
-type LocaleHook struct {
-	Fired bool
-}
-
-// Fire 国际化钩子触发函数
-func (hook *LocaleHook) Fire(k *Kuu, args ...interface{}) error {
-	var config LangMap
-	if k.Config["i18n"] != nil {
-		config = k.Config["i18n"].(LangMap)
-	}
-	if config != nil {
-		for key, value := range config {
-			langs[key] = value
-		}
-	}
-	hook.Fired = true
-	return nil
-}
-
 func init() {
-	AddHook("OnNew", new(LocaleHook))
+	On("OnNew", func(args ...interface{}) {
+		k := args[0].(*Kuu)
+		var config LangMap
+		if k.Config["i18n"] != nil {
+			config = k.Config["i18n"].(LangMap)
+		}
+		if config != nil {
+			for key, value := range config {
+				langs[key] = value
+			}
+		}
+	})
 }
 
-// 加载语言库的方式：
-// 1.应用配置
-// 2.HTTP
+func parseAcceptLanguage(c *gin.Context) string {
+	header := c.GetHeader("Accept-Language")
+	split := strings.Split(header, ",")
+	// zh-CN,zh;q=0.9,zh-TW;q=0.8,en;q=0.7
+	for _, item := range split {
+		item = strings.TrimSpace(item)
+		s := strings.TrimSpace(strings.Split(item, ";")[0])
+		return s
+	}
+	return ""
+}
 
-// L Locale的快捷调用
+// L 国际化函数(*gin.Context, key, data, lang)
 func L(args ...interface{}) string {
 	var (
 		c    *gin.Context
@@ -77,24 +76,20 @@ func L(args ...interface{}) string {
 			lang = l
 		}
 	}
-	return Locale(key, lang, data)
+	return localeMessage(key, lang, data)
 }
 
-// parseAcceptLanguage 解析Accept-Language并转换成lang
-func parseAcceptLanguage(c *gin.Context) string {
-	header := c.GetHeader("Accept-Language")
-	split := strings.Split(header, ",")
-	// zh-CN,zh;q=0.9,zh-TW;q=0.8,en;q=0.7
-	for _, item := range split {
-		item = strings.TrimSpace(item)
-		s := strings.TrimSpace(strings.Split(item, ";")[0])
-		return s
+// SafeL 包含默认值的L函数
+func SafeL(defaultMessages map[string]string, args ...interface{}) string {
+	value := L(args...)
+	if value == "" {
+		key := args[1].(string)
+		value = defaultMessages[key]
 	}
-	return ""
+	return value
 }
 
-// Locale 获取指定语言的国际化内容
-func Locale(key string, l string, data H) string {
+func localeMessage(key string, l string, data H) string {
 	if l == "" {
 		l = lang
 	}

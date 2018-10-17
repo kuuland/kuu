@@ -98,18 +98,20 @@ func Add(ts ...*Task) {
 	}
 }
 
+func init() {
+	kuu.Emit("OnPluginLoad", func(args ...interface{}) {
+		k := args[0].(*kuu.Kuu)
+		if url := k.Config["taskURL"]; url != nil {
+			loadTasksFromURL(url.(string))
+			c.Start()
+		}
+	})
+}
+
 // Plugin 插件声明
 var Plugin = &kuu.Plugin{
 	Name: "task",
-	OnLoad: func(k *kuu.Kuu) {
-		var taskURL string
-		if k.Config["taskURL"] != nil {
-			taskURL = k.Config["taskURL"].(string)
-			loadTasksFromURL(taskURL)
-			c.Start()
-		}
-	},
-	Methods: kuu.Methods{
+	KuuMethods: kuu.KuuMethods{
 		"add": func(args ...interface{}) interface{} {
 			if args != nil && len(args) > 0 {
 				for _, item := range args {
@@ -126,8 +128,8 @@ var Plugin = &kuu.Plugin{
 			return Tasks
 		},
 	},
-	Routes: kuu.R{
-		"list": &kuu.Route{
+	Routes: kuu.Routes{
+		kuu.RouteInfo{
 			Method: "GET",
 			Path:   "/tasks",
 			Handler: func(c *gin.Context) {

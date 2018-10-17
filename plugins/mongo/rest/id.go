@@ -28,8 +28,6 @@ func ID(name string) func(*gin.Context) {
 			handleError(err, c)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"data": data,
-		})
+		c.JSON(http.StatusOK, kuu.StdDataOK(data))
 	}
 }

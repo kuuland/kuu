@@ -48,8 +48,6 @@ func Remove(name string) func(*gin.Context) {
 			return
 		}
 		// 构造返回
-		c.JSON(http.StatusOK, gin.H{
-			"data": data,
-		})
+		c.JSON(http.StatusOK, kuu.StdDataOK(data))
 	}
 }

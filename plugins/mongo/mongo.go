@@ -10,13 +10,25 @@ import (
 	"github.com/kuuland/kuu/plugins/mongo/rest"
 )
 
-// defaultName 默认连接名
 const defaultName = "default"
 
-// connections 连接实例缓存
 var connections = map[string]*Connection{}
-
 var index = 0
+
+func init() {
+	kuu.Emit("OnPluginLoad", func(args ...interface{}) {
+		k := args[0].(*kuu.Kuu)
+		if c := k.Config["mongo"]; c != nil {
+			uri := c.(string)
+			Connect(uri)
+		}
+	})
+	kuu.Emit("OnModel", func(args ...interface{}) {
+		k := args[0].(*kuu.Kuu)
+		schema := args[0].(*kuu.Schema)
+		MountRESTful(k, schema.Name)
+	})
+}
 
 // Connection 数据库连接
 type Connection struct {
@@ -91,21 +103,12 @@ func C(name string) *mgo.Collection {
 // Plugin 插件声明
 var Plugin = &kuu.Plugin{
 	Name: "mongo",
-	OnLoad: func(k *kuu.Kuu) {
-		if c := k.Config["mongo"]; c != nil {
-			uri := c.(string)
-			Connect(uri)
-		}
-	},
-	OnModel: func(k *kuu.Kuu, schema *kuu.Schema) {
-		MountRESTful(k, schema.Name)
-	},
-	Methods: kuu.Methods{
-		"Connect": func(args ...interface{}) interface{} {
+	KuuMethods: kuu.KuuMethods{
+		"connect": func(args ...interface{}) interface{} {
 			uri := args[0].(string)
 			return Connect(uri)
 		},
-		"New": func(args ...interface{}) interface{} {
+		"new": func(args ...interface{}) interface{} {
 			m := args[0].(*Connection)
 			return New(m)
 		},
@@ -121,7 +124,7 @@ var Plugin = &kuu.Plugin{
 			return SN(name)
 		},
 	},
-	InstMethods: kuu.InstMethods{
+	AppMethods: kuu.AppMethods{
 		"rest": func(k *kuu.Kuu, args ...interface{}) interface{} {
 			if args != nil {
 				for _, item := range args {
