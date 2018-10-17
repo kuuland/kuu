@@ -88,8 +88,8 @@ func C(name string) *mgo.Collection {
 	return nil
 }
 
-// P 插件声明
-var P = &kuu.Plugin{
+// Plugin 插件声明
+var Plugin = &kuu.Plugin{
 	Name: "mongo",
 	OnLoad: func(k *kuu.Kuu) {
 		if c := k.Config["mongo"]; c != nil {

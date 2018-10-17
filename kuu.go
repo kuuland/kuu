@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -160,15 +159,6 @@ func (k *Kuu) loadPlugins() {
 	}
 }
 
-// Join 基于字节实现的字符串拼接
-func Join(args ...string) string {
-	b := bytes.Buffer{}
-	for _, item := range args {
-		b.WriteString(item)
-	}
-	return b.String()
-}
-
 // Run 重写启动函数
 func (k *Kuu) Run(addr ...string) (err error) {
 	k.eachPlugins(func(p *Plugin) {
@@ -232,4 +222,37 @@ func App(name string) *Kuu {
 // K 获取应用实例（获取不指定Name所创建的应用）
 func K() *Kuu {
 	return App("kuu")
+}
+
+// StdData 按标准格式返回数据
+func StdData(data interface{}, msg string, code int) H {
+	json := H{}
+	if data != nil {
+		json["data"] = msg
+	}
+	if msg != "" {
+		json["msg"] = msg
+	}
+	json["code"] = code
+	return json
+}
+
+// StdDataOK 返回数据
+func StdDataOK(data interface{}) H {
+	return StdData(data, "", 0)
+}
+
+// StdDataOKWithMsg 返回数据和提示信息
+func StdDataOKWithMsg(data interface{}, msg string) H {
+	return StdData(data, msg, 0)
+}
+
+// StdDataError 返回错误信息
+func StdDataError(msg string) H {
+	return StdData(nil, "", -1)
+}
+
+// StdDataErrorWithCode 返回错误信息和错误码
+func StdDataErrorWithCode(msg string, code int) H {
+	return StdData(nil, "", code)
 }

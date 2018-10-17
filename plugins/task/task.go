@@ -98,8 +98,8 @@ func Add(ts ...*Task) {
 	}
 }
 
-// P 插件声明
-var P = &kuu.Plugin{
+// Plugin 插件声明
+var Plugin = &kuu.Plugin{
 	Name: "task",
 	OnLoad: func(k *kuu.Kuu) {
 		var taskURL string

@@ -8,7 +8,7 @@ import (
 
 // 汇总导出
 var (
-	Mongo    = mongo.P
-	Accounts = accounts.P
-	Task     = task.P
+	Mongo    = mongo.Plugin
+	Accounts = accounts.Plugin
+	Task     = task.Plugin
 )
