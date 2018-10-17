@@ -47,14 +47,24 @@ type Kuu struct {
 }
 
 // Model 模型注册
-func (k *Kuu) Model(m interface{}) {
-	s := reflect.TypeOf(m).Elem()
-	schema := &Schema{
-		Name:   s.Name(),
-		Fields: make([]*SchemaField, s.NumField()),
+func (k *Kuu) Model(args ...interface{}) {
+	for _, m := range args {
+		model(k, m)
 	}
-	for i := 0; i < s.NumField(); i++ {
-		field := s.Field(i)
+}
+
+func model(k *Kuu, m interface{}) {
+	v := reflect.ValueOf(m)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	t := v.Type()
+	schema := &Schema{
+		Name:   Join(t.PkgPath(), "/", t.Name()),
+		Fields: make([]*SchemaField, t.NumField()),
+	}
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
 		tags := field.Tag
 		sField := &SchemaField{}
 		sField.Code = strings.ToLower(field.Name)
