@@ -221,10 +221,10 @@ func StdDataOKWithMsg(data interface{}, msg string) H {
 
 // StdDataError 返回错误信息
 func StdDataError(msg string) H {
-	return StdData(nil, "", -1)
+	return StdData(nil, msg, -1)
 }
 
 // StdDataErrorWithCode 返回错误信息和错误码
 func StdDataErrorWithCode(msg string, code int) H {
-	return StdData(nil, "", code)
+	return StdData(nil, msg, code)
 }

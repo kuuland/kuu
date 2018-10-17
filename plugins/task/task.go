@@ -32,7 +32,7 @@ type Task struct {
 }
 
 // Tasks 任务实例
-var Tasks = map[string]*Task{}
+var tasks = map[string]*Task{}
 
 // loadTasksFromURL 从远程URL获取任务配置
 func loadTasksFromURL(taskURL string) {
@@ -92,7 +92,7 @@ func Add(ts ...*Task) {
 			}
 			c.AddFunc(t.Spec, t.Func)
 			if t.Name != "" {
-				Tasks[t.Name] = t
+				tasks[t.Name] = t
 			}
 		}
 	}
@@ -124,8 +124,8 @@ var Plugin = &kuu.Plugin{
 			}
 			return nil
 		},
-		"tasks": func(args ...interface{}) interface{} {
-			return Tasks
+		"list": func(args ...interface{}) interface{} {
+			return tasks
 		},
 	},
 	Routes: kuu.Routes{
@@ -133,7 +133,7 @@ var Plugin = &kuu.Plugin{
 			Method: "GET",
 			Path:   "/tasks",
 			Handler: func(c *gin.Context) {
-				c.JSON(http.StatusOK, Tasks)
+				c.JSON(http.StatusOK, kuu.StdDataOK(tasks))
 			},
 		},
 	},

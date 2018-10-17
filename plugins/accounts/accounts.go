@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -12,14 +13,19 @@ import (
 )
 
 var (
-	tokenKey   = "token"
-	loginFunc  func(*gin.Context) (kuu.H, string)
-	secretFunc func(string) string
+	tokenKey        = "token"
+	loginFunc       func(*gin.Context) (kuu.H, string)
+	secretFunc      func(string) string
+	secretResetFunc func(string, kuu.H)
+	whilelist       = []string{
+		"POST /login",
+	}
 	filterFunc = func(c *gin.Context) bool {
 		return false
 	}
 	errorHandler = func(c *gin.Context) {
-		c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "auth_error")))
+		data := kuu.StdDataError(kuu.SafeL(defaultMessages, c, "auth_error"))
+		c.AbortWithStatusJSON(http.StatusOK, data)
 	}
 	defaultMessages = map[string]string{
 		"login_error": "Login failed, please contact the administrator or try again later.",
@@ -27,6 +33,12 @@ var (
 		"logout":      "Logout successful.",
 	}
 )
+
+func init() {
+	// kuu.Emit("OnPluginLoad", func(args ...interface{}) {
+	// 	k := args[0].(*kuu.Kuu)
+	// })
+}
 
 // Encoded 加密
 func Encoded(data jwt.MapClaims, secret string) string {
@@ -71,17 +83,38 @@ func parseToken(c *gin.Context) string {
 func encodeData(c *gin.Context) jwt.MapClaims {
 	token := parseToken(c)
 	secret := secretFunc(token)
-	data := Decoded(token, secret)
+	var data jwt.MapClaims
+	if token != "" && secret != "" {
+		data = Decoded(token, secret)
+	}
 	return data
+}
+
+func whilelistFilter(c *gin.Context) bool {
+	wl := false
+	if len(whilelist) > 0 {
+		value := kuu.Join(c.Request.Method, " ", c.Request.URL.String())
+		value = strings.ToLower(value)
+		for _, item := range whilelist {
+			item = strings.ToLower(item)
+			if strings.Contains(value, item) {
+				wl = true
+				break
+			}
+		}
+	}
+	return wl
 }
 
 // AuthMiddleware 令牌鉴权中间件
 func AuthMiddleware(c *gin.Context) {
 	data := encodeData(c)
-	if data == nil || data.Valid() != nil || !filterFunc(c) {
+	wl := whilelistFilter(c)
+	if wl == false && (data == nil || data.Valid() != nil || !filterFunc(c)) {
 		errorHandler(c)
-		c.Abort()
+		return
 	}
+	c.Next()
 }
 
 // login 登录路由
@@ -119,6 +152,15 @@ func login(c *gin.Context) {
 
 // logout 退出登录路由
 func logout(c *gin.Context) {
+	jwtData := encodeData(c)
+	if jwtData != nil && secretResetFunc != nil {
+		token := parseToken(c)
+		if b, err := json.Marshal(jwtData); err == nil {
+			data := kuu.H{}
+			json.Unmarshal(b, &data)
+			secretResetFunc(token, data)
+		}
+	}
 	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "logout")))
 }
 
@@ -133,22 +175,29 @@ func valid(c *gin.Context) {
 }
 
 // Plugin 插件声明
-func Plugin(l func(*gin.Context) (kuu.H, string), s func(string) string, f func(*gin.Context) bool, eh func(*gin.Context), t string) *kuu.Plugin {
+func Plugin(
+	getUserData func(*gin.Context) (kuu.H, string),
+	getUserSecretByToken func(string) string,
+	setUserSecretByToken func(string, kuu.H),
+	tokenFilter func(*gin.Context) bool,
+	onError func(*gin.Context),
+	customTokenKey string) *kuu.Plugin {
 	// 必填参数
-	if l == nil || s == nil {
+	if getUserData == nil || getUserSecretByToken == nil || setUserSecretByToken == nil {
 		panic("Config required.")
 	}
-	loginFunc = l
-	secretFunc = s
+	loginFunc = getUserData
+	secretFunc = getUserSecretByToken
+	secretResetFunc = setUserSecretByToken
 	// 可选参数
-	if t != "" {
-		tokenKey = t
+	if customTokenKey != "" {
+		tokenKey = customTokenKey
 	}
-	if f != nil {
-		filterFunc = f
+	if tokenFilter != nil {
+		filterFunc = tokenFilter
 	}
-	if eh != nil {
-		errorHandler = eh
+	if onError != nil {
+		errorHandler = onError
 	}
 	return &kuu.Plugin{
 		Name: "ac",
@@ -186,6 +235,37 @@ func Plugin(l func(*gin.Context) (kuu.H, string), s func(string) string, f func(
 					tokenString := args[0].(string)
 					secret := args[1].(string)
 					return Decoded(tokenString, secret)
+				}
+				return nil
+			},
+			"whilelist": func(args ...interface{}) interface{} {
+				list := args[0].([]string)
+				replace := false
+				if len(args) > 1 {
+					replace = args[1].(bool)
+				}
+				if list != nil && len(list) > 0 {
+					m := map[string]bool{}
+					z := make([]string, len(whilelist)+len(list))
+					l := []([]string){}
+					if replace {
+						l = append(l, list)
+					} else {
+						l = append(l, whilelist)
+						l = append(l, list)
+					}
+					offset := 0
+					for _, arr := range l {
+						for i, item := range arr {
+							if m[item] {
+								continue
+							}
+							m[item] = true
+							z[i+offset] = item
+						}
+						offset += len(arr)
+					}
+					whilelist = z
 				}
 				return nil
 			},

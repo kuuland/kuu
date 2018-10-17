@@ -82,8 +82,8 @@ func L(args ...interface{}) string {
 // SafeL 包含默认值的L函数
 func SafeL(defaultMessages map[string]string, args ...interface{}) string {
 	value := L(args...)
-	if value == "" {
-		key := args[1].(string)
+	key := args[1].(string)
+	if value == "" || value == key {
 		value = defaultMessages[key]
 	}
 	return value
