@@ -26,11 +26,12 @@ import (
 	"fmt"
 
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins"
+	"github.com/kuuland/kuu/plugins/mongo"
+	"github.com/kuuland/kuu/plugins/task"
 )
 
 func main() {
-	kuu.Import(plugins.Mongo, plugins.Task)
+	kuu.Import(mongo.All(), task.All())
 	k := kuu.New(kuu.H{
 		"mongo":   "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50"
 	})
