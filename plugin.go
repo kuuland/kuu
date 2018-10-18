@@ -8,6 +8,7 @@ import (
 type Plugin struct {
 	Routes     Routes
 	Middleware Middleware
+	Models     []interface{}
 }
 
 // RouteInfo 路由声明

@@ -19,6 +19,7 @@ var (
 	contexts         = map[string]*Kuu{}
 	pluginMiddleware = []gin.HandlerFunc{}
 	pluginRoutes     = []RouteInfo{}
+	pluginModels     = []interface{}{}
 )
 
 func init() {
@@ -127,13 +128,17 @@ func (k *Kuu) loadConfigFile() {
 }
 
 func (k *Kuu) loadPlugins() {
-	// 挂载中间件
+	// 挂载插件中间件
 	for _, m := range pluginMiddleware {
 		k.Use(m)
 	}
-	// 挂载路由
+	// 挂载插件路由
 	for _, r := range pluginRoutes {
 		k.Handle(r.Method, r.Path, r.Handler)
+	}
+	// 挂载插件模型
+	for _, m := range pluginModels {
+		k.Model(m)
 	}
 }
 
@@ -183,6 +188,12 @@ func Import(ps ...*Plugin) {
 				r.Method = "GET"
 			}
 			pluginRoutes = append(pluginRoutes, r)
+		}
+		for _, m := range p.Models {
+			if m == nil {
+				continue
+			}
+			pluginModels = append(pluginModels, m)
 		}
 	}
 }
