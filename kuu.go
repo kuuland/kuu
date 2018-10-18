@@ -56,15 +56,32 @@ func (k *Kuu) Model(args ...interface{}) {
 
 func model(k *Kuu, m interface{}) {
 	v := reflect.ValueOf(m)
+	config := H{}
+	if s, ok := m.(IConfig); ok {
+		config = s.Config()
+	}
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
+	} else {
+		panic(Join("kuu.Model only accepts Ptr type, try to use 'kuu.Model(&", v.Type().Name(), ")'."))
 	}
+
 	t := v.Type()
 	schema := &Schema{
-		Name:   Join(t.PkgPath(), "/", t.Name()),
-		Fields: make([]*SchemaField, t.NumField()),
+		Name:     t.Name(),
+		FullName: Join(t.PkgPath(), "/", t.Name()),
+		Fields:   make([]*SchemaField, t.NumField()),
 	}
-	for i := 0; i < t.NumField(); i++ {
+	if config["displayName"] != nil {
+		schema.DisplayName = config["displayName"].(string)
+	}
+	if config["collection"] != nil {
+		schema.Collection = config["collection"].(string)
+	}
+	if config["name"] != nil {
+		schema.Name = config["name"].(string)
+	}
+	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		tags := field.Tag
 		sField := &SchemaField{}

@@ -1,9 +1,17 @@
 package kuu
 
+// IConfig 配置接口
+type IConfig interface {
+	Config() H
+}
+
 // Schema 数据模型
 type Schema struct {
-	Name   string
-	Fields []*SchemaField
+	Name        string
+	DisplayName string
+	FullName    string
+	Collection  string
+	Fields      []*SchemaField
 }
 
 // SchemaField 模型字段
