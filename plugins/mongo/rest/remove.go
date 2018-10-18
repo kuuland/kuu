@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
 )
@@ -12,7 +11,7 @@ import (
 func remove(c *gin.Context) {
 	// 参数处理
 	var body kuu.H
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := kuu.CopyBody(c, &body); err != nil {
 		handleError(err, c)
 		return
 	}
@@ -28,7 +27,7 @@ func remove(c *gin.Context) {
 		cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 	}
 	// 执行查询
-	C := kuu.D("mongo:C", name).(*mgo.Collection)
+	C := model(name)
 	defer C.Database.Session.Close()
 	var (
 		err  error
@@ -46,5 +45,5 @@ func remove(c *gin.Context) {
 		return
 	}
 	// 构造返回
-	c.JSON(http.StatusOK, kuu.StdDataOK(data))
+	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

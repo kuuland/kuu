@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
 )
 
@@ -13,7 +12,7 @@ func list(c *gin.Context) {
 	// 参数处理
 	p := parseParams(c)
 	// 执行查询
-	C := kuu.D("mongo:C", name).(*mgo.Collection)
+	C := model(name)
 	defer C.Database.Session.Close()
 	query := C.Find(p.cond)
 	totalrecords, countErr := query.Count()
@@ -60,5 +59,5 @@ func list(c *gin.Context) {
 	if p._range != "" {
 		data["range"] = p._range
 	}
-	c.JSON(http.StatusOK, kuu.StdDataOK(data))
+	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

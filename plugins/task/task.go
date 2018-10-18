@@ -12,13 +12,26 @@ import (
 	"github.com/robfig/cron"
 )
 
-var c = cron.New()
-
 // 任务运行模式
 const (
 	SerialMode   = iota // 线性
 	ParallelMode        // 并行
 )
+
+var (
+	c     = cron.New()
+	tasks = map[string]*Task{}
+)
+
+func init() {
+	kuu.Emit("OnNew", func(args ...interface{}) {
+		k := args[0].(*kuu.Kuu)
+		if url := k.Config["taskURL"]; url != nil {
+			loadTasksFromURL(url.(string))
+			c.Start()
+		}
+	})
+}
 
 // Task 任务
 type Task struct {
@@ -31,10 +44,6 @@ type Task struct {
 	Mode    int    `json:"mode"`
 }
 
-// Tasks 任务实例
-var tasks = map[string]*Task{}
-
-// loadTasksFromURL 从远程URL获取任务配置
 func loadTasksFromURL(taskURL string) {
 	body := fetch(taskURL)
 	var data []Task
@@ -98,45 +107,20 @@ func Add(ts ...*Task) {
 	}
 }
 
-func init() {
-	kuu.Emit("OnPluginLoad", func(args ...interface{}) {
-		k := args[0].(*kuu.Kuu)
-		if url := k.Config["taskURL"]; url != nil {
-			loadTasksFromURL(url.(string))
-			c.Start()
-		}
-	})
+// TasksHandler 任务列表路由
+func TasksHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, kuu.StdOK(tasks))
 }
 
-// Plugin 插件声明
-var Plugin = &kuu.Plugin{
-	Name: "task",
-	KuuMethods: kuu.KuuMethods{
-		"add": func(args ...interface{}) interface{} {
-			if args != nil && len(args) > 0 {
-				for _, item := range args {
-					if item == nil {
-						continue
-					}
-					t := item.(*Task)
-					Add(t)
-				}
-			}
-			return nil
+// All 插件声明
+func All() *kuu.Plugin {
+	return &kuu.Plugin{
+		Routes: kuu.Routes{
+			kuu.RouteInfo{
+				Method:  "GET",
+				Path:    "/tasks",
+				Handler: TasksHandler,
+			},
 		},
-		"list": func(args ...interface{}) interface{} {
-			return tasks
-		},
-	},
-	Routes: kuu.Routes{
-		kuu.RouteInfo{
-			Method:  "GET",
-			Path:    "/tasks",
-			Handler: tasksHandler,
-		},
-	},
-}
-
-func tasksHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, kuu.StdDataOK(tasks))
+	}
 }

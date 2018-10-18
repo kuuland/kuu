@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/mongo"
 )
 
 var uri = "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50"
 
 func TestGetUseDB(t *testing.T) {
-	fmt.Println(useDB(uri))
+	fmt.Println(parseDB(uri))
 }
 
 func TestConnect(t *testing.T) {
@@ -31,7 +31,7 @@ func TestImport(t *testing.T) {
 		"mongo": "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50",
 	})
 	k.GET("/", func(c *gin.Context) {
-		user := kuu.D("mongo:C", "user").(*mgo.Collection)
+		user := mongo.C("user")
 		n, err := user.Count()
 		if err == nil {
 			c.String(200, string(n))

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
 )
 
@@ -21,8 +22,9 @@ var (
 	defaultMessages = map[string]string{
 		"request_error": "Request failed.",
 	}
-	k    *kuu.Kuu
-	name string
+	k     *kuu.Kuu
+	name  string
+	model func(string) *mgo.Collection
 )
 
 // params 请求参数
@@ -108,13 +110,14 @@ func parseParams(c *gin.Context) *params {
 
 func handleError(err error, c *gin.Context) {
 	kuu.Error(err)
-	c.JSON(http.StatusOK, kuu.StdDataError(kuu.SafeL(defaultMessages, c, "request_error")))
+	c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "request_error")))
 }
 
 // Mount 挂载模型RESTful接口
-func Mount(app *kuu.Kuu, n string) {
+func Mount(app *kuu.Kuu, n string, c func(string) *mgo.Collection) {
 	k = app
 	name = n
+	model = c
 	path := kuu.Join("/", strings.ToLower(name))
 	k.POST(path, create)
 	k.DELETE(path, remove)

@@ -12,11 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ROOT 应用运行目录
+var ROOT string
+
 var (
-	ROOT       string
-	plugins    = map[string]*Plugin{}
-	contexts   = map[string]*Kuu{}
-	kuuMethods = KuuMethods{}
+	contexts         = map[string]*Kuu{}
+	pluginMiddleware = []gin.HandlerFunc{}
+	pluginRoutes     = []RouteInfo{}
 )
 
 func init() {
@@ -38,12 +40,11 @@ type H map[string]interface{}
 // Kuu 应用
 type Kuu struct {
 	*gin.Engine
-	Name       string
-	Config     H
-	Port       int16
-	Env        string
-	Schemas    map[string]*Schema
-	appMethods AppMethods
+	Name    string
+	Config  H
+	Port    int16
+	Env     string
+	Schemas map[string]*Schema
 }
 
 // Model 模型注册
@@ -111,36 +112,14 @@ func (k *Kuu) loadConfigFile() {
 }
 
 func (k *Kuu) loadPlugins() {
-	// 优先挂载中间件
-	for _, p := range plugins {
-		for _, value := range p.Middleware {
-			if value == nil {
-				break
-			}
-			k.Use(value)
-		}
+	// 挂载中间件
+	for _, m := range pluginMiddleware {
+		k.Use(m)
 	}
-	for _, p := range plugins {
-		// 挂载路由
-		for _, value := range p.Routes {
-			if value.Path == "" || value.Handler == nil {
-				break
-			}
-			if value.Method == "" {
-				value.Method = "GET"
-			}
-			k.Handle(value.Method, value.Path, value.Handler)
-		}
-		// 加载API
-		for key, value := range p.AppMethods {
-			if key == "" ||
-				value == nil {
-				break
-			}
-			k.appMethods[Join(p.Name, ":", key)] = value
-		}
+	// 挂载路由
+	for _, r := range pluginRoutes {
+		k.Handle(r.Method, r.Path, r.Handler)
 	}
-	Emit("OnPluginLoad", k)
 }
 
 // Run 重写启动函数
@@ -152,9 +131,8 @@ func (k *Kuu) Run(addr ...string) (err error) {
 // New 创建新应用
 func New(cfg H) *Kuu {
 	k := Kuu{
-		Engine:     gin.New(),
-		Schemas:    make(map[string]*Schema),
-		appMethods: make(AppMethods),
+		Engine:  gin.New(),
+		Schemas: make(map[string]*Schema),
 	}
 	k.Use(gin.Logger(), gin.Recovery())
 	if cfg == nil {
@@ -177,19 +155,19 @@ func New(cfg H) *Kuu {
 // Import 导入插件
 func Import(ps ...*Plugin) {
 	for _, p := range ps {
-		Emit("OnImport", p)
-		// 插件名不能为空
-		if p.Name == "" {
-			break
-		}
-		// 缓存插件
-		plugins[p.Name] = p
-		// 加载插件全局API
-		for key, value := range p.KuuMethods {
-			if key == "" || value == nil {
-				break
+		for _, m := range p.Middleware {
+			if m != nil {
+				pluginMiddleware = append(pluginMiddleware, m)
 			}
-			kuuMethods[Join(p.Name, ":", key)] = value
+		}
+		for _, r := range p.Routes {
+			if r.Path == "" || r.Handler == nil {
+				continue
+			}
+			if r.Method == "" {
+				r.Method = "GET"
+			}
+			pluginRoutes = append(pluginRoutes, r)
 		}
 	}
 }
@@ -199,13 +177,13 @@ func App(name string) *Kuu {
 	return contexts[name]
 }
 
-// K 获取应用实例（获取不指定Name所创建的应用）
+// K 快速导出单实例应用
 func K() *Kuu {
 	return App("kuu")
 }
 
-// StdData 按标准格式返回数据
-func StdData(data interface{}, msg string, code int) H {
+// Std 按标准格式返回数据
+func Std(data interface{}, msg string, code int) H {
 	json := H{}
 	if data != nil {
 		json["data"] = data
@@ -217,22 +195,22 @@ func StdData(data interface{}, msg string, code int) H {
 	return json
 }
 
-// StdDataOK 返回数据
-func StdDataOK(data interface{}) H {
-	return StdData(data, "", 0)
+// StdOK 返回数据
+func StdOK(data interface{}) H {
+	return Std(data, "", 0)
 }
 
-// StdDataOKWithMsg 返回数据和提示信息
-func StdDataOKWithMsg(data interface{}, msg string) H {
-	return StdData(data, msg, 0)
+// StdOKWithMsg 返回数据和提示信息
+func StdOKWithMsg(data interface{}, msg string) H {
+	return Std(data, msg, 0)
 }
 
-// StdDataError 返回错误信息
-func StdDataError(msg string) H {
-	return StdData(nil, msg, -1)
+// StdError 返回错误信息
+func StdError(msg string) H {
+	return Std(nil, msg, -1)
 }
 
-// StdDataErrorWithCode 返回错误信息和错误码
-func StdDataErrorWithCode(msg string, code int) H {
-	return StdData(nil, msg, code)
+// StdErrorWithCode 返回错误信息和错误码
+func StdErrorWithCode(msg string, code int) H {
+	return Std(nil, msg, code)
 }
