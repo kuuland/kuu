@@ -62,8 +62,6 @@ func model(k *Kuu, m interface{}) {
 	}
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
-	} else {
-		panic(Join("kuu.Model only accepts Ptr type, try to use 'kuu.Model(&", v.Type().Name(), ")'."))
 	}
 
 	t := v.Type()
@@ -105,7 +103,7 @@ func model(k *Kuu, m interface{}) {
 		schema.Fields[i] = sField
 	}
 	k.Schemas[schema.Name] = schema
-	Emit("OnModel", k, schema)
+	Emit("OnModel", k, schema, config)
 }
 
 func (k *Kuu) loadConfigFile() {
