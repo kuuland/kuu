@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	kuu.Emit("OnNew", func(args ...interface{}) {
+	kuu.On("OnNew", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		if url := k.Config["taskURL"]; url != nil {
 			loadTasksFromURL(url.(string))

@@ -18,16 +18,16 @@ var connections = map[string]*Connection{}
 var index = 0
 
 func init() {
-	kuu.Emit("OnNew", func(args ...interface{}) {
+	kuu.On("OnNew", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		if c := k.Config["mongo"]; c != nil {
 			uri := c.(string)
 			Connect(uri)
 		}
 	})
-	kuu.Emit("OnModel", func(args ...interface{}) {
+	kuu.On("OnModel", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
-		schema := args[0].(*kuu.Schema)
+		schema := args[1].(*kuu.Schema)
 		rest.Mount(k, schema.Name, C)
 	})
 }
