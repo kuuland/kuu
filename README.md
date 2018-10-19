@@ -20,7 +20,7 @@ Pluggable Go Web Framework.
 ```sh
 go get -u github.com/kuuland/kuu
 ```
-## Example
+## Usage
 
 ```go
 package main
