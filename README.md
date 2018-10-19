@@ -2,6 +2,14 @@
 
 Pluggable Go Web Framework.
 
+
+## Features
+
+- 🎉 **插件式设计** -  灵活的插件机制
+- ✨ **领域建模** - 面向数据模型设计
+- 🚀 **配套增删改查API** - 数据模型自动注册CURD路由
+- 🐠 **配套管理UI*** - 自带后台基础管理框架
+
 ## Documentation
 
 - [API Reference](https://godoc.org/github.com/kuuland/kuu)
@@ -12,16 +20,6 @@ Pluggable Go Web Framework.
 ```sh
 go get -u github.com/kuuland/kuu
 ```
-
-## Features
-
-- 🎉 **插件式设计** -  灵活的插件机制
-- ✨ **领域建模** - 面向数据模型设计
-- 🚀 **配套增删改查API** - 数据模型自动注册CURD路由
-- 🐠 **配套管理UI*** - 自带后台基础管理框架
-
-![plan](https://raw.githubusercontent.com/kuuland/kuu/master/plan.png)
-
 ## Example
 
 ```go
@@ -45,3 +43,12 @@ func main() {
 }
 
 ```
+
+## Plan
+
+![plan](https://raw.githubusercontent.com/kuuland/kuu/master/plan.png)
+
+## License
+
+Kuu is available under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+
