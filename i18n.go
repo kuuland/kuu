@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"bytes"
+	"encoding/json"
 	"html/template"
 	"strings"
 
@@ -18,9 +19,11 @@ var (
 func init() {
 	On("OnNew", func(args ...interface{}) {
 		k := args[0].(*Kuu)
-		var config map[string](LangMessages)
+		var config = map[string](LangMessages){}
 		if k.Config["i18n"] != nil {
-			config = k.Config["i18n"].(map[string](LangMessages))
+			if b, e := json.Marshal(k.Config["i18n"]); e == nil {
+				json.Unmarshal(b, &config)
+			}
 		}
 		if config != nil {
 			for key, value := range config {

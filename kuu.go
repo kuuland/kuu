@@ -130,6 +130,7 @@ func (k *Kuu) loadConfigFile() {
 		return
 	}
 	if err := json.Unmarshal(data, &config); err != nil {
+		Error(err)
 		return
 	}
 	if config != nil {

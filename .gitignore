@@ -12,3 +12,4 @@
 *.out
 .history
 kuu.*.log
+.idea

@@ -101,6 +101,9 @@ func whilelistFilter(c *gin.Context) bool {
 		value := kuu.Join(c.Request.Method, " ", c.Request.URL.Path)
 		value = strings.ToLower(value)
 		for _, item := range whilelist {
+			if s := strings.Split(item, " "); len(s) == 1 {
+				item = kuu.Join(c.Request.Method, " ", item)
+			}
 			item = strings.ToLower(item)
 			if value == item {
 				wl = true
@@ -128,9 +131,6 @@ func AddWhilelist(list []string, replace bool) []string {
 			for i, item := range arr {
 				if exists[item] {
 					continue
-				}
-				if split := strings.Split(item, " "); len(split) == 1 {
-					item = kuu.Join("GET ", item)
 				}
 				exists[item] = true
 				z[i+offset] = item
