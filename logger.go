@@ -64,43 +64,43 @@ func split(args ...interface{}) (string, []interface{}) {
 	return format, a
 }
 
-// Debug Logger.Debug别名
+// Debug 输出Debug级别的日志
 func Debug(args ...interface{}) {
 	format, a := split(args...)
 	log.Debugf(format, a...)
 }
 
-// Info Logger.Info别名
+// Info 输出Info级别的日志
 func Info(args ...interface{}) {
 	format, a := split(args...)
 	log.Infof(format, a...)
 }
 
-// Print Logger.Print别名
+// Print 输出Print级别的日志
 func Print(args ...interface{}) {
 	format, a := split(args...)
 	log.Printf(format, a...)
 }
 
-// Warn Logger.Warn别名
+// Warn 输出Warn级别的日志
 func Warn(args ...interface{}) {
 	format, a := split(args...)
 	log.Warnf(format, a...)
 }
 
-// Error Logger.Error别名
+// Error 输出Error级别的日志
 func Error(args ...interface{}) {
 	format, a := split(args...)
 	log.Errorf(format, a...)
 }
 
-// Fatal Logger.Fatal别名
+// Fatal 输出Fatal级别的日志
 func Fatal(args ...interface{}) {
 	format, a := split(args...)
 	log.Fatalf(format, a...)
 }
 
-// Panic Logger.Panic别名
+// Panic 输出Panic级别的日志
 func Panic(args ...interface{}) {
 	format, a := split(args...)
 	log.Panicf(format, a...)

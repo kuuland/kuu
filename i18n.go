@@ -8,29 +8,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// LangMessageMap 语言配置集合
-type LangMessageMap map[string]string
-
-// LangMap 语言集合
-type LangMap map[string](LangMessageMap)
-
-var lang = "en"
-var langs = LangMap{}
+var (
+	// DefaultLang 默认国际化语言编码
+	DefaultLang = "en"
+	// Langs 国际化语言集合
+	Langs = map[string](LangMessages){}
+)
 
 func init() {
 	On("OnNew", func(args ...interface{}) {
 		k := args[0].(*Kuu)
-		var config LangMap
+		var config map[string](LangMessages)
 		if k.Config["i18n"] != nil {
-			config = k.Config["i18n"].(LangMap)
+			config = k.Config["i18n"].(map[string](LangMessages))
 		}
 		if config != nil {
 			for key, value := range config {
-				langs[key] = value
+				Langs[key] = value
 			}
 		}
 	})
 }
+
+// LangMessages 语言消息集合
+type LangMessages map[string]string
 
 func parseAcceptLanguage(c *gin.Context) string {
 	header := c.GetHeader("Accept-Language")
@@ -44,46 +45,32 @@ func parseAcceptLanguage(c *gin.Context) string {
 	return ""
 }
 
-// L 国际化函数(*gin.Context, key, data, lang)
-func L(args ...interface{}) string {
+// L 获取国际化信息值，可选参数为模板数据和语言值：(data H, language string)
+func L(c *gin.Context, key string, args ...interface{}) string {
 	var (
-		c    *gin.Context
-		key  string
-		data H
-		lang string
+		data     H
+		language string
 	)
 	if len(args) > 1 {
 		if args[0] != nil {
-			c = args[0].(*gin.Context)
-		}
-		if args[1] != nil {
-			key = args[1].(string)
+			data = args[0].(H)
 		}
 	}
 	if len(args) > 2 {
-		if args[2] != nil {
-			lang = args[2].(string)
+		if args[1] != nil {
+			language = args[1].(string)
 		}
 	}
-	if len(args) > 3 {
-		if args[3] != nil {
-			data = args[3].(H)
-		}
+	if language == "" && c != nil {
+		language = parseAcceptLanguage(c)
 	}
-	if c != nil {
-		// 解析Accept-Language
-		if l := parseAcceptLanguage(c); l != "" {
-			lang = l
-		}
-	}
-	return localeMessage(key, lang, data)
+	return localeMessage(key, language, data)
 }
 
 // SafeL 包含默认值的L函数
-func SafeL(defaultMessages map[string]string, args ...interface{}) string {
-	value := L(args...)
-	key := args[1].(string)
-	if value == "" || value == key {
+func SafeL(defaultMessages map[string]string, c *gin.Context, key string, args ...interface{}) string {
+	value := L(c, key, args...)
+	if (value == "" || value == key) && defaultMessages[key] != "" {
 		value = defaultMessages[key]
 	}
 	return value
@@ -91,15 +78,15 @@ func SafeL(defaultMessages map[string]string, args ...interface{}) string {
 
 func localeMessage(key string, l string, data H) string {
 	if l == "" {
-		l = lang
+		l = DefaultLang
 	}
-	if key == "" || langs[l] == nil || langs[l][key] == "" {
+	if key == "" || Langs[l] == nil || Langs[l][key] == "" {
 		return key
 	}
 
-	value := langs[l][key]
+	value := Langs[l][key]
 	var buf bytes.Buffer
-	tmpl, err := template.New(lang).Parse(value)
+	tmpl, err := template.New(l).Parse(value)
 	if err != nil {
 		return key
 	}
@@ -107,21 +94,4 @@ func localeMessage(key string, l string, data H) string {
 		return key
 	}
 	return buf.String()
-}
-
-// SetLang 切换当前语言
-func SetLang(l string) {
-	lang = l
-}
-
-// AddLang 添加语言配置
-func AddLang(l string, data LangMessageMap) {
-	if l != "" && data != nil {
-		langs[l] = data
-	}
-}
-
-// L 应用实例函数
-func (k *Kuu) L(args ...interface{}) string {
-	return L(args...)
 }

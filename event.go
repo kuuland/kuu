@@ -35,7 +35,7 @@ func dial(u string) {
 	}
 }
 
-// On 事件订阅
+// On 针对指定事件注册事件处理器
 func On(event string, handlers ...EventHandler) {
 	if event == "" || len(handlers) == 0 {
 		return
@@ -49,7 +49,7 @@ func On(event string, handlers ...EventHandler) {
 	subscribe(event)
 }
 
-// Emit 事件触发
+// Emit 触发指定事件，支持参数传入
 func Emit(event string, args ...interface{}) {
 	if event == "" || events[event] == nil {
 		return

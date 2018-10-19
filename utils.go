@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Join 基于字节实现的字符串拼接
+// Join 基于字节实现的字符串拼接函数
 func Join(args ...string) string {
 	b := bytes.Buffer{}
 	for _, item := range args {
@@ -19,7 +19,7 @@ func Join(args ...string) string {
 	return b.String()
 }
 
-// CloneDeep 深度拷贝
+// CloneDeep 用于深度拷贝
 func CloneDeep(src, dst interface{}) error {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
