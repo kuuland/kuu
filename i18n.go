@@ -45,20 +45,20 @@ func parseAcceptLanguage(c *gin.Context) string {
 	return ""
 }
 
-// L 获取国际化信息值，可选参数为模板数据和语言值：(data H, language string)
+// L 获取国际化信息值，可选参数为语言编码和模板数据：(language string, data H)
 func L(c *gin.Context, key string, args ...interface{}) string {
 	var (
-		data     H
 		language string
+		data     H
 	)
-	if len(args) > 1 {
+	if len(args) > 0 {
 		if args[0] != nil {
-			data = args[0].(H)
+			language = args[0].(string)
 		}
 	}
-	if len(args) > 2 {
+	if len(args) > 1 {
 		if args[1] != nil {
-			language = args[1].(string)
+			data = args[1].(H)
 		}
 	}
 	if language == "" && c != nil {

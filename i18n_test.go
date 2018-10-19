@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"fmt"
-	"testing"
 )
 
 func init() {
@@ -28,13 +27,36 @@ func init() {
 		"success": "恭喜，你的賬號 {{.username}} 已註冊成功！",
 	}
 }
-func TestLang(t *testing.T) {
+
+func ExampleL() {
+	Langs["en"] = LangMessages{
+		"signup": "Sign up",
+	}
+	Langs["zh-CN"] = LangMessages{
+		"signup": "注册",
+	}
+	Langs["zh-TW"] = LangMessages{
+		"signup": "註冊",
+	}
 	fmt.Println(L(nil, "signup"))
 	fmt.Println(L(nil, "signup", "zh-CN"))
 	fmt.Println(L(nil, "signup", "zh-TW"))
+	// Output:
+	// Sign up
+	// 注册
+	// 註冊
 }
 
-func TestTemplate(t *testing.T) {
+func ExampleL_template() {
+	Langs["en"] = LangMessages{
+		"success": "Congratulations, your ID {{.username}} registered successfully.",
+	}
+	Langs["zh-CN"] = LangMessages{
+		"success": "恭喜，你的账号 {{.username}} 已注册成功！",
+	}
+	Langs["zh-TW"] = LangMessages{
+		"success": "恭喜，你的賬號 {{.username}} 已註冊成功！",
+	}
 	fmt.Println(L(nil, "success", nil, H{
 		"username": "kuu",
 	}))
@@ -44,15 +66,20 @@ func TestTemplate(t *testing.T) {
 	fmt.Println(L(nil, "success", "zh-TW", H{
 		"username": "kuu",
 	}))
+	// Output:
+	// Congratulations, your ID kuu registered successfully.
+	// 恭喜，你的账号 kuu 已注册成功！
+	// 恭喜，你的賬號 kuu 已註冊成功！
 }
 
-func TestSetLang(t *testing.T) {
-	// default lang=en
-	fmt.Println("en", L(nil, "signup"))
-	// lang=zh-CN
+func ExampleL_defaultLang() {
+	fmt.Println(L(nil, "signup"))
 	DefaultLang = "zh-CN"
-	fmt.Println("zh-CN", L(nil, "signup"))
-	// lang=zh-TW
+	fmt.Println(L(nil, "signup"))
 	DefaultLang = "zh-TW"
-	fmt.Println("zh-CN", L(nil, "signup"))
+	fmt.Println(L(nil, "signup"))
+	// Output:
+	// Sign up
+	// 注册
+	// 註冊
 }
