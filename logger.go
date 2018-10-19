@@ -3,6 +3,8 @@ package kuu
 import (
 	"fmt"
 	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -12,6 +14,7 @@ var (
 	log        = logrus.New()
 	dateFormat = time.Now().Format("2006-01-02")
 	dateFile   *os.File
+	logsDir    = os.Getenv("KUU_LOGS")
 )
 
 func init() {
@@ -22,8 +25,14 @@ func init() {
 }
 
 func setLogOut(f string) {
-	path := Join("kuu.", f, ".log")
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	filePath := Join("kuu.", f, ".log")
+	if logsDir != "" {
+		filePath = path.Join(logsDir, filePath)
+	} else {
+		filePath = path.Join(ROOT, filePath)
+	}
+	fmt.Println(ROOT, filePath)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		log.Out = file
 		if dateFile != nil {
@@ -51,7 +60,7 @@ func (h *outputHook) Levels() []logrus.Level {
 
 func (h *outputHook) Fire(entry *logrus.Entry) error {
 	dateCheck()
-	fmt.Println(Join("[Kuu-", entry.Level.String(), "] ", time.Now().Format("2006-01-02 15:04:05"), " ", entry.Message))
+	fmt.Println(Join("[KUU-", strings.ToUpper(entry.Level.String()), time.Now().Format(" 2006-01-02 15:04:05] "), entry.Message))
 	return nil
 }
 
