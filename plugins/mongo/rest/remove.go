@@ -15,11 +15,11 @@ func remove(c *gin.Context) {
 		handleError(err, c)
 		return
 	}
-	c.Set("body", &body)
 	var (
-		cond = body["cond"].(map[string]interface{})
+		cond = kuu.H{}
 		all  = false
 	)
+	kuu.CloneDeep(body["cond"], &cond)
 	if body["all"] != nil {
 		all = body["all"].(bool)
 	}
@@ -29,6 +29,10 @@ func remove(c *gin.Context) {
 	// 执行查询
 	C := model(name)
 	defer C.Database.Session.Close()
+	// 触发前置钩子
+	if s, ok := schema.Origin.(IPreRestRemove); ok {
+		s.PreRestRemove(c, &cond, all)
+	}
 	var (
 		err  error
 		data interface{}
@@ -43,6 +47,10 @@ func remove(c *gin.Context) {
 	if err != nil {
 		handleError(err, c)
 		return
+	}
+	// 触发后置钩子
+	if s, ok := schema.Origin.(IPostRestRemove); ok {
+		s.PostRestRemove(c, &data)
 	}
 	// 构造返回
 	c.JSON(http.StatusOK, kuu.StdOK(data))

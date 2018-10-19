@@ -14,6 +14,7 @@ type Schema struct {
 	FullName    string
 	Collection  string
 	Fields      []*SchemaField
+	Origin      interface{}
 }
 
 // SchemaField 数据模型字段

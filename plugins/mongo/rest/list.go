@@ -10,21 +10,25 @@ import (
 
 func list(c *gin.Context) {
 	// 参数处理
-	p := parseParams(c)
+	p := ParseParams(c)
 	// 执行查询
 	C := model(name)
 	defer C.Database.Session.Close()
-	query := C.Find(p.cond)
+	query := C.Find(p.Cond)
 	totalrecords, countErr := query.Count()
 	if countErr != nil {
 		handleError(countErr, c)
 		return
 	}
-	if p.project != nil {
-		query.Select(p.project)
+	if p.Project != nil {
+		query.Select(p.Project)
 	}
-	if p._range == PAGE {
-		query.Skip((p.page - 1) * p.size).Limit(p.size)
+	if p.Range == PAGE {
+		query.Skip((p.Page - 1) * p.Size).Limit(p.Size)
+	}
+	// 触发前置钩子
+	if s, ok := schema.Origin.(IPreRestList); ok {
+		s.PreRestList(c, query, p)
 	}
 	var list []kuu.H
 	findErr := query.All(&list)
@@ -32,7 +36,7 @@ func list(c *gin.Context) {
 		handleError(findErr, c)
 		return
 	}
-	query.Sort(p.sort...)
+	query.Sort(p.Sort...)
 	if list == nil {
 		list = make([]kuu.H, 0)
 	}
@@ -41,23 +45,27 @@ func list(c *gin.Context) {
 		"list":         list,
 		"totalrecords": totalrecords,
 	}
-	if p._range == PAGE {
-		totalpages := int(math.Ceil(float64(totalrecords) / float64(p.size)))
+	if p.Range == PAGE {
+		totalpages := int(math.Ceil(float64(totalrecords) / float64(p.Size)))
 		data["totalpages"] = totalpages
-		data["page"] = p.page
-		data["size"] = p.size
+		data["page"] = p.Page
+		data["size"] = p.Size
 	}
-	if p.sort != nil && len(p.sort) > 0 {
-		data["sort"] = p.sort
+	if p.Sort != nil && len(p.Sort) > 0 {
+		data["sort"] = p.Sort
 	}
-	if p.project != nil {
-		data["project"] = p.project
+	if p.Project != nil {
+		data["project"] = p.Project
 	}
-	if p.cond != nil {
-		data["cond"] = p.cond
+	if p.Cond != nil {
+		data["cond"] = p.Cond
 	}
-	if p._range != "" {
-		data["range"] = p._range
+	if p.Range != "" {
+		data["range"] = p.Range
+	}
+	// 触发后置钩子
+	if s, ok := schema.Origin.(IPostRestList); ok {
+		s.PostRestList(c, &data)
 	}
 	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

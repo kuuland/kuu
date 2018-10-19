@@ -14,8 +14,10 @@ import (
 
 const defaultName = "default"
 
-var connections = map[string]*Connection{}
-var index = 0
+var (
+	connections = map[string]*Connection{}
+	schemas     = map[string]*kuu.Schema{}
+)
 
 func init() {
 	kuu.On("OnNew", func(args ...interface{}) {
@@ -28,6 +30,7 @@ func init() {
 	kuu.On("OnModel", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		schema := args[1].(*kuu.Schema)
+		schemas[schema.Name] = schema
 		rest.Mount(k, schema.Name, C)
 	})
 }

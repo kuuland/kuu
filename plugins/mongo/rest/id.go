@@ -10,13 +10,18 @@ import (
 
 func id(c *gin.Context) {
 	// 参数处理
-	p := parseParams(c)
+	p := ParseParams(c)
+	id := c.Param("id")
 	// 执行查询
 	C := model(name)
 	defer C.Database.Session.Close()
-	query := C.FindId(bson.ObjectIdHex(c.Param("id")))
-	if p.project != nil {
-		query.Select(p.project)
+	// 触发前置钩子
+	if s, ok := schema.Origin.(IPreRestID); ok {
+		id = s.PreRestID(c, id, p)
+	}
+	query := C.FindId(bson.ObjectIdHex(id))
+	if p.Project != nil {
+		query.Select(p.Project)
 	}
 	// 构造返回
 	var data kuu.H
@@ -24,6 +29,10 @@ func id(c *gin.Context) {
 	if err != nil {
 		handleError(err, c)
 		return
+	}
+	// 触发后置钩子
+	if s, ok := schema.Origin.(IPostRestID); ok {
+		s.PostRestID(c, &data)
 	}
 	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

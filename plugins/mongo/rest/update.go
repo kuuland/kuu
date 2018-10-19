@@ -17,10 +17,12 @@ func update(c *gin.Context) {
 	}
 	c.Set("body", &body)
 	var (
-		cond = body["cond"].(map[string]interface{})
-		doc  = body["doc"].(map[string]interface{})
+		cond = kuu.H{}
+		doc  = kuu.H{}
 		all  = false
 	)
+	kuu.CloneDeep(body["cond"], &cond)
+	kuu.CloneDeep(body["doc"], &doc)
 	if body["all"] != nil {
 		all = body["all"].(bool)
 	}
@@ -35,6 +37,10 @@ func update(c *gin.Context) {
 	// 执行查询
 	C := model(name)
 	defer C.Database.Session.Close()
+	// 触发前置钩子
+	if s, ok := schema.Origin.(IPreRestUpdate); ok {
+		s.PreRestUpdate(c, &cond, &doc, all)
+	}
 	var (
 		err  error
 		data interface{}
@@ -51,5 +57,9 @@ func update(c *gin.Context) {
 		return
 	}
 	// 构造返回
+	// 触发前置钩子
+	if s, ok := schema.Origin.(IPostRestUpdate); ok {
+		s.PostRestUpdate(c, &data)
+	}
 	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

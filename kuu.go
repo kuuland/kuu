@@ -70,6 +70,7 @@ func (k *Kuu) Model(args ...interface{}) {
 			Name:     t.Name(),
 			FullName: Join(t.PkgPath(), "/", t.Name()),
 			Fields:   make([]*SchemaField, t.NumField()),
+			Origin:   m,
 		}
 		if config["name"] != nil {
 			schema.Name = config["name"].(string)
