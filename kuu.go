@@ -1,3 +1,4 @@
+// Package kuu is a pluggable Go web framework.
 package kuu
 
 import (
