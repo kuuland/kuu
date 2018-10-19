@@ -1,5 +1,7 @@
 # kuu
 
+[![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
+
 Pluggable Go Web Framework.
 
 
