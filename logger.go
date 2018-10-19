@@ -31,7 +31,6 @@ func setLogOut(f string) {
 	} else {
 		filePath = path.Join(ROOT, filePath)
 	}
-	fmt.Println(ROOT, filePath)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		log.Out = file
