@@ -1,5 +1,7 @@
 package kuu
 
+import "time"
+
 // IConfig 模型配置接口，数据模型通过实现该接口来增强模型配置
 type IConfig interface {
 	Config() H
@@ -21,5 +23,13 @@ type SchemaField struct {
 	Type     string
 	Required bool
 	Default  interface{}
-	Alias    string
+}
+
+// Model 定义了数据模型的一些基本字段
+type Model struct {
+	CreatedBy interface{} `name:"创建人"`
+	CreatedAt time.Time   `name:"创建时间"`
+	UpdatedBy interface{} `name:"修改人"`
+	UpdatedAt time.Time   `name:"修改时间"`
+	IsDeleted bool        `name:"是否已删除"`
 }

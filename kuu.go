@@ -71,23 +71,33 @@ func (k *Kuu) Model(args ...interface{}) {
 			FullName: Join(t.PkgPath(), "/", t.Name()),
 			Fields:   make([]*SchemaField, t.NumField()),
 		}
+		if config["name"] != nil {
+			schema.Name = config["name"].(string)
+		}
 		if config["displayName"] != nil {
 			schema.DisplayName = config["displayName"].(string)
+		} else {
+			schema.DisplayName = schema.Name
 		}
 		if config["collection"] != nil {
 			schema.Collection = config["collection"].(string)
-		}
-		if config["name"] != nil {
-			schema.Name = config["name"].(string)
+		} else {
+			schema.Collection = schema.Name
 		}
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
 			tags := field.Tag
 			sField := &SchemaField{}
 			sField.Code = strings.ToLower(field.Name)
-			sField.Name = tags.Get("name")
+			if tags.Get("name") != "" {
+				sField.Name = tags.Get("name")
+			} else {
+				sField.Name = sField.Code
+			}
+			if tags.Get("alias") != "" {
+				sField.Name = tags.Get("alias")
+			}
 			sField.Default = tags.Get("default")
-			sField.Alias = tags.Get("alias")
 			if tags.Get("type") != "" {
 				sField.Type = tags.Get("type")
 			} else {

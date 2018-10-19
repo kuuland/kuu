@@ -114,7 +114,6 @@ func whilelistFilter(c *gin.Context) bool {
 // AddWhilelist 添加白名单
 func AddWhilelist(list []string, replace bool) []string {
 	if list != nil && len(list) > 0 {
-		m := map[string]bool{}
 		z := make([]string, len(whilelist)+len(list))
 		l := []([]string){}
 		if replace {
@@ -123,13 +122,17 @@ func AddWhilelist(list []string, replace bool) []string {
 			l = append(l, whilelist)
 			l = append(l, list)
 		}
+		exists := map[string]bool{}
 		offset := 0
 		for _, arr := range l {
 			for i, item := range arr {
-				if m[item] {
+				if exists[item] {
 					continue
 				}
-				m[item] = true
+				if split := strings.Split(item, " "); len(split) == 1 {
+					item = kuu.Join("GET ", item)
+				}
+				exists[item] = true
 				z[i+offset] = item
 			}
 			offset += len(arr)
