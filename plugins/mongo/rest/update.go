@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,8 +22,12 @@ func update(c *gin.Context) {
 		doc  = kuu.H{}
 		all  = false
 	)
-	kuu.CloneDeep(body["cond"], &cond)
-	kuu.CloneDeep(body["doc"], &doc)
+	if b, e := json.Marshal(body["cond"]); e == nil {
+		json.Unmarshal(b, &cond)
+	}
+	if b, e := json.Marshal(body["doc"]); e == nil {
+		json.Unmarshal(b, &doc)
+	}
 	if body["all"] != nil {
 		all = body["all"].(bool)
 	}

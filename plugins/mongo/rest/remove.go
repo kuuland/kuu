@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,9 @@ func remove(c *gin.Context) {
 		cond = kuu.H{}
 		all  = false
 	)
-	kuu.CloneDeep(body["cond"], &cond)
+	if b, e := json.Marshal(body["cond"]); e == nil {
+		json.Unmarshal(b, &cond)
+	}
 	if body["all"] != nil {
 		all = body["all"].(bool)
 	}
