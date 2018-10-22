@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"bytes"
-	"encoding/json"
 	"html/template"
 	"strings"
 
@@ -21,9 +20,7 @@ func init() {
 		k := args[0].(*Kuu)
 		var config = map[string](LangMessages){}
 		if k.Config["i18n"] != nil {
-			if b, e := json.Marshal(k.Config["i18n"]); e == nil {
-				json.Unmarshal(b, &config)
-			}
+			JSONConvert(k.Config["i18n"], &config)
 		}
 		if config != nil {
 			for key, value := range config {

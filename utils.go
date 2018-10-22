@@ -39,3 +39,10 @@ func CopyBody(c *gin.Context, docs interface{}) (err error) {
 	}
 	return err
 }
+
+// JSONConvert 用于对类JSON数据的快速转换
+func JSONConvert(s, t interface{}) {
+	if b, e := json.Marshal(s); e == nil {
+		json.Unmarshal(b, t)
+	}
+}

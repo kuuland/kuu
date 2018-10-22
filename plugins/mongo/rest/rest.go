@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/plugins/mongo/db"
 )
@@ -19,7 +18,6 @@ var (
 	k      *kuu.Kuu
 	name   string
 	schema *kuu.Schema
-	model  func(string) *mgo.Collection
 )
 
 // ParseParams 解析请求上线文
@@ -74,7 +72,7 @@ func ParseParams(c *gin.Context) *db.Params {
 				exclude = true
 			}
 			if exclude == true {
-				key = item[1:len(item)]
+				key = item[1 : len(item)-1]
 				value = 0
 			} else {
 				key = item
@@ -85,7 +83,7 @@ func ParseParams(c *gin.Context) *db.Params {
 	}
 	// 处理cond参数
 	if c.Query("cond") != "" {
-		cond := make(map[string]interface{})
+		var cond kuu.H
 		json.Unmarshal([]byte(c.Query("cond")), &cond)
 		p.Cond = cond
 		// 避免服务端注入攻击

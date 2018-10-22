@@ -2,6 +2,7 @@ package db
 
 import (
 	"math"
+	"time"
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
@@ -28,7 +29,7 @@ type Params struct {
 
 // IModel 定义了模型持久化统一操作接口
 type IModel interface {
-	Create(interface{}) error
+	Create(...interface{}) error
 	Remove(kuu.H) error
 	RemoveAll(kuu.H) (interface{}, error)
 	Update(kuu.H, kuu.H) error
@@ -44,10 +45,16 @@ type Model struct {
 }
 
 // Create 实现新增
-func (m *Model) Create(docs interface{}) error {
+func (m *Model) Create(docs ...interface{}) error {
+	for index, item := range docs {
+		var doc kuu.H
+		kuu.JSONConvert(item, &doc)
+		doc["CreatedAt"] = time.Now()
+		docs[index] = doc
+	}
 	C := C(m.Name)
 	defer C.Database.Session.Close()
-	return C.Insert(docs)
+	return C.Insert(docs...)
 }
 
 // Remove 实现删除
@@ -80,10 +87,36 @@ func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 
 // List 实现列表查询
 func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
+	// 参数加工
+	isDeleted := kuu.H{
+		"$ne": true,
+	}
+	if p.Cond["$and"] != nil {
+		var and []kuu.H
+		kuu.JSONConvert(p.Cond["$and"], &and)
+		hasDr := false
+		for _, item := range and {
+			if item["IsDeleted"] != nil {
+				hasDr = true
+				break
+			}
+		}
+		if !hasDr {
+			and = append(and, kuu.H{
+				"IsDeleted": isDeleted,
+			})
+			p.Cond["$and"] = and
+		}
+	} else {
+		if p.Cond["IsDeleted"] == nil {
+			p.Cond["IsDeleted"] = isDeleted
+		}
+	}
+
 	C := C(m.Name)
 	defer C.Database.Session.Close()
 	query := C.Find(p.Cond)
-	totalrecords, err := query.Count()
+	totalRecords, err := query.Count()
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +138,10 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 	}
 	data := kuu.H{
 		"list":         list,
-		"totalrecords": totalrecords,
+		"totalrecords": totalRecords,
 	}
 	if p.Range == PAGE {
-		totalpages := int(math.Ceil(float64(totalrecords) / float64(p.Size)))
+		totalpages := int(math.Ceil(float64(totalRecords) / float64(p.Size)))
 		data["totalpages"] = totalpages
 		data["page"] = p.Page
 		data["size"] = p.Size
