@@ -10,12 +10,9 @@ import (
 	"github.com/kuuland/kuu/plugins/mongo/rest"
 )
 
-var app *kuu.Kuu
-
 func init() {
 	kuu.On("OnNew", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
-		app = k
 		if c := k.Config["mongo"]; c != nil {
 			uri := c.(string)
 			db.Connect(uri)
@@ -38,19 +35,6 @@ func MetadataHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdOK(kuu.K().Schemas))
 }
 
-// All 插件声明
-func All() *kuu.Plugin {
-	return &kuu.Plugin{
-		Routes: kuu.Routes{
-			kuu.RouteInfo{
-				Method:  "GET",
-				Path:    "/meta",
-				Handler: MetadataHandler,
-			},
-		},
-	}
-}
-
 // SN 根据连接名获取会话
 func SN(name string) *mgo.Session {
 	return db.SN(name)
@@ -64,4 +48,17 @@ func S() *mgo.Session {
 // C 获取集合对象
 func C(name string) *mgo.Collection {
 	return db.C(name)
+}
+
+// All 插件声明
+func All() *kuu.Plugin {
+	return &kuu.Plugin{
+		Routes: kuu.Routes{
+			kuu.RouteInfo{
+				Method:  "GET",
+				Path:    "/meta",
+				Handler: MetadataHandler,
+			},
+		},
+	}
 }
