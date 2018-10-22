@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 func create(c *gin.Context) {
@@ -15,13 +16,15 @@ func create(c *gin.Context) {
 		return
 	}
 	// 执行查询
-	C := model(name)
-	defer C.Database.Session.Close()
+	Model := db.Model{
+		Name:      name,
+		QueryHook: nil,
+	}
 	// 触发前置钩子
 	if s, ok := schema.Origin.(IPreRestCreate); ok {
 		s.PreRestCreate(c, &docs)
 	}
-	if err := C.Insert(docs...); err != nil {
+	if err := Model.Create(docs); err != nil {
 		handleError(err, c)
 		return
 	}

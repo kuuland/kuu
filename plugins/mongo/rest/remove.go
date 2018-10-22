@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 func remove(c *gin.Context) {
@@ -30,8 +31,10 @@ func remove(c *gin.Context) {
 		cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 	}
 	// 执行查询
-	C := model(name)
-	defer C.Database.Session.Close()
+	Model := db.Model{
+		Name:      name,
+		QueryHook: nil,
+	}
 	// 触发前置钩子
 	if s, ok := schema.Origin.(IPreRestRemove); ok {
 		s.PreRestRemove(c, &cond, all)
@@ -41,9 +44,9 @@ func remove(c *gin.Context) {
 		data interface{}
 	)
 	if all == true {
-		data, err = C.RemoveAll(cond)
+		data, err = Model.RemoveAll(cond)
 	} else {
-		err = C.Remove(cond)
+		err = Model.Remove(cond)
 		data = body
 	}
 

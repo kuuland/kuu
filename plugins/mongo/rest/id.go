@@ -4,28 +4,28 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
+	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 func id(c *gin.Context) {
 	// 参数处理
 	p := ParseParams(c)
-	id := c.Param("id")
+	id := p.ID
 	// 执行查询
-	C := model(name)
-	defer C.Database.Session.Close()
-	// 触发前置钩子
-	if s, ok := schema.Origin.(IPreRestID); ok {
-		id = s.PreRestID(c, id, p)
-	}
-	query := C.FindId(bson.ObjectIdHex(id))
-	if p.Project != nil {
-		query.Select(p.Project)
+	Model := db.Model{
+		Name: name,
+		QueryHook: func(query *mgo.Query) {
+			// 触发前置钩子
+			if s, ok := schema.Origin.(IPreRestID); ok {
+				id = s.PreRestID(c, id, p)
+			}
+		},
 	}
 	// 构造返回
 	var data kuu.H
-	err := query.One(&data)
+	err := Model.ID(p, &data)
 	if err != nil {
 		handleError(err, c)
 		return
