@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
+	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 func update(c *gin.Context) {
@@ -40,8 +41,10 @@ func update(c *gin.Context) {
 		}
 	}
 	// 执行查询
-	C := model(name)
-	defer C.Database.Session.Close()
+	Model := db.Model{
+		Name:      name,
+		QueryHook: nil,
+	}
 	// 触发前置钩子
 	if s, ok := schema.Origin.(IPreRestUpdate); ok {
 		s.PreRestUpdate(c, &cond, &doc, all)
@@ -51,20 +54,19 @@ func update(c *gin.Context) {
 		data interface{}
 	)
 	if all == true {
-		data, err = C.UpdateAll(cond, doc)
+		data, err = Model.UpdateAll(cond, doc)
 	} else {
-		err = C.Update(cond, doc)
+		err = Model.Update(cond, doc)
 		data = body
 	}
-
 	if err != nil {
 		handleError(err, c)
 		return
 	}
-	// 构造返回
-	// 触发前置钩子
+	// 触发后置钩子
 	if s, ok := schema.Origin.(IPostRestUpdate); ok {
 		s.PostRestUpdate(c, &data)
 	}
+	// 构造返回
 	c.JSON(http.StatusOK, kuu.StdOK(data))
 }

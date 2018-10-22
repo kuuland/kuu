@@ -9,13 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
-)
-
-const (
-	// ALL 全量模式
-	ALL = "ALL"
-	// PAGE 分页模式
-	PAGE = "PAGE"
+	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 var (
@@ -28,19 +22,12 @@ var (
 	model  func(string) *mgo.Collection
 )
 
-// Params 从请求上下文中解析出的参数信息
-type Params struct {
-	Page    int
-	Size    int
-	Range   string
-	Sort    []string
-	Project map[string]int
-	Cond    map[string]interface{}
-}
-
 // ParseParams 解析请求上线文
-func ParseParams(c *gin.Context) *Params {
-	p := Params{}
+func ParseParams(c *gin.Context) *db.Params {
+	p := db.Params{}
+	if c.Param("id") != "" {
+		p.ID = c.Param("id")
+	}
 	// 处理page参数
 	if c.Query("page") != "" {
 		n, err := strconv.Atoi(c.Query("page"))
@@ -57,10 +44,10 @@ func ParseParams(c *gin.Context) *Params {
 	}
 	// 处理range参数
 	p.Range = strings.ToUpper(c.Query("range"))
-	if p.Range != ALL && p.Range != PAGE {
-		p.Range = PAGE
+	if p.Range != db.ALL && p.Range != db.PAGE {
+		p.Range = db.PAGE
 	}
-	if p.Range == PAGE {
+	if p.Range == db.PAGE {
 		// PAGE模式下赋分页默认值
 		if p.Page == 0 {
 			p.Page = 1
@@ -115,10 +102,9 @@ func handleError(err error, c *gin.Context) {
 }
 
 // Mount 挂载模型RESTful接口
-func Mount(app *kuu.Kuu, n string, c func(string) *mgo.Collection) {
+func Mount(app *kuu.Kuu, n string) {
 	k = app
 	name = n
-	model = c
 	schema = app.Schemas[name]
 	path := kuu.Join("/", strings.ToLower(name))
 	k.POST(path, create)
