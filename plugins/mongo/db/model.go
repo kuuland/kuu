@@ -24,7 +24,7 @@ type Params struct {
 	Range   string
 	Sort    []string
 	Project map[string]int
-	Cond    map[string]interface{}
+	Cond    kuu.H
 }
 
 // IModel 定义了模型持久化统一操作接口
@@ -66,13 +66,17 @@ func (m *Model) Create(docs ...interface{}) error {
 }
 
 // Remove 实现逻辑删除
-func (m *Model) Remove(cond kuu.H, doc kuu.H) error {
+func (m *Model) Remove(cond kuu.H, data ...kuu.H) error {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
+	var doc kuu.H
+	if len(data) > 0 {
+		doc = data[0]
+	}
 	if doc == nil {
 		doc = make(kuu.H)
 	}
@@ -82,13 +86,17 @@ func (m *Model) Remove(cond kuu.H, doc kuu.H) error {
 }
 
 // RemoveAll 实现逻辑删除
-func (m *Model) RemoveAll(cond kuu.H, doc kuu.H) (interface{}, error) {
+func (m *Model) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
+	var doc kuu.H
+	if len(data) > 0 {
+		doc = data[0]
+	}
 	if doc == nil {
 		doc = make(kuu.H)
 	}
@@ -150,7 +158,7 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 		"$ne": true,
 	}
 	if p.Cond == nil {
-		p.Cond = make(map[string]interface{})
+		p.Cond = make(kuu.H)
 	}
 	if p.Cond["$and"] != nil {
 		var and []kuu.H
@@ -229,7 +237,7 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 // ID 实现ID查询
 func (m *Model) ID(p *Params, data interface{}) error {
 	if p.Cond == nil {
-		p.Cond = make(map[string]interface{})
+		p.Cond = make(kuu.H)
 	}
 	C := C(m.Name)
 	m.Session = C.Database.Session
@@ -251,7 +259,7 @@ func (m *Model) ID(p *Params, data interface{}) error {
 // One 实现单个查询
 func (m *Model) One(p *Params, data interface{}) error {
 	if p.Cond == nil {
-		p.Cond = make(map[string]interface{})
+		p.Cond = make(kuu.H)
 	}
 	C := C(m.Name)
 	m.Session = C.Database.Session
