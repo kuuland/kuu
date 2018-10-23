@@ -30,13 +30,14 @@ type Params struct {
 // IModel 定义了模型持久化统一操作接口
 type IModel interface {
 	Create(...interface{}) error
-	Remove(kuu.H) error
-	RemoveAll(kuu.H) (interface{}, error)
+	Remove(kuu.H, kuu.H) error
+	RemoveAll(kuu.H, kuu.H) (interface{}, error)
 	PhyRemove(kuu.H) error
 	PhyRemoveAll(kuu.H) (interface{}, error)
 	Update(kuu.H, kuu.H) error
 	UpdateAll(kuu.H, kuu.H) (interface{}, error)
 	List(*Params, interface{}) (kuu.H, error)
+	One(*Params, interface{}) (kuu.H, error)
 	ID(*Params, interface{}) error
 }
 
@@ -64,30 +65,36 @@ func (m *Model) Create(docs ...interface{}) error {
 	return C.Insert(docs...)
 }
 
-// Remove 实现删除
-func (m *Model) Remove(cond kuu.H) error {
+// Remove 实现逻辑删除
+func (m *Model) Remove(cond kuu.H, doc kuu.H) error {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
-	return C.Update(cond, kuu.H{
-		"IsDeleted": true,
-	})
+	if doc == nil {
+		doc = make(kuu.H)
+	}
+	doc["IsDeleted"] = true
+	doc["UpdatedAt"] = time.Now()
+	return C.Update(cond, doc)
 }
 
-// RemoveAll 实现删除
-func (m *Model) RemoveAll(cond kuu.H) (interface{}, error) {
+// RemoveAll 实现逻辑删除
+func (m *Model) RemoveAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
-	return C.UpdateAll(cond, kuu.H{
-		"IsDeleted": true,
-	})
+	if doc == nil {
+		doc = make(kuu.H)
+	}
+	doc["IsDeleted"] = true
+	doc["UpdatedAt"] = time.Now()
+	return C.UpdateAll(cond, doc)
 }
 
 // PhyRemove 实现物理删除
@@ -232,6 +239,27 @@ func (m *Model) ID(p *Params, data interface{}) error {
 	}()
 	id := p.ID
 	query := C.FindId(bson.ObjectIdHex(id))
+	if p.Project != nil {
+		query.Select(p.Project)
+	}
+	if m.QueryHook != nil {
+		m.QueryHook(query)
+	}
+	return query.One(data)
+}
+
+// One 实现单个查询
+func (m *Model) One(p *Params, data interface{}) error {
+	if p.Cond == nil {
+		p.Cond = make(map[string]interface{})
+	}
+	C := C(m.Name)
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
+	query := C.Find(p.Cond)
 	if p.Project != nil {
 		query.Select(p.Project)
 	}

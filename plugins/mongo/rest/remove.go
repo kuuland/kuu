@@ -22,6 +22,7 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		var (
 			cond = kuu.H{}
+			doc  = kuu.H{}
 			all  = false
 		)
 		if b, e := json.Marshal(body["cond"]); e == nil {
@@ -46,10 +47,11 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 			err  error
 			data interface{}
 		)
+		doc = setUpdatedBy(c, doc)
 		if all == true {
-			data, err = Model.RemoveAll(cond)
+			data, err = Model.RemoveAll(cond, doc)
 		} else {
-			err = Model.Remove(cond)
+			err = Model.Remove(cond, doc)
 			data = body
 		}
 

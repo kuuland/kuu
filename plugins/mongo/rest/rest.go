@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/plugins/mongo/db"
 )
@@ -104,4 +106,42 @@ func MountAll(k *kuu.Kuu, name string) {
 	k.PUT(path, Update(k, name))
 	k.GET(path, List(k, name))
 	k.GET(kuu.Join(path, "/:id"), ID(k, name))
+}
+
+func setCreatedBy(c *gin.Context, docs []kuu.H) []kuu.H {
+	var jwtData jwt.MapClaims
+	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
+		jwtData = value.(jwt.MapClaims)
+	}
+	for _, item := range docs {
+		if jwtData != nil && jwtData["_id"] != nil {
+			createdBy := jwtData["_id"]
+			switch createdBy.(type) {
+			case string:
+				createdBy = bson.ObjectIdHex(createdBy.(string))
+			case bson.ObjectId:
+				createdBy = createdBy.(bson.ObjectId)
+			}
+			item["CreatedBy"] = createdBy
+		}
+	}
+	return docs
+}
+
+func setUpdatedBy(c *gin.Context, data kuu.H) kuu.H {
+	var jwtData jwt.MapClaims
+	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
+		jwtData = value.(jwt.MapClaims)
+	}
+	if data["UpdatedBy"] == nil && jwtData != nil && jwtData["_id"] != nil {
+		updatedBy := jwtData["_id"]
+		switch updatedBy.(type) {
+		case string:
+			updatedBy = bson.ObjectIdHex(updatedBy.(string))
+		case bson.ObjectId:
+			updatedBy = updatedBy.(bson.ObjectId)
+		}
+		data["UpdatedBy"] = updatedBy
+	}
+	return data
 }

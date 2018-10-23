@@ -3,8 +3,6 @@ package rest
 import (
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
-
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/plugins/mongo/db"
@@ -20,15 +18,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 			handleError(err, c)
 			return
 		}
-		var jwtData jwt.MapClaims
-		if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-			jwtData = value.(jwt.MapClaims)
-		}
-		for _, item := range docs {
-			if jwtData != nil && jwtData["_id"] != nil {
-				item["CreatedBy"] = jwtData["_id"]
-			}
-		}
+		docs = setCreatedBy(c, docs)
 		// 执行查询
 		Model := db.Model{
 			Name:      name,

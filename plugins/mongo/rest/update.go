@@ -3,7 +3,6 @@ package rest
 import (
 	"net/http"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
@@ -38,13 +37,7 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 				"$set": doc,
 			}
 		}
-		var jwtData jwt.MapClaims
-		if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-			jwtData = value.(jwt.MapClaims)
-		}
-		if doc["UpdatedBy"] == nil && jwtData != nil && jwtData["_id"] != nil {
-			doc["UpdatedBy"] = jwtData["_id"]
-		}
+		doc = setUpdatedBy(c, doc)
 		// 执行查询
 		Model := db.Model{
 			Name:      name,
