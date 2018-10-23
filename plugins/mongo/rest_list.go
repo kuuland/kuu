@@ -15,7 +15,7 @@ func List(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 参数处理
 		p := ParseParams(c)
 		// 执行查询
-		Model := M{
+		m := Model{
 			Name: name,
 			QueryHook: func(query *mgo.Query) {
 				// 触发前置钩子
@@ -25,7 +25,7 @@ func List(k *kuu.Kuu, name string) func(*gin.Context) {
 			},
 		}
 		var list []kuu.H
-		data, err := Model.List(p, &list)
+		data, err := m.List(p, &list)
 		if err != nil {
 			handleError(err, c)
 			return

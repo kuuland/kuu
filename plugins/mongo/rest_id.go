@@ -16,7 +16,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		p := ParseParams(c)
 		id := p.ID
 		// 执行查询
-		Model := M{
+		m := Model{
 			Name: name,
 			QueryHook: func(query *mgo.Query) {
 				// 触发前置钩子
@@ -27,7 +27,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		// 构造返回
 		var data kuu.H
-		err := Model.ID(p, &data)
+		err := m.ID(p, &data)
 		if err != nil {
 			handleError(err, c)
 			return

@@ -34,7 +34,7 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 			cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 		}
 		// 执行查询
-		Model := M{
+		m := Model{
 			Name:      name,
 			QueryHook: nil,
 		}
@@ -48,9 +48,9 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 		)
 		doc = setUpdatedBy(c, doc)
 		if all == true {
-			data, err = Model.RemoveAll(cond, doc)
+			data, err = m.RemoveAll(cond, doc)
 		} else {
-			err = Model.Remove(cond, doc)
+			err = m.Remove(cond, doc)
 			data = body
 		}
 

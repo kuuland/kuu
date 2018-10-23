@@ -19,7 +19,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		docs = setCreatedBy(c, docs)
 		// 执行查询
-		Model := M{
+		m := Model{
 			Name:      name,
 			QueryHook: nil,
 		}
@@ -27,7 +27,8 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		if s, ok := schema.Origin.(IPreRestCreate); ok {
 			s.PreRestCreate(c, &docs)
 		}
-		if err := Model.Create(docs); err != nil {
+		data, err := m.Create(docs)
+		if err != nil {
 			handleError(err, c)
 			return
 		}
@@ -36,7 +37,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 			s.PostRestCreate(c, &docs)
 		}
 		// 构造返回
-		c.JSON(http.StatusOK, kuu.StdOK(docs))
+		c.JSON(http.StatusOK, kuu.StdOK(data))
 	}
 	return handler
 }

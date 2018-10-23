@@ -19,7 +19,7 @@ func TestConnect(t *testing.T) {
 }
 
 func ExampleModel_list() {
-	User := Model("User")
+	User := M("User")
 	// 默认分页
 	var userList []kuu.H
 	User.List(&Params{}, userList)
@@ -42,7 +42,7 @@ func ExampleModel_list() {
 	}, userList)
 }
 func ExampleModel_one() {
-	User := Model("User")
+	User := M("User")
 	var userKuu kuu.H
 	User.One(&Params{
 		Cond: kuu.H{
@@ -53,7 +53,7 @@ func ExampleModel_one() {
 }
 
 func ExampleModel_id() {
-	User := Model("User")
+	User := M("User")
 	var userKuu kuu.H
 	User.ID(&Params{
 		ID: "5bc0865cb7c851165e6bbac0",
@@ -61,7 +61,7 @@ func ExampleModel_id() {
 }
 
 func ExampleModel_create() {
-	User := Model("User")
+	User := M("User")
 	// 单个新增
 	User.Create(kuu.H{
 		"Password": "123456",
@@ -88,7 +88,7 @@ func ExampleModel_create() {
 	User.Create(docs...)
 }
 func ExampleModel_update() {
-	User := Model("User")
+	User := M("User")
 	// 单个修改
 	User.Update(kuu.H{
 		"Username": "kuu",
@@ -104,7 +104,7 @@ func ExampleModel_update() {
 }
 
 func ExampleModel_remove() {
-	User := Model("User")
+	User := M("User")
 	// 单个删除（逻辑删除）
 	User.Remove(kuu.H{
 		"Username": "kuu",
@@ -115,7 +115,7 @@ func ExampleModel_remove() {
 	})
 }
 func ExampleModel_phyRemove() {
-	User := Model("User")
+	User := M("User")
 	// 单个删除（物理删除）
 	User.PhyRemove(kuu.H{
 		"Username": "kuu",

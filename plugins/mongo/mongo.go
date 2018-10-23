@@ -41,9 +41,9 @@ func All() *kuu.Plugin {
 	}
 }
 
-// Model 创建模型操作实例
-func Model(name string, args ...interface{}) *M {
-	m := &M{
+// M 创建模型操作实例
+func M(name string, args ...interface{}) *Model {
+	m := &Model{
 		Name: name,
 	}
 	if len(args) > 0 {

@@ -29,7 +29,7 @@ type Params struct {
 
 // IModel 定义了模型持久化统一操作接口
 type IModel interface {
-	Create(...interface{}) error
+	Create(...interface{}) ([]interface{}, error)
 	Remove(kuu.H, kuu.H) error
 	RemoveAll(kuu.H, kuu.H) (interface{}, error)
 	PhyRemove(kuu.H) error
@@ -41,18 +41,19 @@ type IModel interface {
 	ID(*Params, interface{}) error
 }
 
-// M 基于Mongo的模型操作实现
-type M struct {
+// Model 基于Mongo的模型操作实现
+type Model struct {
 	Name      string
 	QueryHook func(query *mgo.Query)
 	Session   *mgo.Session
 }
 
 // Create 实现新增
-func (m *M) Create(docs ...interface{}) error {
+func (m *Model) Create(docs ...interface{}) ([]interface{}, error) {
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
+		doc["_id"] = bson.NewObjectId()
 		doc["CreatedAt"] = time.Now()
 		docs[index] = doc
 	}
@@ -62,11 +63,12 @@ func (m *M) Create(docs ...interface{}) error {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
-	return C.Insert(docs...)
+	err := C.Insert(docs...)
+	return docs, err
 }
 
 // Remove 实现逻辑删除
-func (m *M) Remove(cond kuu.H, data ...kuu.H) error {
+func (m *Model) Remove(cond kuu.H, data ...kuu.H) error {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -86,7 +88,7 @@ func (m *M) Remove(cond kuu.H, data ...kuu.H) error {
 }
 
 // RemoveAll 实现逻辑删除
-func (m *M) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
+func (m *Model) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -106,7 +108,7 @@ func (m *M) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
 }
 
 // PhyRemove 实现物理删除
-func (m *M) PhyRemove(cond kuu.H) error {
+func (m *Model) PhyRemove(cond kuu.H) error {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -117,7 +119,7 @@ func (m *M) PhyRemove(cond kuu.H) error {
 }
 
 // PhyRemoveAll 实现物理删除
-func (m *M) PhyRemoveAll(cond kuu.H) (interface{}, error) {
+func (m *Model) PhyRemoveAll(cond kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -128,7 +130,7 @@ func (m *M) PhyRemoveAll(cond kuu.H) (interface{}, error) {
 }
 
 // Update 实现更新
-func (m *M) Update(cond kuu.H, doc kuu.H) error {
+func (m *Model) Update(cond kuu.H, doc kuu.H) error {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -140,7 +142,7 @@ func (m *M) Update(cond kuu.H, doc kuu.H) error {
 }
 
 // UpdateAll 实现更新
-func (m *M) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
+func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	m.Session = C.Database.Session
 	defer func() {
@@ -152,8 +154,11 @@ func (m *M) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 }
 
 // List 实现列表查询
-func (m *M) List(p *Params, list interface{}) (kuu.H, error) {
+func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 	// 参数加工
+	if list == nil {
+		list = make([]kuu.H, 0)
+	}
 	isDeleted := kuu.H{
 		"$ne": true,
 	}
@@ -203,11 +208,11 @@ func (m *M) List(p *Params, list interface{}) (kuu.H, error) {
 	if m.QueryHook != nil {
 		m.QueryHook(query)
 	}
-	if err := query.All(list); err != nil {
+	result := []kuu.H{}
+	if err := query.All(&result); err != nil {
 		return nil, err
-	}
-	if list == nil {
-		list = make([]kuu.H, 0)
+	} else {
+		kuu.JSONConvert(result, list)
 	}
 	data := kuu.H{
 		"list":         list,
@@ -235,7 +240,7 @@ func (m *M) List(p *Params, list interface{}) (kuu.H, error) {
 }
 
 // ID 实现ID查询
-func (m *M) ID(p *Params, data interface{}) error {
+func (m *Model) ID(p *Params, data interface{}) error {
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
@@ -253,11 +258,16 @@ func (m *M) ID(p *Params, data interface{}) error {
 	if m.QueryHook != nil {
 		m.QueryHook(query)
 	}
-	return query.One(data)
+	result := kuu.H{}
+	err := query.One(result)
+	if err == nil {
+		kuu.JSONConvert(result, data)
+	}
+	return err
 }
 
 // One 实现单个查询
-func (m *M) One(p *Params, data interface{}) error {
+func (m *Model) One(p *Params, data interface{}) error {
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
@@ -274,5 +284,10 @@ func (m *M) One(p *Params, data interface{}) error {
 	if m.QueryHook != nil {
 		m.QueryHook(query)
 	}
-	return query.One(data)
+	result := kuu.H{}
+	err := query.One(result)
+	if err == nil {
+		kuu.JSONConvert(result, data)
+	}
+	return err
 }

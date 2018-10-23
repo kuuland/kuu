@@ -38,7 +38,7 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		doc = setUpdatedBy(c, doc)
 		// 执行查询
-		Model := M{
+		m := Model{
 			Name:      name,
 			QueryHook: nil,
 		}
@@ -51,9 +51,9 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 			data interface{}
 		)
 		if all == true {
-			data, err = Model.UpdateAll(cond, doc)
+			data, err = m.UpdateAll(cond, doc)
 		} else {
-			err = Model.Update(cond, doc)
+			err = m.Update(cond, doc)
 			data = body
 		}
 		if err != nil {
