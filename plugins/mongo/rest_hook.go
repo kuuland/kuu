@@ -1,10 +1,9 @@
-package rest
+package mongo
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 // IPreRestCreate 新增前钩子
@@ -19,7 +18,7 @@ type IPostRestCreate interface {
 
 // IPreRestID ID查询前钩子
 type IPreRestID interface {
-	PreRestID(*gin.Context, string, *db.Params) string
+	PreRestID(*gin.Context, string, *Params) string
 }
 
 // IPostRestID ID查询后钩子
@@ -29,7 +28,7 @@ type IPostRestID interface {
 
 // IPreRestList 列表查询前钩子
 type IPreRestList interface {
-	PreRestList(*gin.Context, *mgo.Query, *db.Params)
+	PreRestList(*gin.Context, *mgo.Query, *Params)
 }
 
 // IPostRestList 列表查询后钩子

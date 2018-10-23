@@ -1,17 +1,15 @@
-package rest
+package mongo
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
-// Remove 定义了删除路由接口
-func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
+// Update 定义了修改路由接口
+func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 	schema := k.Schemas[name]
 	handler := func(c *gin.Context) {
 		// 参数处理
@@ -25,43 +23,46 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 			doc  = kuu.H{}
 			all  = false
 		)
-		if b, e := json.Marshal(body["cond"]); e == nil {
-			json.Unmarshal(b, &cond)
-		}
+		kuu.JSONConvert(body["cond"], &cond)
+		kuu.JSONConvert(body["doc"], &doc)
 		if body["all"] != nil {
 			all = body["all"].(bool)
 		}
 		if cond["_id"] != nil {
 			cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 		}
+		if doc["$set"] == nil {
+			doc = kuu.H{
+				"$set": doc,
+			}
+		}
+		doc = setUpdatedBy(c, doc)
 		// 执行查询
-		Model := db.Model{
+		Model := M{
 			Name:      name,
 			QueryHook: nil,
 		}
 		// 触发前置钩子
-		if s, ok := schema.Origin.(IPreRestRemove); ok {
-			s.PreRestRemove(c, &cond, all)
+		if s, ok := schema.Origin.(IPreRestUpdate); ok {
+			s.PreRestUpdate(c, &cond, &doc, all)
 		}
 		var (
 			err  error
 			data interface{}
 		)
-		doc = setUpdatedBy(c, doc)
 		if all == true {
-			data, err = Model.RemoveAll(cond, doc)
+			data, err = Model.UpdateAll(cond, doc)
 		} else {
-			err = Model.Remove(cond, doc)
+			err = Model.Update(cond, doc)
 			data = body
 		}
-
 		if err != nil {
 			handleError(err, c)
 			return
 		}
 		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestRemove); ok {
-			s.PostRestRemove(c, &data)
+		if s, ok := schema.Origin.(IPostRestUpdate); ok {
+			s.PostRestUpdate(c, &data)
 		}
 		// 构造返回
 		c.JSON(http.StatusOK, kuu.StdOK(data))

@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 var uri = "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50"
 
 func TestConnect(t *testing.T) {
-	db.Connect(uri)
+	Connect(uri)
 	if n, err := C("user").Count(); err == nil {
 		fmt.Println(n)
 	} else {
@@ -23,19 +22,19 @@ func ExampleModel_list() {
 	User := Model("User")
 	// 默认分页
 	var userList []kuu.H
-	User.List(&db.Params{}, userList)
+	User.List(&Params{}, userList)
 	// 带参查询
-	User.List(&db.Params{
+	User.List(&Params{
 		Page: 2,
 		Size: 50,
 		Sort: []string{"-CreatedAt"},
 		Project: map[string]int{
 			"Password": -1,
 		},
-	}, userList)
+	}, &userList)
 	// 全量查询
-	User.List(&db.Params{
-		Range: db.ALL,
+	User.List(&Params{
+		Range: ALL,
 		Sort:  []string{"-CreatedAt"},
 		Project: map[string]int{
 			"Password": -1,
@@ -45,20 +44,20 @@ func ExampleModel_list() {
 func ExampleModel_one() {
 	User := Model("User")
 	var userKuu kuu.H
-	User.One(&db.Params{
+	User.One(&Params{
 		Cond: kuu.H{
 			"Username": "kuu",
 			"Password": "123456",
 		},
-	}, userKuu)
+	}, &userKuu)
 }
 
 func ExampleModel_id() {
 	User := Model("User")
 	var userKuu kuu.H
-	User.ID(&db.Params{
+	User.ID(&Params{
 		ID: "5bc0865cb7c851165e6bbac0",
-	}, userKuu)
+	}, &userKuu)
 }
 
 func ExampleModel_create() {

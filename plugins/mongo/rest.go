@@ -1,4 +1,4 @@
-package rest
+package mongo
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 var (
@@ -20,8 +19,8 @@ var (
 )
 
 // ParseParams 解析请求上线文
-func ParseParams(c *gin.Context) *db.Params {
-	p := db.Params{}
+func ParseParams(c *gin.Context) *Params {
+	p := Params{}
 	if c.Param("id") != "" {
 		p.ID = c.Param("id")
 	}
@@ -41,10 +40,10 @@ func ParseParams(c *gin.Context) *db.Params {
 	}
 	// 处理range参数
 	p.Range = strings.ToUpper(c.Query("range"))
-	if p.Range != db.ALL && p.Range != db.PAGE {
-		p.Range = db.PAGE
+	if p.Range != ALL && p.Range != PAGE {
+		p.Range = PAGE
 	}
-	if p.Range == db.PAGE {
+	if p.Range == PAGE {
 		// PAGE模式下赋分页默认值
 		if p.Page == 0 {
 			p.Page = 1

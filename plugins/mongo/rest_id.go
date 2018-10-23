@@ -1,4 +1,4 @@
-package rest
+package mongo
 
 import (
 	"net/http"
@@ -6,34 +6,35 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
-// List 定义了列表查询路由接口
-func List(k *kuu.Kuu, name string) func(*gin.Context) {
+// ID 定义了ID查询路由接口
+func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 	schema := k.Schemas[name]
 	handler := func(c *gin.Context) {
 		// 参数处理
 		p := ParseParams(c)
+		id := p.ID
 		// 执行查询
-		Model := db.Model{
+		Model := M{
 			Name: name,
 			QueryHook: func(query *mgo.Query) {
 				// 触发前置钩子
-				if s, ok := schema.Origin.(IPreRestList); ok {
-					s.PreRestList(c, query, p)
+				if s, ok := schema.Origin.(IPreRestID); ok {
+					id = s.PreRestID(c, id, p)
 				}
 			},
 		}
-		var list []kuu.H
-		data, err := Model.List(p, &list)
+		// 构造返回
+		var data kuu.H
+		err := Model.ID(p, &data)
 		if err != nil {
 			handleError(err, c)
 			return
 		}
 		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestList); ok {
-			s.PostRestList(c, &data)
+		if s, ok := schema.Origin.(IPostRestID); ok {
+			s.PostRestID(c, &data)
 		}
 		c.JSON(http.StatusOK, kuu.StdOK(data))
 	}

@@ -1,11 +1,10 @@
-package rest
+package mongo
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo/db"
 )
 
 // Create 定义了新增路由接口
@@ -20,7 +19,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		docs = setCreatedBy(c, docs)
 		// 执行查询
-		Model := db.Model{
+		Model := M{
 			Name:      name,
 			QueryHook: nil,
 		}
