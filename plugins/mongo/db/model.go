@@ -44,6 +44,7 @@ type IModel interface {
 type Model struct {
 	Name      string
 	QueryHook func(query *mgo.Query)
+	Session   *mgo.Session
 }
 
 // Create 实现新增
@@ -55,14 +56,22 @@ func (m *Model) Create(docs ...interface{}) error {
 		docs[index] = doc
 	}
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	return C.Insert(docs...)
 }
 
 // Remove 实现删除
 func (m *Model) Remove(cond kuu.H) error {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	return C.Update(cond, kuu.H{
 		"IsDeleted": true,
 	})
@@ -71,7 +80,11 @@ func (m *Model) Remove(cond kuu.H) error {
 // RemoveAll 实现删除
 func (m *Model) RemoveAll(cond kuu.H) (interface{}, error) {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	return C.UpdateAll(cond, kuu.H{
 		"IsDeleted": true,
 	})
@@ -80,21 +93,33 @@ func (m *Model) RemoveAll(cond kuu.H) (interface{}, error) {
 // PhyRemove 实现物理删除
 func (m *Model) PhyRemove(cond kuu.H) error {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	return C.Remove(cond)
 }
 
 // PhyRemoveAll 实现物理删除
 func (m *Model) PhyRemoveAll(cond kuu.H) (interface{}, error) {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	return C.RemoveAll(cond)
 }
 
 // Update 实现更新
 func (m *Model) Update(cond kuu.H, doc kuu.H) error {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	doc["UpdatedAt"] = time.Now()
 	return C.Update(cond, doc)
 }
@@ -102,7 +127,11 @@ func (m *Model) Update(cond kuu.H, doc kuu.H) error {
 // UpdateAll 实现更新
 func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	doc["UpdatedAt"] = time.Now()
 	return C.UpdateAll(cond, doc)
 }
@@ -139,7 +168,11 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 	}
 
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	query := C.Find(p.Cond)
 	totalRecords, err := query.Count()
 	if err != nil {
@@ -192,7 +225,11 @@ func (m *Model) ID(p *Params, data interface{}) error {
 		p.Cond = make(map[string]interface{})
 	}
 	C := C(m.Name)
-	defer C.Database.Session.Close()
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
 	id := p.ID
 	query := C.FindId(bson.ObjectIdHex(id))
 	if p.Project != nil {

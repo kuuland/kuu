@@ -62,3 +62,14 @@ func All() *kuu.Plugin {
 		},
 	}
 }
+
+// Model 创建模型操作实例
+func Model(args ...interface{}) *db.Model {
+	m := &db.Model{
+		Name: args[0].(string),
+	}
+	if len(args) > 1 {
+		m.QueryHook = args[1].(func(query *mgo.Query))
+	}
+	return m
+}

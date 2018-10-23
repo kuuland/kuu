@@ -85,6 +85,7 @@ func (k *Kuu) Model(args ...interface{}) {
 		} else {
 			schema.Collection = schema.Name
 		}
+		schema.Config = config
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
 			tags := field.Tag

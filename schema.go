@@ -1,6 +1,8 @@
 package kuu
 
-import "time"
+import (
+	"time"
+)
 
 // IConfig 模型配置接口，数据模型通过实现该接口来增强模型配置
 type IConfig interface {
@@ -15,6 +17,7 @@ type Schema struct {
 	Collection  string
 	Fields      []*SchemaField
 	Origin      interface{}
+	Config      H
 }
 
 // SchemaField 数据模型字段
