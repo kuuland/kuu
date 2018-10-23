@@ -20,17 +20,25 @@ var (
 func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
-	setLogOut(dateFormat)
+	setLogOut(Join("kuu.", dateFormat, ".log"))
 	log.AddHook(new(outputHook))
 }
 
-func setLogOut(f string) {
-	filePath := Join("kuu.", f, ".log")
-	if logsDir != "" {
-		filePath = path.Join(logsDir, filePath)
-	} else {
-		filePath = path.Join(ROOT, filePath)
+func setLogOut(filePath string) {
+	if logsDir == "" {
+		config, err := LocalConfig()
+		if err == nil && config["logsDir"] != nil {
+			dir := config["logsDir"].(string)
+			if !path.IsAbs(dir) {
+				dir = path.Join(ROOT, dir)
+			}
+			logsDir = dir
+		} else {
+			logsDir = ROOT
+		}
 	}
+	EnsureDir(logsDir)
+	filePath = path.Join(logsDir, filePath)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		log.Out = file
@@ -47,7 +55,7 @@ func dateCheck() {
 	f := time.Now().Format("2006-01-02")
 	if dateFormat != f {
 		dateFormat = f
-		setLogOut(dateFormat)
+		setLogOut(Join("kuu.", dateFormat, ".log"))
 	}
 }
 

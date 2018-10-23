@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,4 +46,24 @@ func JSONConvert(s, t interface{}) {
 	if b, e := json.Marshal(s); e == nil {
 		json.Unmarshal(b, t)
 	}
+}
+
+// EnsureDir 确保文件夹存在
+func EnsureDir(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
+	}
+}
+
+// EmptyDir 确保文件夹存在且为空文件夹
+func EmptyDir(dir string) {
+	if dir == "/" {
+		Error("What are you doing?")
+		return
+	}
+	stat, _ := os.Stat(dir)
+	if stat != nil && stat.IsDir() {
+		os.RemoveAll(dir)
+	}
+	EnsureDir(dir)
 }

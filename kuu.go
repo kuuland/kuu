@@ -120,17 +120,27 @@ func (k *Kuu) Model(args ...interface{}) {
 	}
 }
 
-func (k *Kuu) loadConfigFile() {
+// LocalConfig 加载本地配置文件中的配置信息
+func LocalConfig() (H, error) {
 	path := os.Getenv("KUU_CONFIG")
 	if path == "" || !strings.HasSuffix(path, ".json") {
 		path = "kuu.json"
 	}
-	var config H
+	config := H{}
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return
+		return nil, err
 	}
 	if err := json.Unmarshal(data, &config); err != nil {
+		Error(err)
+		return nil, err
+	}
+	return config, nil
+}
+
+func (k *Kuu) loadConfigFile() {
+	config, err := LocalConfig()
+	if err != nil {
 		Error(err)
 		return
 	}
