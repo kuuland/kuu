@@ -21,13 +21,13 @@ func init() {
 	kuu.On("OnModel", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		schema := args[1].(*kuu.Schema)
-		rest.Mount(k, schema.Name)
+		rest.MountAll(k, schema.Name)
 	})
 }
 
-// Mount 挂载模型路由
-func Mount(k *kuu.Kuu, name string) {
-	rest.Mount(k, name)
+// MountAll 挂载模型路由
+func MountAll(k *kuu.Kuu, name string) {
+	rest.MountAll(k, name)
 }
 
 // MetadataHandler 元数据列表路由

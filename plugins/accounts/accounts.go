@@ -3,7 +3,6 @@ package accounts
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -43,7 +42,7 @@ func Encoded(data jwt.MapClaims, secret string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, data)
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		log.Println(err)
+		kuu.Error(err)
 	}
 	return tokenString
 }
@@ -60,7 +59,7 @@ func Decoded(tokenString string, secret string) jwt.MapClaims {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims
 	} else {
-		fmt.Println(err)
+		kuu.Error(err)
 	}
 	return nil
 }
@@ -145,6 +144,7 @@ func AddWhilelist(list []string, replace bool) []string {
 // AuthMiddleware 令牌鉴权中间件
 func AuthMiddleware(c *gin.Context) {
 	data := GetDecodedData(c)
+	c.Set("JWTDecoded", data)
 	wl := whilelistFilter(c)
 	if wl == false && (data == nil || data.Valid() != nil || !CustomAuthFilter(c)) {
 		CustomErrorHandler(c)

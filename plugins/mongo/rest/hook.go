@@ -9,12 +9,12 @@ import (
 
 // IPreRestCreate 新增前钩子
 type IPreRestCreate interface {
-	PreRestCreate(*gin.Context, *[]interface{})
+	PreRestCreate(*gin.Context, *[]kuu.H)
 }
 
 // IPostRestCreate 新增后钩子
 type IPostRestCreate interface {
-	PostRestCreate(*gin.Context, *[]interface{})
+	PostRestCreate(*gin.Context, *[]kuu.H)
 }
 
 // IPreRestID ID查询前钩子

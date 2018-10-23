@@ -32,6 +32,8 @@ type IModel interface {
 	Create(...interface{}) error
 	Remove(kuu.H) error
 	RemoveAll(kuu.H) (interface{}, error)
+	PhyRemove(kuu.H) error
+	PhyRemoveAll(kuu.H) (interface{}, error)
 	Update(kuu.H, kuu.H) error
 	UpdateAll(kuu.H, kuu.H) (interface{}, error)
 	List(*Params, interface{}) (kuu.H, error)
@@ -61,11 +63,29 @@ func (m *Model) Create(docs ...interface{}) error {
 func (m *Model) Remove(cond kuu.H) error {
 	C := C(m.Name)
 	defer C.Database.Session.Close()
-	return C.Remove(cond)
+	return C.Update(cond, kuu.H{
+		"IsDeleted": true,
+	})
 }
 
 // RemoveAll 实现删除
 func (m *Model) RemoveAll(cond kuu.H) (interface{}, error) {
+	C := C(m.Name)
+	defer C.Database.Session.Close()
+	return C.UpdateAll(cond, kuu.H{
+		"IsDeleted": true,
+	})
+}
+
+// PhyRemove 实现物理删除
+func (m *Model) PhyRemove(cond kuu.H) error {
+	C := C(m.Name)
+	defer C.Database.Session.Close()
+	return C.Remove(cond)
+}
+
+// PhyRemoveAll 实现物理删除
+func (m *Model) PhyRemoveAll(cond kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	defer C.Database.Session.Close()
 	return C.RemoveAll(cond)
@@ -75,6 +95,7 @@ func (m *Model) RemoveAll(cond kuu.H) (interface{}, error) {
 func (m *Model) Update(cond kuu.H, doc kuu.H) error {
 	C := C(m.Name)
 	defer C.Database.Session.Close()
+	doc["UpdatedAt"] = time.Now()
 	return C.Update(cond, doc)
 }
 
@@ -82,6 +103,7 @@ func (m *Model) Update(cond kuu.H, doc kuu.H) error {
 func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
 	C := C(m.Name)
 	defer C.Database.Session.Close()
+	doc["UpdatedAt"] = time.Now()
 	return C.UpdateAll(cond, doc)
 }
 
@@ -90,6 +112,9 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 	// 参数加工
 	isDeleted := kuu.H{
 		"$ne": true,
+	}
+	if p.Cond == nil {
+		p.Cond = make(map[string]interface{})
 	}
 	if p.Cond["$and"] != nil {
 		var and []kuu.H
@@ -163,6 +188,9 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 
 // ID 实现ID查询
 func (m *Model) ID(p *Params, data interface{}) error {
+	if p.Cond == nil {
+		p.Cond = make(map[string]interface{})
+	}
 	C := C(m.Name)
 	defer C.Database.Session.Close()
 	id := p.ID

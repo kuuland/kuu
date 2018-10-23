@@ -15,9 +15,6 @@ var (
 	defaultMessages = map[string]string{
 		"request_error": "Request failed.",
 	}
-	k      *kuu.Kuu
-	name   string
-	schema *kuu.Schema
 )
 
 // ParseParams 解析请求上线文
@@ -99,15 +96,12 @@ func handleError(err error, c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "request_error")))
 }
 
-// Mount 挂载模型RESTful接口
-func Mount(app *kuu.Kuu, n string) {
-	k = app
-	name = n
-	schema = app.Schemas[name]
+// MountAll 挂载模型RESTful接口
+func MountAll(k *kuu.Kuu, name string) {
 	path := kuu.Join("/", strings.ToLower(name))
-	k.POST(path, create)
-	k.DELETE(path, remove)
-	k.PUT(path, update)
-	k.GET(path, list)
-	k.GET(kuu.Join(path, "/:id"), id)
+	k.POST(path, Create(k, name))
+	k.DELETE(path, Remove(k, name))
+	k.PUT(path, Update(k, name))
+	k.GET(path, List(k, name))
+	k.GET(kuu.Join(path, "/:id"), ID(k, name))
 }
