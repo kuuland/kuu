@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Plugin 插件实例
-type Plugin struct {
+// Mod 模块实例
+type Mod struct {
 	Routes     Routes
 	Middleware Middleware
 	Models     []interface{}

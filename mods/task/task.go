@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/kuuland/kuu"
 	"github.com/robfig/cron"
 )
@@ -112,9 +111,9 @@ func TasksHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdOK(tasks))
 }
 
-// All 插件声明
-func All() *kuu.Plugin {
-	return &kuu.Plugin{
+// All 模块声明
+func All() *kuu.Mod {
+	return &kuu.Mod{
 		Routes: kuu.Routes{
 			kuu.RouteInfo{
 				Method:  "GET",

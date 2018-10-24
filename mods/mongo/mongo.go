@@ -28,9 +28,9 @@ func MetadataHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, kuu.StdOK(kuu.K().Schemas))
 }
 
-// All 插件声明
-func All() *kuu.Plugin {
-	return &kuu.Plugin{
+// All 模块声明
+func All() *kuu.Mod {
+	return &kuu.Mod{
 		Routes: kuu.Routes{
 			kuu.RouteInfo{
 				Method:  "GET",

@@ -205,10 +205,10 @@ func ValidHandler(c *gin.Context) {
 	}
 }
 
-// All 插件声明
-func All(dataGetter func(*gin.Context) (kuu.H, func() string, func())) *kuu.Plugin {
+// All 模块声明
+func All(dataGetter func(*gin.Context) (kuu.H, func() string, func())) *kuu.Mod {
 	DataGetter = dataGetter
-	return &kuu.Plugin{
+	return &kuu.Mod{
 		Middleware: kuu.Middleware{
 			AuthMiddleware,
 		},

@@ -20,10 +20,10 @@ var ROOT string
 var ENV string
 
 var (
-	apps             = []*Kuu{}
-	pluginMiddleware = []gin.HandlerFunc{}
-	pluginRoutes     = []RouteInfo{}
-	pluginModels     = []interface{}{}
+	apps          = []*Kuu{}
+	modMiddleware = []gin.HandlerFunc{}
+	modRoutes     = []RouteInfo{}
+	modModels     = []interface{}{}
 )
 
 func init() {
@@ -151,17 +151,17 @@ func (k *Kuu) loadConfigFile() {
 	}
 }
 
-func (k *Kuu) loadPlugins() {
-	// 挂载插件中间件
-	for _, m := range pluginMiddleware {
+func (k *Kuu) loadMods() {
+	// 挂载模块中间件
+	for _, m := range modMiddleware {
 		k.Use(m)
 	}
-	// 挂载插件路由
-	for _, r := range pluginRoutes {
+	// 挂载模块路由
+	for _, r := range modRoutes {
 		k.Handle(r.Method, r.Path, r.Handler)
 	}
-	// 挂载插件模型
-	for _, m := range pluginModels {
+	// 挂载模块模型
+	for _, m := range modModels {
 		k.Model(m)
 	}
 }
@@ -172,7 +172,7 @@ func (k *Kuu) Run(addr ...string) (err error) {
 	return k.Engine.Run(addr...)
 }
 
-// New 根据配置创建并返回一个新的应用实例，创建过程会自动加载已导入插件
+// New 根据配置创建并返回一个新的应用实例，创建过程会自动加载已导入模块
 func New(cfg H) *Kuu {
 	k := Kuu{
 		Engine:  gin.New(),
@@ -188,17 +188,17 @@ func New(cfg H) *Kuu {
 	apps = append(apps, &k)
 	k.Config = cfg
 	k.loadConfigFile()
-	k.loadPlugins()
+	k.loadMods()
 	Emit("OnNew", &k)
 	return &k
 }
 
-// Import 导入一个或多个插件
-func Import(ps ...*Plugin) {
+// Import 导入一个或多个模块
+func Import(ps ...*Mod) {
 	for _, p := range ps {
 		for _, m := range p.Middleware {
 			if m != nil {
-				pluginMiddleware = append(pluginMiddleware, m)
+				modMiddleware = append(modMiddleware, m)
 			}
 		}
 		for _, r := range p.Routes {
@@ -208,13 +208,13 @@ func Import(ps ...*Plugin) {
 			if r.Method == "" {
 				r.Method = "GET"
 			}
-			pluginRoutes = append(pluginRoutes, r)
+			modRoutes = append(modRoutes, r)
 		}
 		for _, m := range p.Models {
 			if m == nil {
 				continue
 			}
-			pluginModels = append(pluginModels, m)
+			modModels = append(modModels, m)
 		}
 	}
 }
