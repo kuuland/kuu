@@ -37,3 +37,20 @@ type Model struct {
 	UpdatedAt time.Time   `name:"修改时间"`
 	IsDeleted bool        `name:"是否已删除"`
 }
+
+// IModel 定义了模型统一持久化操作接口
+type IModel interface {
+	Create(interface{}) ([]interface{}, error)
+	Remove(interface{}, interface{}) error
+	RemoveEntity(interface{}, interface{}) error
+	RemoveAll(interface{}, interface{}) (interface{}, error)
+	PhyRemove(interface{}) error
+	PhyRemoveEntity(interface{}) error
+	PhyRemoveAll(interface{}) (interface{}, error)
+	Update(interface{}, interface{}) error
+	UpdateEntity(interface{}) error
+	UpdateAll(interface{}, interface{}) (interface{}, error)
+	List(interface{}, interface{}) (interface{}, error)
+	ID(interface{}, interface{}) error
+	One(interface{}, interface{}) error
+}
