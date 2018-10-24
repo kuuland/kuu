@@ -211,9 +211,8 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 	result := []kuu.H{}
 	if err := query.All(&result); err != nil {
 		return nil, err
-	} else {
-		kuu.JSONConvert(result, list)
 	}
+	kuu.JSONConvert(result, list)
 	data := kuu.H{
 		"list":         list,
 		"totalrecords": totalRecords,
