@@ -104,7 +104,7 @@ func MountAll(k *kuu.Kuu, name string) {
 	k.DELETE(path, Remove(k, name))
 	k.PUT(path, Update(k, name))
 	k.GET(path, List(k, name))
-	k.GET(kuu.Join(path, "/:id"), ID(k, name))
+	k.GET(kuu.Join(path, "/id/:id"), ID(k, name))
 }
 
 func setCreatedBy(c *gin.Context, docs []kuu.H) []kuu.H {

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
 )
 
@@ -27,14 +26,6 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 		kuu.JSONConvert(body["doc"], &doc)
 		if body["all"] != nil {
 			all = body["all"].(bool)
-		}
-		if cond["_id"] != nil {
-			cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
-		}
-		if doc["$set"] == nil {
-			doc = kuu.H{
-				"$set": doc,
-			}
 		}
 		doc = setUpdatedBy(c, doc)
 		// 执行查询

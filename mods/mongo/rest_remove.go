@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
 )
 
@@ -29,9 +28,6 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		if body["all"] != nil {
 			all = body["all"].(bool)
-		}
-		if cond["_id"] != nil {
-			cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 		}
 		// 执行查询
 		m := Model{

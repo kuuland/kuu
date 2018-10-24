@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"errors"
 	"math"
 	"time"
 
@@ -27,20 +28,6 @@ type Params struct {
 	Cond    kuu.H
 }
 
-// IModel 定义了模型持久化统一操作接口
-type IModel interface {
-	Create(...interface{}) ([]interface{}, error)
-	Remove(kuu.H, kuu.H) error
-	RemoveAll(kuu.H, kuu.H) (interface{}, error)
-	PhyRemove(kuu.H) error
-	PhyRemoveAll(kuu.H) (interface{}, error)
-	Update(kuu.H, kuu.H) error
-	UpdateAll(kuu.H, kuu.H) (interface{}, error)
-	List(*Params, interface{}) (kuu.H, error)
-	One(*Params, interface{}) (kuu.H, error)
-	ID(*Params, interface{}) error
-}
-
 // Model 基于Mongo的模型操作实现
 type Model struct {
 	Name      string
@@ -48,8 +35,16 @@ type Model struct {
 	Session   *mgo.Session
 }
 
-// Create 实现新增
-func (m *Model) Create(docs ...interface{}) ([]interface{}, error) {
+// Create 实现新增（支持传入单个或者数组）
+func (m *Model) Create(data interface{}) ([]interface{}, error) {
+	docs := []interface{}{}
+	if kuu.IsArray(data) {
+		kuu.JSONConvert(data, &docs)
+	} else {
+		doc := kuu.H{}
+		kuu.JSONConvert(data, &doc)
+		docs = append(docs, doc)
+	}
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
@@ -67,90 +62,92 @@ func (m *Model) Create(docs ...interface{}) ([]interface{}, error) {
 	return docs, err
 }
 
-// Remove 实现逻辑删除
+// Remove 实现基于条件的逻辑删除
 func (m *Model) Remove(cond kuu.H, data ...kuu.H) error {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
 	var doc kuu.H
 	if len(data) > 0 {
 		doc = data[0]
 	}
-	if doc == nil {
-		doc = make(kuu.H)
-	}
-	doc["IsDeleted"] = true
-	doc["UpdatedAt"] = time.Now()
-	return C.Update(cond, doc)
+	_, err := m.remove(cond, doc, false)
+	return err
 }
 
-// RemoveAll 实现逻辑删除
+// RemoveEntity 实现基于实体的逻辑删除
+func (m *Model) RemoveEntity(entity interface{}, data ...kuu.H) error {
+	var doc kuu.H
+	if len(data) > 0 {
+		doc = data[0]
+	}
+	var obj kuu.H
+	kuu.JSONConvert(entity, &obj)
+	if obj == nil || obj["_id"] == nil {
+		return errors.New("_id is required")
+	}
+	cond := kuu.H{
+		"_id": obj["_id"],
+	}
+	_, err := m.remove(cond, doc, false)
+	return err
+}
+
+// RemoveAll 实现基于条件的批量逻辑删除
 func (m *Model) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
 	var doc kuu.H
 	if len(data) > 0 {
 		doc = data[0]
 	}
-	if doc == nil {
-		doc = make(kuu.H)
-	}
-	doc["IsDeleted"] = true
-	doc["UpdatedAt"] = time.Now()
-	return C.UpdateAll(cond, doc)
+	return m.remove(cond, doc, true)
 }
 
-// PhyRemove 实现物理删除
+// PhyRemove 实现基于条件的物理删除
 func (m *Model) PhyRemove(cond kuu.H) error {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
-	return C.Remove(cond)
+	_, err := m.phyRemove(cond, false)
+	return err
 }
 
-// PhyRemoveAll 实现物理删除
+// PhyRemoveEntity 实现基于实体的物理删除
+func (m *Model) PhyRemoveEntity(entity interface{}) error {
+	var obj kuu.H
+	kuu.JSONConvert(entity, &obj)
+	if obj == nil || obj["_id"] == nil {
+		return errors.New("_id is required")
+	}
+	cond := kuu.H{
+		"_id": obj["_id"],
+	}
+	_, err := m.phyRemove(cond, false)
+	return err
+}
+
+// PhyRemoveAll 实现基于条件的批量物理删除
 func (m *Model) PhyRemoveAll(cond kuu.H) (interface{}, error) {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
-	return C.RemoveAll(cond)
+	return m.phyRemove(cond, true)
 }
 
-// Update 实现更新
+// Update 实现基于条件的更新
 func (m *Model) Update(cond kuu.H, doc kuu.H) error {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
-	doc["UpdatedAt"] = time.Now()
-	return C.Update(cond, doc)
+	_, err := m.update(cond, doc, false)
+	return err
 }
 
-// UpdateAll 实现更新
+// UpdateEntity 实现基于实体的更新
+func (m *Model) UpdateEntity(entity interface{}) error {
+	var doc kuu.H
+	kuu.JSONConvert(entity, &doc)
+	if doc == nil || doc["_id"] == nil {
+		return errors.New("_id is required")
+	}
+	cond := kuu.H{
+		"_id": doc["_id"],
+	}
+	delete(doc, "_id")
+	_, err := m.update(cond, doc, false)
+	return err
+}
+
+// UpdateAll 实现基于条件的批量更新
 func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
-	C := C(m.Name)
-	m.Session = C.Database.Session
-	defer func() {
-		C.Database.Session.Close()
-		m.Session = nil
-	}()
-	doc["UpdatedAt"] = time.Now()
-	return C.UpdateAll(cond, doc)
+	return m.update(cond, doc, true)
 }
 
 // List 实现列表查询
@@ -239,7 +236,16 @@ func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
 }
 
 // ID 实现ID查询
-func (m *Model) ID(p *Params, data interface{}) error {
+func (m *Model) ID(v interface{}, data interface{}) error {
+	p := &Params{}
+	switch v.(type) {
+	case *Params:
+		p = v.(*Params)
+	case string:
+		p = &Params{
+			ID: v.(string),
+		}
+	}
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
@@ -289,4 +295,82 @@ func (m *Model) One(p *Params, data interface{}) error {
 		kuu.JSONConvert(result, data)
 	}
 	return err
+}
+
+func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (interface{}, error) {
+	C := C(m.Name)
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
+	if doc == nil {
+		doc = make(kuu.H)
+	}
+	doc["IsDeleted"] = true
+	doc["UpdatedAt"] = time.Now()
+	cond = checkObjectID(cond)
+	doc = checkUpdateSet(doc)
+	if all {
+		return C.UpdateAll(cond, doc)
+	}
+	return nil, C.Update(cond, doc)
+}
+
+func (m *Model) phyRemove(cond kuu.H, all bool) (interface{}, error) {
+	C := C(m.Name)
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
+	cond = checkObjectID(cond)
+	if all {
+		return C.RemoveAll(cond)
+	}
+	return nil, C.Remove(cond)
+}
+
+func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (interface{}, error) {
+	C := C(m.Name)
+	m.Session = C.Database.Session
+	defer func() {
+		C.Database.Session.Close()
+		m.Session = nil
+	}()
+	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
+	cond = checkObjectID(cond)
+	doc = checkUpdateSet(doc)
+	if all {
+		return C.UpdateAll(cond, doc)
+	}
+	return nil, C.Update(cond, doc)
+}
+
+func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
+	if doc["$set"] != nil {
+		set := kuu.H{}
+		kuu.JSONConvert(doc["$set"], &set)
+		set[key] = value
+		doc["$set"] = set
+	} else {
+		doc[key] = value
+	}
+	return doc
+}
+
+func checkObjectID(cond kuu.H) kuu.H {
+	if cond["_id"] != nil {
+		cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
+	}
+	return cond
+}
+
+func checkUpdateSet(doc kuu.H) kuu.H {
+	if doc["$set"] == nil {
+		doc = kuu.H{
+			"$set": doc,
+		}
+	}
+	return doc
 }

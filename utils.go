@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 )
@@ -66,4 +67,38 @@ func EmptyDir(dir string) {
 		os.RemoveAll(dir)
 	}
 	EnsureDir(dir)
+}
+
+// ToInterfaceArray 将传入值转换为[]interface{}类型
+func ToInterfaceArray(arr interface{}) []interface{} {
+	v := reflect.ValueOf(arr)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Slice {
+		return make([]interface{}, 0, 0)
+	}
+	l := v.Len()
+	ret := make([]interface{}, l)
+	for i := 0; i < l; i++ {
+		ret[i] = v.Index(i).Interface()
+	}
+	return ret
+}
+
+// GetKind 通过反射获取传入值的Kind信息
+func GetKind(a interface{}) reflect.Kind {
+	v := reflect.ValueOf(a)
+	kind := v.Kind()
+	if kind == reflect.Ptr {
+		v = v.Elem()
+		kind = v.Kind()
+	}
+	return kind
+}
+
+// IsArray 判断传入值是否为数组
+func IsArray(a interface{}) bool {
+	kind := GetKind(a)
+	return kind == reflect.Slice || kind == reflect.Array
 }
