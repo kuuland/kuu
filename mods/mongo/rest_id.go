@@ -29,7 +29,8 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		var data kuu.H
 		err := m.ID(p, &data)
 		if err != nil {
-			handleError(err, c)
+			kuu.Error(err)
+			c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "entity_not_exist")))
 			return
 		}
 		// 触发后置钩子

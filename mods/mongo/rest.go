@@ -15,6 +15,7 @@ import (
 var (
 	defaultMessages = map[string]string{
 		"request_error": "Request failed.",
+		"entity_not_exist": "Entity does not exist.",
 	}
 )
 
