@@ -106,6 +106,10 @@ func Warn(args ...interface{}) {
 
 // Error 输出Error级别的日志
 func Error(args ...interface{}) {
+	switch args[0].(type) {
+	case error:
+		args[0] = args[0].(error).Error()
+	}
 	format, a := split(args...)
 	log.Errorf(format, a...)
 }

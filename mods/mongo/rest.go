@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -94,7 +93,7 @@ func ParseParams(c *gin.Context) *Params {
 }
 
 func handleError(err error, c *gin.Context) {
-	kuu.Error(errors.New(err.Error()))
+	kuu.Error(err)
 	c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "request_error")))
 }
 
