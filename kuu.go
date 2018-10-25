@@ -61,7 +61,6 @@ func (k *Kuu) Model(args ...interface{}) {
 			panic(`Model only accepts pointer. Example:
 			Use: kuu.Model(&Struct{}) instead of kuu.Model(Struct{})
 		`)
-			}
 		}
 		// 判断是否实现了配置接口
 		config := H{}
