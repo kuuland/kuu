@@ -41,16 +41,19 @@ type Model struct {
 // IModel 定义了模型持久化操作接口
 type IModel interface {
 	Create(interface{}) ([]interface{}, error)
-	Remove(interface{}, interface{}) error
-	RemoveEntity(interface{}, interface{}) error
-	RemoveAll(interface{}, interface{}) (interface{}, error)
+	Remove(interface{}) error
+	RemoveEntity(interface{}) error
+	RemoveAll(interface{}) (interface{}, error)
+	RemoveWithData(interface{}, interface{}) error
+	RemoveEntityWithData(interface{}, interface{}) error
+	RemoveAllWithData(interface{}, interface{}) (interface{}, error)
 	PhyRemove(interface{}) error
 	PhyRemoveEntity(interface{}) error
 	PhyRemoveAll(interface{}) (interface{}, error)
 	Update(interface{}, interface{}) error
 	UpdateEntity(interface{}) error
 	UpdateAll(interface{}, interface{}) (interface{}, error)
-	List(interface{}, interface{}) (interface{}, error)
+	List(interface{}, interface{}) (H, error)
 	ID(interface{}, interface{}) error
 	One(interface{}, interface{}) error
 }

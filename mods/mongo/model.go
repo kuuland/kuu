@@ -63,23 +63,35 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 }
 
 // Remove 实现基于条件的逻辑删除
-func (m *Model) Remove(cond kuu.H, data ...kuu.H) error {
-	var doc kuu.H
-	if len(data) > 0 {
-		doc = data[0]
-	}
+func (m *Model) Remove(selector interface{}) error {
+	return m.RemoveWithData(selector, nil)
+}
+
+// RemoveWithData 实现基于条件的逻辑删除
+func (m *Model) RemoveWithData(selector interface{}, data interface{}) error {
+	var (
+		cond kuu.H
+		doc  kuu.H
+	)
+	kuu.JSONConvert(selector, &cond)
+	kuu.JSONConvert(data, &doc)
 	_, err := m.remove(cond, doc, false)
 	return err
 }
 
 // RemoveEntity 实现基于实体的逻辑删除
-func (m *Model) RemoveEntity(entity interface{}, data ...kuu.H) error {
-	var doc kuu.H
-	if len(data) > 0 {
-		doc = data[0]
-	}
-	var obj kuu.H
+func (m *Model) RemoveEntity(entity interface{}) error {
+	return m.RemoveEntityWithData(entity, nil)
+}
+
+// RemoveEntityWithData 实现基于实体的逻辑删除
+func (m *Model) RemoveEntityWithData(entity interface{}, data interface{}) error {
+	var (
+		doc kuu.H
+		obj kuu.H
+	)
 	kuu.JSONConvert(entity, &obj)
+	kuu.JSONConvert(data, &doc)
 	if obj == nil || obj["_id"] == nil {
 		return errors.New("_id is required")
 	}
@@ -91,16 +103,25 @@ func (m *Model) RemoveEntity(entity interface{}, data ...kuu.H) error {
 }
 
 // RemoveAll 实现基于条件的批量逻辑删除
-func (m *Model) RemoveAll(cond kuu.H, data ...kuu.H) (interface{}, error) {
-	var doc kuu.H
-	if len(data) > 0 {
-		doc = data[0]
-	}
+func (m *Model) RemoveAll(selector interface{}) (interface{}, error) {
+	return m.RemoveAllWithData(selector, nil)
+}
+
+// RemoveAllWithData 实现基于条件的批量逻辑删除
+func (m *Model) RemoveAllWithData(selector interface{}, data interface{}) (interface{}, error) {
+	var (
+		cond kuu.H
+		doc  kuu.H
+	)
+	kuu.JSONConvert(selector, &cond)
+	kuu.JSONConvert(data, &doc)
 	return m.remove(cond, doc, true)
 }
 
 // PhyRemove 实现基于条件的物理删除
-func (m *Model) PhyRemove(cond kuu.H) error {
+func (m *Model) PhyRemove(selector interface{}) error {
+	var cond kuu.H
+	kuu.JSONConvert(selector, &cond)
 	_, err := m.phyRemove(cond, false)
 	return err
 }
@@ -120,12 +141,20 @@ func (m *Model) PhyRemoveEntity(entity interface{}) error {
 }
 
 // PhyRemoveAll 实现基于条件的批量物理删除
-func (m *Model) PhyRemoveAll(cond kuu.H) (interface{}, error) {
+func (m *Model) PhyRemoveAll(selector interface{}) (interface{}, error) {
+	var cond kuu.H
+	kuu.JSONConvert(selector, &cond)
 	return m.phyRemove(cond, true)
 }
 
 // Update 实现基于条件的更新
-func (m *Model) Update(cond kuu.H, doc kuu.H) error {
+func (m *Model) Update(selector interface{}, data interface{}) error {
+	var (
+		cond kuu.H
+		doc  kuu.H
+	)
+	kuu.JSONConvert(selector, &cond)
+	kuu.JSONConvert(data, &doc)
 	_, err := m.update(cond, doc, false)
 	return err
 }
@@ -146,12 +175,20 @@ func (m *Model) UpdateEntity(entity interface{}) error {
 }
 
 // UpdateAll 实现基于条件的批量更新
-func (m *Model) UpdateAll(cond kuu.H, doc kuu.H) (interface{}, error) {
+func (m *Model) UpdateAll(selector interface{}, data interface{}) (interface{}, error) {
+	var (
+		cond kuu.H
+		doc  kuu.H
+	)
+	kuu.JSONConvert(selector, &cond)
+	kuu.JSONConvert(data, &doc)
 	return m.update(cond, doc, true)
 }
 
 // List 实现列表查询
-func (m *Model) List(p *Params, list interface{}) (kuu.H, error) {
+func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
+	p := &Params{}
+	kuu.JSONConvert(a, p)
 	// 参数加工
 	if list == nil {
 		list = make([]kuu.H, 0)
@@ -272,7 +309,9 @@ func (m *Model) ID(v interface{}, data interface{}) error {
 }
 
 // One 实现单个查询
-func (m *Model) One(p *Params, data interface{}) error {
+func (m *Model) One(a interface{}, data interface{}) error {
+	p := &Params{}
+	kuu.JSONConvert(a, p)
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}

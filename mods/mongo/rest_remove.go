@@ -44,9 +44,9 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 		)
 		doc = setUpdatedBy(c, doc)
 		if all == true {
-			data, err = m.RemoveAll(cond, doc)
+			data, err = m.RemoveAllWithData(cond, doc)
 		} else {
-			err = m.Remove(cond, doc)
+			err = m.RemoveWithData(cond, doc)
 			data = body
 		}
 
