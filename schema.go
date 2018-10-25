@@ -38,7 +38,7 @@ type Model struct {
 	IsDeleted bool        `name:"是否已删除"`
 }
 
-// IModel 定义了模型统一持久化操作接口
+// IModel 定义了模型持久化操作接口
 type IModel interface {
 	Create(interface{}) ([]interface{}, error)
 	Remove(interface{}, interface{}) error
