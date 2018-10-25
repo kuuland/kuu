@@ -97,6 +97,12 @@ func GetKind(a interface{}) reflect.Kind {
 	return kind
 }
 
+// IsPtr 检查是否指针
+func IsPtr(a interface{}) bool {
+	v := reflect.ValueOf(a)
+	return v.Kind() == reflect.Ptr
+}
+
 // IsArray 判断传入值是否为数组
 func IsArray(a interface{}) bool {
 	kind := GetKind(a)

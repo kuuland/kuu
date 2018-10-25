@@ -58,7 +58,10 @@ func (k *Kuu) Model(args ...interface{}) {
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		} else {
-			panic(Join("kuu.Model only accepts Ptr type, try to use 'kuu.Model(&", v.Type().Name(), ")'."))
+			panic(`Model only accepts pointer. Example:
+			Use: kuu.Model(&Struct{}) instead of kuu.Model(Struct{})
+		`)
+			}
 		}
 		// 判断是否实现了配置接口
 		config := H{}
