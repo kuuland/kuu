@@ -50,7 +50,7 @@ func main() {
 ## FAQ
 
 ### Why is it called Kuu?
-> Kuu is the name of a cat. ([Kuu and Shino's story](http://www.sohu.com/a/225954042_509045))
+> Kuu is the name of a cat, click to go to [The story of Kuu and Shino](http://www.sohu.com/a/225954042_509045).
 
 ![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
 
