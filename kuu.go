@@ -129,6 +129,9 @@ func ParseLocalConfig() (H, error) {
 		path = "kuu.json"
 	}
 	config := H{}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return config, nil
+	}
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -175,20 +178,21 @@ func (k *Kuu) Run(addr ...string) (err error) {
 }
 
 // New 根据配置创建并返回一个新的应用实例，创建过程会自动加载已导入模块
-func New(cfg H) *Kuu {
+func New(cfg ...H) *Kuu {
+	config := resolveConfig(cfg)
 	k := Kuu{
 		Engine:  gin.New(),
 		Schemas: make(map[string]*Schema),
 	}
 	k.Use(gin.Logger(), gin.Recovery())
-	if cfg == nil {
-		cfg = H{}
+	if config == nil {
+		config = H{}
 	}
-	if cfg["name"] != nil {
-		k.Name = cfg["name"].(string)
+	if config["name"] != nil {
+		k.Name = config["name"].(string)
 	}
 	apps = append(apps, &k)
-	k.Config = cfg
+	k.Config = config
 	k.loadConfigFile()
 	k.loadMods()
 	Emit("OnNew", &k)
@@ -275,4 +279,15 @@ func StdError(msg string) H {
 // StdErrorWithCode 只包含错误信息和错误码的Std
 func StdErrorWithCode(msg string, code int) H {
 	return Std(nil, msg, code)
+}
+
+func resolveConfig(config []H) H {
+	switch len(config) {
+	case 0:
+		return H{}
+	case 1:
+		return config[0]
+	default:
+		return H{}
+	}
 }

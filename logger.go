@@ -75,7 +75,7 @@ func split(args ...interface{}) (string, []interface{}) {
 	format := args[0].(string)
 	var a []interface{}
 	if len(args) > 1 {
-		a = a[1:len(args)]
+		a = args[1:len(args)]
 	}
 	return format, a
 }
