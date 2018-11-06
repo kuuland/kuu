@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO 需实现：
+// 1.自动新增到数据库
+// 2.自动翻译不存在的语言值
+
 var (
 	// DefaultLang 默认国际化语言编码
 	DefaultLang = "en"

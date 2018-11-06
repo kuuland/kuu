@@ -272,15 +272,19 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	return data, nil
 }
 
-// ID 实现ID查询
-func (m *Model) ID(v interface{}, data interface{}) error {
+// ID 实现ID查询（支持传入“string”、“bson.ObjectId”和“&mongo.Params”三种类型的数据）
+func (m *Model) ID(id interface{}, data interface{}) error {
 	p := &Params{}
-	switch v.(type) {
+	switch id.(type) {
 	case *Params:
-		p = v.(*Params)
+		p = id.(*Params)
+	case bson.ObjectId:
+		p = &Params{
+			ID: id.(bson.ObjectId).Hex(),
+		}
 	case string:
 		p = &Params{
-			ID: v.(string),
+			ID: id.(string),
 		}
 	}
 	if p.Cond == nil {
@@ -292,8 +296,8 @@ func (m *Model) ID(v interface{}, data interface{}) error {
 		C.Database.Session.Close()
 		m.Session = nil
 	}()
-	id := p.ID
-	query := C.FindId(bson.ObjectIdHex(id))
+	v := p.ID
+	query := C.FindId(bson.ObjectIdHex(v))
 	if p.Project != nil {
 		query.Select(p.Project)
 	}

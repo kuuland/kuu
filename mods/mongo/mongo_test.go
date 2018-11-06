@@ -55,9 +55,7 @@ func ExampleModel_one() {
 func ExampleModel_id() {
 	User := M("User")
 	var userKuu kuu.H
-	User.ID(&Params{
-		ID: "5bc0865cb7c851165e6bbac0",
-	}, &userKuu)
+	User.ID("5bc0865cb7c851165e6bbac0", &userKuu)
 }
 
 func ExampleModel_create() {
