@@ -39,7 +39,7 @@ func Call(address string, handler func(*grpc.ClientConn, context.Context)) {
 	handler(conn, ctx)
 }
 
-// Run 封装启动函数（复用gRPC和HTTP端口）
+// Run 封装启动函数（gRPC和HTTP复用端口）
 func Run(k *kuu.Kuu, addr ...string) (err error) {
 	address := resolveAddress(addr)
 	port := resolvePort(address)
