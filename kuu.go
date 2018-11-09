@@ -110,7 +110,8 @@ func RegisterModel(args ...interface{}) {
 			field := t.Field(i)
 			tags := field.Tag
 			sField := &SchemaField{
-				Tags: make(map[string]string),
+				Tags:    make(map[string]string),
+				IsArray: false,
 			}
 			parseModelTags(sField, tags)
 			sField.Code = strings.ToLower(field.Name)
@@ -122,13 +123,16 @@ func RegisterModel(args ...interface{}) {
 			if tags.Get("alias") != "" {
 				sField.Name = tags.Get("alias")
 			}
+			if _, ok := sField.Tags["array"]; ok {
+				sField.IsArray = true
+			}
 			sField.Default = tags.Get("default")
 			if tags.Get("type") != "" {
 				sField.Type = tags.Get("type")
 			} else {
 				sField.Type = field.Type.Name()
 			}
-			if tags.Get("required") != "" {
+			if _, ok := sField.Tags["required"]; ok {
 				required, err := strconv.ParseBool(tags.Get("required"))
 				if err != nil {
 					sField.Required = required
@@ -146,15 +150,21 @@ func RegisterModel(args ...interface{}) {
 func parseModelTags(field *SchemaField, tag reflect.StructTag) {
 	split := strings.Split(string(tag), " ")
 	for _, item := range split {
+		if item == "" {
+			continue
+		}
 		t := strings.Split(item, ":")
-		if t != nil && len(t) > 1 {
-			v, err := strconv.Unquote(t[1])
-			if err == nil {
-				field.Tags[t[0]] = v
-			} else {
-				field.Tags[t[0]] = t[1]
+		if t != nil && len(t) > 0 && t[0] != "" {
+			var value string
+			if len(t) > 1 {
+				v, err := strconv.Unquote(t[1])
+				if err == nil {
+					value = v
+				} else {
+					value = t[1]
+				}
 			}
-
+			field.Tags[t[0]] = value
 		}
 	}
 }

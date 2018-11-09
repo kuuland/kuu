@@ -37,4 +37,5 @@ type SchemaField struct {
 	Required bool
 	Default  interface{}
 	Tags     map[string]string
+	IsArray  bool
 }
