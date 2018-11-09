@@ -26,7 +26,7 @@ func init() {
 
 func setLogOut(filePath string) {
 	if logsDir == "" {
-		config, err := ParseLocalConfig()
+		config, err := ParseKuuJSON()
 		if err == nil && config["logsDir"] != nil {
 			dir := config["logsDir"].(string)
 			if !path.IsAbs(dir) {

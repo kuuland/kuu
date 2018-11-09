@@ -13,11 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ROOT 应用运行根目录
-var ROOT string
-
-// ENV 应用运行环境
-var ENV string
+var (
+	// ROOT 应用运行根目录
+	ROOT string
+	// ENV 应用运行环境
+	ENV string
+	// Schemas 数据模型集合
+	Schemas = map[string]*Schema{}
+)
 
 var (
 	apps          = []*Kuu{}
@@ -46,20 +49,24 @@ type H map[string]interface{}
 // Kuu 是框架的实例，它包含系统配置、数据模型等信息
 type Kuu struct {
 	*gin.Engine
-	Config  H
-	Name    string
-	Schemas map[string]*Schema
+	Config H
+	Name   string
 }
 
-// Model 模型注册
-func (k *Kuu) Model(args ...interface{}) {
+// GetSchema 获取模型信息
+func GetSchema(name string) *Schema {
+	return Schemas[name]
+}
+
+// RegisterModel 模型注册
+func RegisterModel(args ...interface{}) {
 	for _, m := range args {
 		v := reflect.ValueOf(m)
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		} else {
 			panic(`Model only accepts pointer. Example:
-			Use: kuu.Model(&Struct{}) instead of kuu.Model(Struct{})
+			Use: kuu.RegisterModel(&Struct{}) instead of kuu.RegisterModel(Struct{})
 		`)
 		}
 		// 判断是否实现了配置接口
@@ -86,6 +93,17 @@ func (k *Kuu) Model(args ...interface{}) {
 			schema.Collection = config["collection"].(string)
 		} else {
 			schema.Collection = schema.Name
+		}
+		if config["adapter"] != nil {
+			if s, ok := config["adapter"].(IModel); ok {
+				schema.Adapter = s
+			}
+		}
+		if schema.Adapter == nil && ModelAdapter != nil {
+			schema.Adapter = ModelAdapter
+		}
+		if schema.Adapter == nil {
+			panic("Please register 'kuu.ModelAdapter' before using 'kuu.RegisterModel'")
 		}
 		schema.Config = config
 		for i := 0; i < v.NumField(); i++ {
@@ -117,13 +135,13 @@ func (k *Kuu) Model(args ...interface{}) {
 			}
 			schema.Fields[i] = sField
 		}
-		k.Schemas[schema.Name] = schema
-		Emit("OnModel", k, schema, config)
+		Schemas[schema.Name] = schema
+		Emit("OnModel", schema, config)
 	}
 }
 
-// ParseLocalConfig 加载本地配置文件中的配置信息
-func ParseLocalConfig() (H, error) {
+// ParseKuuJSON 加载本地配置文件中的配置信息
+func ParseKuuJSON() (H, error) {
 	path := os.Getenv("KUU_CONFIG")
 	if path == "" || !strings.HasSuffix(path, ".json") {
 		path = "kuu.json"
@@ -144,7 +162,7 @@ func ParseLocalConfig() (H, error) {
 }
 
 func (k *Kuu) loadConfigFile() {
-	config, err := ParseLocalConfig()
+	config, err := ParseKuuJSON()
 	if err != nil {
 		Error(err)
 		return
@@ -167,7 +185,7 @@ func (k *Kuu) loadMods() {
 	}
 	// 挂载模块模型
 	for _, m := range modModels {
-		k.Model(m)
+		RegisterModel(m)
 	}
 }
 
@@ -181,8 +199,7 @@ func (k *Kuu) Run(addr ...string) (err error) {
 func New(cfg ...H) *Kuu {
 	config := resolveConfig(cfg)
 	k := Kuu{
-		Engine:  gin.New(),
-		Schemas: make(map[string]*Schema),
+		Engine: gin.New(),
 	}
 	k.Use(gin.Logger(), gin.Recovery())
 	if config == nil {

@@ -1,4 +1,4 @@
-package mongo
+package rest
 
 import (
 	"encoding/json"
@@ -6,18 +6,45 @@ import (
 	"strconv"
 	"strings"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 	"github.com/kuuland/kuu"
 )
 
 var (
+	k               *kuu.Kuu
 	defaultMessages = map[string]string{
-		"request_error": "Request failed.",
+		"request_error":    "Request failed.",
 		"entity_not_exist": "Entity does not exist.",
 	}
 )
+
+const (
+	// ALL 全量模式
+	ALL = "ALL"
+	// PAGE 分页模式
+	PAGE = "PAGE"
+)
+
+// Params 定义了查询参数常用结构
+type Params struct {
+	ID      string
+	Page    int
+	Size    int
+	Range   string
+	Sort    []string
+	Project map[string]int
+	Cond    kuu.H
+}
+
+func init() {
+	kuu.On("OnNew", func(args ...interface{}) {
+		k = args[0].(*kuu.Kuu)
+	})
+	kuu.On("OnModel", func(args ...interface{}) {
+		schema := args[0].(*kuu.Schema)
+		MountAll(k, schema.Name)
+	})
+}
 
 // ParseParams 解析请求上线文
 func ParseParams(c *gin.Context) *Params {
@@ -109,39 +136,30 @@ func MountAll(k *kuu.Kuu, name string) {
 }
 
 func setCreatedBy(c *gin.Context, docs []kuu.H) []kuu.H {
-	var jwtData jwt.MapClaims
+	var jwtData kuu.H
 	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-		jwtData = value.(jwt.MapClaims)
+		kuu.JSONConvert(&value, &jwtData)
 	}
 	for _, item := range docs {
 		if jwtData != nil && jwtData["_id"] != nil {
-			createdBy := jwtData["_id"]
-			switch createdBy.(type) {
-			case string:
-				createdBy = bson.ObjectIdHex(createdBy.(string))
-			case bson.ObjectId:
-				createdBy = createdBy.(bson.ObjectId)
-			}
-			item["CreatedBy"] = createdBy
+			item["CreatedBy"] = jwtData["_id"]
 		}
 	}
 	return docs
 }
 
 func setUpdatedBy(c *gin.Context, data kuu.H) kuu.H {
-	var jwtData jwt.MapClaims
+	var jwtData kuu.H
 	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-		jwtData = value.(jwt.MapClaims)
+		kuu.JSONConvert(&value, &jwtData)
 	}
 	if data["UpdatedBy"] == nil && jwtData != nil && jwtData["_id"] != nil {
-		updatedBy := jwtData["_id"]
-		switch updatedBy.(type) {
-		case string:
-			updatedBy = bson.ObjectIdHex(updatedBy.(string))
-		case bson.ObjectId:
-			updatedBy = updatedBy.(bson.ObjectId)
-		}
-		data["UpdatedBy"] = updatedBy
+		data["UpdatedBy"] = jwtData["_id"]
 	}
 	return data
+}
+
+// All 导出模块
+func All() *kuu.Mod {
+	return &kuu.Mod{}
 }

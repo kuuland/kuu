@@ -26,16 +26,6 @@ const (
 	ResourceEffectData
 )
 
-// Model 定义了数据模型的一些基本字段
-type Model struct {
-	CreatedBy interface{} `name:"创建人"`
-	CreatedAt time.Time   `name:"创建时间"`
-	UpdatedBy interface{} `name:"修改人"`
-	UpdatedAt time.Time   `name:"修改时间"`
-	IsDeleted bool        `name:"是否已删除"`
-	Remark    string      `name:"备注"`
-}
-
 // User 用户数据模型
 type User struct {
 	Username string    `name:"账号" required:"true"`

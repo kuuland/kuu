@@ -1,30 +1,26 @@
-package mongo
+package rest
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/kuuland/kuu"
 )
 
 // ID 定义了ID查询路由接口
 func ID(k *kuu.Kuu, name string) func(*gin.Context) {
-	schema := k.Schemas[name]
+	schema := kuu.GetSchema(name)
 	handler := func(c *gin.Context) {
+		scope := &Scope{
+			Context: c,
+		}
 		// 参数处理
 		p := ParseParams(c)
-		id := p.ID
 		// 执行查询
-		m := Model{
-			Name: name,
-			QueryHook: func(query *mgo.Query) {
-				// 触发前置钩子
-				if s, ok := schema.Origin.(IPreRestID); ok {
-					id = s.PreRestID(c, id, p)
-				}
-			},
-		}
+		m := kuu.Model(name)
+		scope.Params = p
+		scope.Model = m
+		scope.CallMethod(BeforeIDEnum, schema)
 		// 构造返回
 		var data kuu.H
 		err := m.ID(p, &data)
@@ -33,11 +29,11 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 			c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "entity_not_exist")))
 			return
 		}
-		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestID); ok {
-			s.PostRestID(c, &data)
-		}
-		c.JSON(http.StatusOK, kuu.StdOK(data))
+		// 构造返回
+		res := kuu.StdOK(data)
+		scope.ResponseData = &res
+		scope.CallMethod(AfterIDEnum, schema)
+		c.JSON(http.StatusOK, res)
 	}
 	return handler
 }

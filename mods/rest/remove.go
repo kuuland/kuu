@@ -1,7 +1,6 @@
-package mongo
+package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,8 +9,11 @@ import (
 
 // Remove 定义了删除路由接口
 func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
-	schema := k.Schemas[name]
+	schema := kuu.GetSchema(name)
 	handler := func(c *gin.Context) {
+		scope := &Scope{
+			Context: c,
+		}
 		// 参数处理
 		var body kuu.H
 		if err := kuu.CopyBody(c, &body); err != nil {
@@ -23,43 +25,37 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 			doc  = kuu.H{}
 			all  = false
 		)
-		if b, e := json.Marshal(body["cond"]); e == nil {
-			json.Unmarshal(b, &cond)
-		}
+		kuu.JSONConvert(body["cond"], &cond)
 		if body["all"] != nil {
 			all = body["all"].(bool)
 		}
+		doc = setUpdatedBy(c, doc)
 		// 执行查询
-		m := Model{
-			Name:      name,
-			QueryHook: nil,
-		}
-		// 触发前置钩子
-		if s, ok := schema.Origin.(IPreRestRemove); ok {
-			s.PreRestRemove(c, &cond, all)
-		}
+		m := kuu.Model(name)
+		scope.Model = m
+		scope.RemoveCond = &cond
+		scope.RemoveDoc = &doc
+		scope.RemoveAll = all
 		var (
 			err  error
 			data interface{}
 		)
-		doc = setUpdatedBy(c, doc)
+		scope.CallMethod(BeforeRemoveEnum, schema)
 		if all == true {
 			data, err = m.RemoveAllWithData(cond, doc)
 		} else {
 			err = m.RemoveWithData(cond, doc)
 			data = body
 		}
-
 		if err != nil {
 			handleError(err, c)
 			return
 		}
-		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestRemove); ok {
-			s.PostRestRemove(c, &data)
-		}
 		// 构造返回
-		c.JSON(http.StatusOK, kuu.StdOK(data))
+		res := kuu.StdOK(data)
+		scope.ResponseData = &res
+		scope.CallMethod(AfterRemoveEnum, schema)
+		c.JSON(http.StatusOK, res)
 	}
 	return handler
 }

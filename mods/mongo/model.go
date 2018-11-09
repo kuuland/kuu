@@ -30,13 +30,37 @@ type Params struct {
 
 // Model 基于Mongo的模型操作实现
 type Model struct {
-	Name      string
-	QueryHook func(query *mgo.Query)
-	Session   *mgo.Session
+	schema     *kuu.Schema
+	Scope      *Scope
+	Collection string
+	Name       string
+	Session    *mgo.Session
+}
+
+// New 实现New接口
+func (m *Model) New(schema *kuu.Schema) kuu.IModel {
+	n := &Model{
+		schema:     schema,
+		Name:       schema.Name,
+		Collection: schema.Name,
+	}
+	if schema.Collection != "" {
+		n.Collection = schema.Collection
+	}
+	return n
+}
+
+// Schema 实现Schema接口
+func (m *Model) Schema() *kuu.Schema {
+	return m.schema
 }
 
 // Create 实现新增（支持传入单个或者数组）
 func (m *Model) Create(data interface{}) ([]interface{}, error) {
+	m.Scope = &Scope{
+		Operation: "Create",
+		Cache:     make(kuu.H),
+	}
 	docs := []interface{}{}
 	if kuu.IsArray(data) {
 		kuu.JSONConvert(data, &docs)
@@ -50,15 +74,31 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		kuu.JSONConvert(item, &doc)
 		doc["_id"] = bson.NewObjectId()
 		doc["CreatedAt"] = time.Now()
+		if doc["CreatedBy"] != nil {
+			switch doc["CreatedBy"].(type) {
+			case string:
+				doc["CreatedBy"] = bson.ObjectIdHex(doc["CreatedBy"].(string))
+			case bson.ObjectId:
+				doc["CreatedBy"] = doc["CreatedBy"].(bson.ObjectId)
+			}
+		}
+
 		docs[index] = doc
 	}
-	C := C(m.Name)
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
+	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
+	m.Scope.CallMethod(BeforeCreateEnum, m.schema)
 	err := C.Insert(docs...)
+	m.Scope.CallMethod(AfterCreateEnum, m.schema)
+	m.Scope.CallMethod(AfterSaveEnum, m.schema)
 	return docs, err
 }
 
@@ -187,6 +227,10 @@ func (m *Model) UpdateAll(selector interface{}, data interface{}) (interface{}, 
 
 // List 实现列表查询
 func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
+	m.Scope = &Scope{
+		Operation: "List",
+		Cache:     make(kuu.H),
+	}
 	p := &Params{}
 	kuu.JSONConvert(a, p)
 	// 参数加工
@@ -221,13 +265,17 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 		}
 	}
 
-	C := C(m.Name)
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
 	query := C.Find(p.Cond)
+	m.Scope.Query = query
 	totalRecords, err := query.Count()
 	if err != nil {
 		return nil, err
@@ -239,14 +287,12 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 		query.Skip((p.Page - 1) * p.Size).Limit(p.Size)
 	}
 	query.Sort(p.Sort...)
-	if m.QueryHook != nil {
-		m.QueryHook(query)
-	}
-	result := []kuu.H{}
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
+	var result []kuu.H
 	if err := query.All(&result); err != nil {
 		return nil, err
 	}
-	kuu.JSONConvert(result, list)
+	kuu.JSONConvert(&result, list)
 	data := kuu.H{
 		"list":         list,
 		"totalrecords": totalRecords,
@@ -269,14 +315,19 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Range != "" {
 		data["range"] = p.Range
 	}
+	m.Scope.CallMethod(AfterFindEnum, m.schema)
 	return data, nil
 }
 
 // ID 实现ID查询（支持传入“string”、“bson.ObjectId”和“&mongo.Params”三种类型的数据）
 func (m *Model) ID(id interface{}, data interface{}) error {
+	m.Scope = &Scope{
+		Operation: "ID",
+		Cache:     make(kuu.H),
+	}
 	p := &Params{}
 	switch id.(type) {
-	case *Params:
+	case Params:
 		p = id.(*Params)
 	case bson.ObjectId:
 		p = &Params{
@@ -290,104 +341,163 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
-	C := C(m.Name)
+	if p.ID == "" {
+		kuu.JSONConvert(id, p)
+	}
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
 	v := p.ID
 	query := C.FindId(bson.ObjectIdHex(v))
+	m.Scope.Query = query
 	if p.Project != nil {
 		query.Select(p.Project)
 	}
-	if m.QueryHook != nil {
-		m.QueryHook(query)
-	}
 	result := kuu.H{}
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	err := query.One(result)
 	if err == nil {
 		kuu.JSONConvert(result, data)
 	}
+	m.Scope.CallMethod(AfterFindEnum, m.schema)
 	return err
 }
 
 // One 实现单个查询
 func (m *Model) One(a interface{}, data interface{}) error {
+	m.Scope = &Scope{
+		Operation: "One",
+		Cache:     make(kuu.H),
+	}
 	p := &Params{}
 	kuu.JSONConvert(a, p)
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
-	C := C(m.Name)
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
 	query := C.Find(p.Cond)
+	m.Scope.Query = query
 	if p.Project != nil {
 		query.Select(p.Project)
 	}
-	if m.QueryHook != nil {
-		m.QueryHook(query)
-	}
 	result := kuu.H{}
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	err := query.One(result)
 	if err == nil {
 		kuu.JSONConvert(result, data)
 	}
+	m.Scope.CallMethod(AfterFindEnum, m.schema)
 	return err
 }
 
-func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (interface{}, error) {
-	C := C(m.Name)
+func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err error) {
+	m.Scope = &Scope{
+		Operation: "Remove",
+		Cache:     make(kuu.H),
+	}
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
 	if doc == nil {
 		doc = make(kuu.H)
 	}
 	doc["IsDeleted"] = true
 	doc["UpdatedAt"] = time.Now()
-	cond = checkObjectID(cond)
+	if doc["UpdatedBy"] != nil {
+		switch doc["UpdatedBy"].(type) {
+		case string:
+			doc["UpdatedBy"] = bson.ObjectIdHex(doc["UpdatedBy"].(string))
+		case bson.ObjectId:
+			doc["UpdatedBy"] = doc["UpdatedBy"].(bson.ObjectId)
+		}
+	}
+	cond = checkID(cond)
 	doc = checkUpdateSet(doc)
+	m.Scope.CallMethod(BeforeRemoveEnum, m.schema)
 	if all {
-		return C.UpdateAll(cond, doc)
+		ret, err = C.UpdateAll(cond, doc)
 	}
-	return nil, C.Update(cond, doc)
+	err = C.Update(cond, doc)
+	m.Scope.CallMethod(AfterRemoveEnum, m.schema)
+	return ret, err
 }
 
-func (m *Model) phyRemove(cond kuu.H, all bool) (interface{}, error) {
-	C := C(m.Name)
+func (m *Model) phyRemove(cond kuu.H, all bool) (ret interface{}, err error) {
+	m.Scope = &Scope{
+		Operation: "PhyRemove",
+		Cache:     make(kuu.H),
+	}
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
-	cond = checkObjectID(cond)
+	cond = checkID(cond)
+	m.Scope.CallMethod(BeforePhyRemoveEnum, m.schema)
 	if all {
-		return C.RemoveAll(cond)
+		ret, err = C.RemoveAll(cond)
 	}
-	return nil, C.Remove(cond)
+	err = C.Remove(cond)
+	m.Scope.CallMethod(AfterPhyRemoveEnum, m.schema)
+	return ret, err
 }
 
-func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (interface{}, error) {
-	C := C(m.Name)
+func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err error) {
+	m.Scope = &Scope{
+		Operation: "Update",
+		Cache:     make(kuu.H),
+	}
+	C := C(m.Collection)
 	m.Session = C.Database.Session
+	m.Scope.Session = m.Session
+	m.Scope.Collection = C
 	defer func() {
 		C.Database.Session.Close()
 		m.Session = nil
+		m.Scope = nil
 	}()
 	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
-	cond = checkObjectID(cond)
-	doc = checkUpdateSet(doc)
-	if all {
-		return C.UpdateAll(cond, doc)
+	if doc["UpdatedBy"] != nil {
+		switch doc["UpdatedBy"].(type) {
+		case string:
+			doc["UpdatedBy"] = bson.ObjectIdHex(doc["UpdatedBy"].(string))
+		case bson.ObjectId:
+			doc["UpdatedBy"] = doc["UpdatedBy"].(bson.ObjectId)
+		}
 	}
-	return nil, C.Update(cond, doc)
+	cond = checkID(cond)
+	doc = checkUpdateSet(doc)
+	m.Scope.CallMethod(BeforeUpdateEnum, m.schema)
+	if all {
+		ret, err = C.UpdateAll(cond, doc)
+	}
+	err = C.Update(cond, doc)
+	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
+	return ret, err
 }
 
 func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
@@ -402,7 +512,7 @@ func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
 	return doc
 }
 
-func checkObjectID(cond kuu.H) kuu.H {
+func checkID(cond kuu.H) kuu.H {
 	if cond["_id"] != nil {
 		cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
 	}

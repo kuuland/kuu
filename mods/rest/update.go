@@ -1,4 +1,4 @@
-package mongo
+package rest
 
 import (
 	"net/http"
@@ -9,8 +9,11 @@ import (
 
 // Update 定义了修改路由接口
 func Update(k *kuu.Kuu, name string) func(*gin.Context) {
-	schema := k.Schemas[name]
+	schema := kuu.GetSchema(name)
 	handler := func(c *gin.Context) {
+		scope := &Scope{
+			Context: c,
+		}
 		// 参数处理
 		var body kuu.H
 		if err := kuu.CopyBody(c, &body); err != nil {
@@ -29,18 +32,16 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		doc = setUpdatedBy(c, doc)
 		// 执行查询
-		m := Model{
-			Name:      name,
-			QueryHook: nil,
-		}
-		// 触发前置钩子
-		if s, ok := schema.Origin.(IPreRestUpdate); ok {
-			s.PreRestUpdate(c, &cond, &doc, all)
-		}
+		m := kuu.Model(name)
+		scope.Model = m
+		scope.UpdateCond = &cond
+		scope.UpdateDoc = &doc
+		scope.UpdateAll = all
 		var (
 			err  error
 			data interface{}
 		)
+		scope.CallMethod(BeforeUpdateEnum, schema)
 		if all == true {
 			data, err = m.UpdateAll(cond, doc)
 		} else {
@@ -51,12 +52,11 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 			handleError(err, c)
 			return
 		}
-		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestUpdate); ok {
-			s.PostRestUpdate(c, &data)
-		}
 		// 构造返回
-		c.JSON(http.StatusOK, kuu.StdOK(data))
+		res := kuu.StdOK(data)
+		scope.ResponseData = &res
+		scope.CallMethod(AfterUpdateEnum, schema)
+		c.JSON(http.StatusOK, res)
 	}
 	return handler
 }

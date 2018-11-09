@@ -1,4 +1,4 @@
-package mongo
+package rest
 
 import (
 	"net/http"
@@ -9,8 +9,11 @@ import (
 
 // Create 定义了新增路由接口
 func Create(k *kuu.Kuu, name string) func(*gin.Context) {
-	schema := k.Schemas[name]
+	schema := kuu.GetSchema(name)
 	handler := func(c *gin.Context) {
+		scope := &Scope{
+			Context: c,
+		}
 		// 参数处理
 		var docs []kuu.H
 		if err := kuu.CopyBody(c, &docs); err != nil {
@@ -19,25 +22,21 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		}
 		docs = setCreatedBy(c, docs)
 		// 执行查询
-		m := Model{
-			Name:      name,
-			QueryHook: nil,
-		}
-		// 触发前置钩子
-		if s, ok := schema.Origin.(IPreRestCreate); ok {
-			s.PreRestCreate(c, &docs)
-		}
+		m := kuu.Model(name)
+		scope.Model = m
+		scope.CreateData = &docs
+		scope.CallMethod(BeforeCreateEnum, schema)
 		data, err := m.Create(docs)
 		if err != nil {
 			handleError(err, c)
 			return
 		}
-		// 触发后置钩子
-		if s, ok := schema.Origin.(IPostRestCreate); ok {
-			s.PostRestCreate(c, &docs)
-		}
+		kuu.JSONConvert(&data, scope.CreateData)
 		// 构造返回
-		c.JSON(http.StatusOK, kuu.StdOK(data))
+		res := kuu.StdOK(data)
+		scope.ResponseData = &res
+		scope.CallMethod(AfterCreateEnum, schema)
+		c.JSON(http.StatusOK, res)
 	}
 	return handler
 }
