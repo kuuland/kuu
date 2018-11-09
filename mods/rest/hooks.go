@@ -1,41 +1,41 @@
 package rest
 
-type IBeforeCreate interface {
-	BeforeCreate(*Scope) error
+type IBeforeCreateRoute interface {
+	BeforeCreateRoute(*Scope) error
 }
 
-type IAfterCreate interface {
-	AfterCreate(*Scope) error
+type IAfterCreateRoute interface {
+	AfterCreateRoute(*Scope) error
 }
 
-type IBeforeID interface {
-	BeforeID(*Scope) error
+type IBeforeIDRoute interface {
+	BeforeIDRoute(*Scope) error
 }
 
-type IAfterID interface {
-	AfterID(*Scope) error
+type IAfterIDRoute interface {
+	AfterIDRoute(*Scope) error
 }
 
-type IBeforeList interface {
-	BeforeList(*Scope) error
+type IBeforeListRoute interface {
+	BeforeListRoute(*Scope) error
 }
 
-type IAfterList interface {
-	AfterList(*Scope) error
+type IAfterListRoute interface {
+	AfterListRoute(*Scope) error
 }
 
-type IBeforeRemove interface {
-	BeforeRemove(*Scope) error
+type IBeforeRemoveRoute interface {
+	BeforeRemoveRoute(*Scope) error
 }
 
-type IAfterRemove interface {
-	AfterRemove(*Scope) error
+type IAfterRemoveRoute interface {
+	AfterRemoveRoute(*Scope) error
 }
 
-type IBeforeUpdate interface {
-	BeforeUpdate(*Scope) error
+type IBeforeUpdateRoute interface {
+	BeforeUpdateRoute(*Scope) error
 }
 
-type IAfterUpdate interface {
-	AfterUpdate(*Scope) error
+type IAfterUpdateRoute interface {
+	AfterUpdateRoute(*Scope) error
 }

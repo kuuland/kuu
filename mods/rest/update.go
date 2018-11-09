@@ -41,7 +41,7 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 			err  error
 			data interface{}
 		)
-		scope.CallMethod(BeforeUpdateEnum, schema)
+		scope.CallMethod(BeforeUpdateRouteEnum, schema)
 		if all == true {
 			data, err = m.UpdateAll(cond, doc)
 		} else {
@@ -55,7 +55,7 @@ func Update(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 构造返回
 		res := kuu.StdOK(data)
 		scope.ResponseData = &res
-		scope.CallMethod(AfterUpdateEnum, schema)
+		scope.CallMethod(AfterUpdateRouteEnum, schema)
 		c.JSON(http.StatusOK, res)
 	}
 	return handler

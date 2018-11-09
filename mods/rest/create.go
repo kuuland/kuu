@@ -25,7 +25,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		m := kuu.Model(name)
 		scope.Model = m
 		scope.CreateData = &docs
-		scope.CallMethod(BeforeCreateEnum, schema)
+		scope.CallMethod(BeforeCreateRouteEnum, schema)
 		data, err := m.Create(docs)
 		if err != nil {
 			handleError(err, c)
@@ -35,7 +35,7 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 构造返回
 		res := kuu.StdOK(data)
 		scope.ResponseData = &res
-		scope.CallMethod(AfterCreateEnum, schema)
+		scope.CallMethod(AfterCreateRouteEnum, schema)
 		c.JSON(http.StatusOK, res)
 	}
 	return handler

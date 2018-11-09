@@ -20,7 +20,7 @@ func List(k *kuu.Kuu, name string) func(*gin.Context) {
 		m := kuu.Model(name)
 		scope.Params = p
 		scope.Model = m
-		scope.CallMethod(BeforeListEnum, schema)
+		scope.CallMethod(BeforeListRouteEnum, schema)
 		var list []kuu.H
 		data, err := m.List(p, &list)
 		if err != nil {
@@ -30,7 +30,7 @@ func List(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 构造返回
 		res := kuu.StdOK(data)
 		scope.ResponseData = &res
-		scope.CallMethod(AfterListEnum, schema)
+		scope.CallMethod(AfterListRouteEnum, schema)
 		c.JSON(http.StatusOK, res)
 	}
 	return handler

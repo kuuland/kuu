@@ -40,7 +40,7 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 			err  error
 			data interface{}
 		)
-		scope.CallMethod(BeforeRemoveEnum, schema)
+		scope.CallMethod(BeforeRemoveRouteEnum, schema)
 		if all == true {
 			data, err = m.RemoveAllWithData(cond, doc)
 		} else {
@@ -54,7 +54,7 @@ func Remove(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 构造返回
 		res := kuu.StdOK(data)
 		scope.ResponseData = &res
-		scope.CallMethod(AfterRemoveEnum, schema)
+		scope.CallMethod(AfterRemoveRouteEnum, schema)
 		c.JSON(http.StatusOK, res)
 	}
 	return handler

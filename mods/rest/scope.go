@@ -6,16 +6,16 @@ import (
 )
 
 const (
-	BeforeCreateEnum = iota
-	BeforeUpdateEnum
-	AfterUpdateEnum
-	AfterCreateEnum
-	BeforeRemoveEnum
-	AfterRemoveEnum
-	BeforeListEnum
-	AfterListEnum
-	BeforeIDEnum
-	AfterIDEnum
+	BeforeCreateRouteEnum = iota
+	BeforeUpdateRouteEnum
+	AfterUpdateRouteEnum
+	AfterCreateRouteEnum
+	BeforeRemoveRouteEnum
+	AfterRemoveRouteEnum
+	BeforeListRouteEnum
+	AfterListRouteEnum
+	BeforeIDRouteEnum
+	AfterIDRouteEnum
 )
 
 type Scope struct {
@@ -35,45 +35,45 @@ type Scope struct {
 
 func (scope *Scope) CallMethod(action int, schema *kuu.Schema) (err error) {
 	switch action {
-	case BeforeCreateEnum:
-		if s, ok := schema.Origin.(IBeforeCreate); ok {
-			err = s.BeforeCreate(scope)
+	case BeforeCreateRouteEnum:
+		if s, ok := schema.Origin.(IBeforeCreateRoute); ok {
+			err = s.BeforeCreateRoute(scope)
 		}
-	case AfterCreateEnum:
-		if s, ok := schema.Origin.(IAfterCreate); ok {
-			err = s.AfterCreate(scope)
+	case AfterCreateRouteEnum:
+		if s, ok := schema.Origin.(IAfterCreateRoute); ok {
+			err = s.AfterCreateRoute(scope)
 		}
-	case BeforeUpdateEnum:
-		if s, ok := schema.Origin.(IBeforeUpdate); ok {
-			err = s.BeforeUpdate(scope)
+	case BeforeUpdateRouteEnum:
+		if s, ok := schema.Origin.(IBeforeUpdateRoute); ok {
+			err = s.BeforeUpdateRoute(scope)
 		}
-	case AfterUpdateEnum:
-		if s, ok := schema.Origin.(IAfterUpdate); ok {
-			err = s.AfterUpdate(scope)
+	case AfterUpdateRouteEnum:
+		if s, ok := schema.Origin.(IAfterUpdateRoute); ok {
+			err = s.AfterUpdateRoute(scope)
 		}
-	case BeforeRemoveEnum:
-		if s, ok := schema.Origin.(IBeforeRemove); ok {
-			err = s.BeforeRemove(scope)
+	case BeforeRemoveRouteEnum:
+		if s, ok := schema.Origin.(IBeforeRemoveRoute); ok {
+			err = s.BeforeRemoveRoute(scope)
 		}
-	case AfterRemoveEnum:
-		if s, ok := schema.Origin.(IAfterRemove); ok {
-			err = s.AfterRemove(scope)
+	case AfterRemoveRouteEnum:
+		if s, ok := schema.Origin.(IAfterRemoveRoute); ok {
+			err = s.AfterRemoveRoute(scope)
 		}
-	case BeforeListEnum:
-		if s, ok := schema.Origin.(IBeforeList); ok {
-			err = s.BeforeList(scope)
+	case BeforeListRouteEnum:
+		if s, ok := schema.Origin.(IBeforeListRoute); ok {
+			err = s.BeforeListRoute(scope)
 		}
-	case AfterListEnum:
-		if s, ok := schema.Origin.(IAfterList); ok {
-			err = s.AfterList(scope)
+	case AfterListRouteEnum:
+		if s, ok := schema.Origin.(IAfterListRoute); ok {
+			err = s.AfterListRoute(scope)
 		}
-	case BeforeIDEnum:
-		if s, ok := schema.Origin.(IBeforeID); ok {
-			err = s.BeforeID(scope)
+	case BeforeIDRouteEnum:
+		if s, ok := schema.Origin.(IBeforeIDRoute); ok {
+			err = s.BeforeIDRoute(scope)
 		}
-	case AfterIDEnum:
-		if s, ok := schema.Origin.(IAfterID); ok {
-			err = s.AfterID(scope)
+	case AfterIDRouteEnum:
+		if s, ok := schema.Origin.(IAfterIDRoute); ok {
+			err = s.AfterIDRoute(scope)
 		}
 	}
 	return err

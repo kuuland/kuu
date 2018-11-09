@@ -20,7 +20,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		m := kuu.Model(name)
 		scope.Params = p
 		scope.Model = m
-		scope.CallMethod(BeforeIDEnum, schema)
+		scope.CallMethod(BeforeIDRouteEnum, schema)
 		// 构造返回
 		var data kuu.H
 		err := m.ID(p, &data)
@@ -32,7 +32,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		// 构造返回
 		res := kuu.StdOK(data)
 		scope.ResponseData = &res
-		scope.CallMethod(AfterIDEnum, schema)
+		scope.CallMethod(AfterIDRouteEnum, schema)
 		c.JSON(http.StatusOK, res)
 	}
 	return handler
