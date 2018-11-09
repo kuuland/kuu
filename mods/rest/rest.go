@@ -159,7 +159,20 @@ func setUpdatedBy(c *gin.Context, data kuu.H) kuu.H {
 	return data
 }
 
+// MetadataHandler 元数据列表路由
+func MetadataHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, kuu.StdOK(kuu.Schemas))
+}
+
 // All 导出模块
 func All() *kuu.Mod {
-	return &kuu.Mod{}
+	return &kuu.Mod{
+		Routes: kuu.Routes{
+			kuu.RouteInfo{
+				Method:  "GET",
+				Path:    "/meta",
+				Handler: MetadataHandler,
+			},
+		},
+	}
 }

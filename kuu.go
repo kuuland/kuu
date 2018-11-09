@@ -109,7 +109,10 @@ func RegisterModel(args ...interface{}) {
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
 			tags := field.Tag
-			sField := &SchemaField{}
+			sField := &SchemaField{
+				Tags: make(map[string]string),
+			}
+			parseModelTags(sField, tags)
 			sField.Code = strings.ToLower(field.Name)
 			if tags.Get("name") != "" {
 				sField.Name = tags.Get("name")
@@ -137,6 +140,22 @@ func RegisterModel(args ...interface{}) {
 		}
 		Schemas[schema.Name] = schema
 		Emit("OnModel", schema, config)
+	}
+}
+
+func parseModelTags(field *SchemaField, tag reflect.StructTag) {
+	split := strings.Split(string(tag), " ")
+	for _, item := range split {
+		t := strings.Split(item, ":")
+		if t != nil && len(t) > 1 {
+			v, err := strconv.Unquote(t[1])
+			if err == nil {
+				field.Tags[t[0]] = v
+			} else {
+				field.Tags[t[0]] = t[1]
+			}
+
+		}
 	}
 }
 

@@ -1,9 +1,6 @@
 package mongo
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
 )
 
@@ -19,20 +16,7 @@ func init() {
 	})
 }
 
-// MetadataHandler 元数据列表路由
-func MetadataHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, kuu.StdOK(kuu.Schemas))
-}
-
 // All 模块声明
 func All() *kuu.Mod {
-	return &kuu.Mod{
-		Routes: kuu.Routes{
-			kuu.RouteInfo{
-				Method:  "GET",
-				Path:    "/meta",
-				Handler: MetadataHandler,
-			},
-		},
-	}
+	return &kuu.Mod{}
 }

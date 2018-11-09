@@ -36,4 +36,5 @@ type SchemaField struct {
 	Type     string
 	Required bool
 	Default  interface{}
+	Tags     map[string]string
 }
