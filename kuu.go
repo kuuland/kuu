@@ -123,6 +123,9 @@ func RegisterModel(args ...interface{}) {
 			if tags.Get("alias") != "" {
 				sField.Name = tags.Get("alias")
 			}
+			if tags.Get("join") != "" {
+				sField.JoinName, sField.JoinSelect = parseJoinSelect(tags.Get("join"))
+			}
 			if _, ok := sField.Tags["array"]; ok {
 				sField.IsArray = true
 			}
@@ -145,6 +148,31 @@ func RegisterModel(args ...interface{}) {
 		Schemas[schema.Name] = schema
 		Emit("OnModel", schema, config)
 	}
+}
+
+func parseJoinSelect(join string) (name string, s map[string]int) {
+	if join == "" {
+		return
+	}
+	start := strings.Index(join, "<")
+	end := strings.LastIndex(join, ">")
+	if start == -1 || end == -1 {
+		return
+	}
+	if raw := join[start+1 : end]; raw != "" {
+		name = join[0:start]
+		s = make(map[string]int)
+		fields := strings.Split(raw, ",")
+		for _, item := range fields {
+			v := 1
+			if strings.HasPrefix(item, "-") {
+				v = -1
+				item = item[1:len(item)]
+			}
+			s[item] = v
+		}
+	}
+	return
 }
 
 func parseModelTags(field *SchemaField, tag reflect.StructTag) {

@@ -31,11 +31,13 @@ type Schema struct {
 
 // SchemaField 数据模型字段
 type SchemaField struct {
-	Code     string
-	Name     string
-	Type     string
-	Required bool
-	Default  interface{}
-	Tags     map[string]string
-	IsArray  bool
+	Code       string
+	Name       string
+	Type       string
+	Required   bool
+	Default    interface{}
+	Tags       map[string]string
+	IsArray    bool
+	JoinName   string
+	JoinSelect map[string]int
 }
