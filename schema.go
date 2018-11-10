@@ -24,9 +24,9 @@ type Schema struct {
 	FullName    string
 	Collection  string
 	Fields      []*SchemaField
-	Origin      interface{}
+	Origin      interface{} `json:"-"`
 	Config      H
-	Adapter     IModel
+	Adapter     IModel `json:"-"`
 }
 
 // SchemaField 数据模型字段
