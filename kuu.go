@@ -114,23 +114,23 @@ func RegisterModel(args ...interface{}) {
 				IsArray: false,
 			}
 			parseModelTags(sField, tags)
-			sField.Code = strings.ToLower(field.Name)
-			if tags.Get("name") != "" {
+			sField.Code = field.Name
+			if sField.Tags["name"] != "" {
 				sField.Name = tags.Get("name")
 			} else {
 				sField.Name = sField.Code
 			}
-			if tags.Get("alias") != "" {
+			if sField.Tags["alias"] != "" {
 				sField.Name = tags.Get("alias")
 			}
-			if tags.Get("join") != "" {
+			if sField.Tags["join"] != "" {
 				sField.JoinName, sField.JoinSelect = parseJoinSelect(tags.Get("join"))
 			}
 			if _, ok := sField.Tags["array"]; ok {
 				sField.IsArray = true
 			}
 			sField.Default = tags.Get("default")
-			if tags.Get("type") != "" {
+			if sField.Tags["type"] != "" {
 				sField.Type = tags.Get("type")
 			} else {
 				sField.Type = field.Type.Name()
@@ -154,6 +154,7 @@ func parseJoinSelect(join string) (name string, s map[string]int) {
 	if join == "" {
 		return
 	}
+	name = join
 	start := strings.Index(join, "<")
 	end := strings.LastIndex(join, ">")
 	if start == -1 || end == -1 {
@@ -166,7 +167,7 @@ func parseJoinSelect(join string) (name string, s map[string]int) {
 		for _, item := range fields {
 			v := 1
 			if strings.HasPrefix(item, "-") {
-				v = -1
+				v = 0
 				item = item[1:len(item)]
 			}
 			s[item] = v

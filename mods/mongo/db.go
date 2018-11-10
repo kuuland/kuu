@@ -74,11 +74,15 @@ func S() *mgo.Session {
 }
 
 // C 获取集合对象
-func C(name string) *mgo.Collection {
+func C(name string, session ...*mgo.Session) *mgo.Collection {
 	if m := connections[defaultName]; m != nil {
-		if s := m.session.Clone(); s != nil {
-			return s.DB(m.UseDB).C(name)
+		var s *mgo.Session
+		if len(session) > 0 {
+			s = session[0]
+		} else {
+			s = m.session.Clone()
 		}
+		return s.DB(m.UseDB).C(name)
 	}
 	return nil
 }

@@ -42,10 +42,7 @@ func (m *Model) New(schema *kuu.Schema) kuu.IModel {
 	n := &Model{
 		schema:     schema,
 		Name:       schema.Name,
-		Collection: schema.Name,
-	}
-	if schema.Collection != "" {
-		n.Collection = schema.Collection
+		Collection: schema.Collection,
 	}
 	return n
 }
@@ -361,9 +358,10 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 	}
 	result := kuu.H{}
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
-	err := query.One(result)
+	err := query.One(&result)
 	if err == nil {
-		kuu.JSONConvert(result, data)
+		fillSingleJoin(m.Scope.Session, m.schema, p.Project, result)
+		kuu.JSONConvert(&result, data)
 	}
 	m.Scope.CallMethod(AfterFindEnum, m.schema)
 	return err
@@ -396,9 +394,9 @@ func (m *Model) One(a interface{}, data interface{}) error {
 	}
 	result := kuu.H{}
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
-	err := query.One(result)
+	err := query.One(&result)
 	if err == nil {
-		kuu.JSONConvert(result, data)
+		kuu.JSONConvert(&result, data)
 	}
 	m.Scope.CallMethod(AfterFindEnum, m.schema)
 	return err
@@ -527,3 +525,75 @@ func checkUpdateSet(doc kuu.H) kuu.H {
 	}
 	return doc
 }
+
+func fillSingleJoin(session *mgo.Session, schema *kuu.Schema, findSelect map[string]int, result kuu.H) {
+	fields := []*kuu.SchemaField{}
+	for _, field := range schema.Fields {
+		if field.JoinName == "" {
+			continue
+		}
+		if findSelect == nil {
+			fields = append(fields, field)
+		} else if _, ok := findSelect[field.Name]; ok {
+			fields = append(fields, field)
+		}
+	}
+	for _, field := range fields {
+		ret := joinFind(session, field, result[field.Code])
+		result[field.Code] = ret
+	}
+}
+
+func joinFind(session *mgo.Session, field *kuu.SchemaField, rawData interface{}) interface{} {
+	if session == nil || field == nil || rawData == nil {
+		return rawData
+	}
+	joinSchema := kuu.GetSchema(field.JoinName)
+	C := C(joinSchema.Collection, session)
+	var query *mgo.Query
+	if field.IsArray {
+		switch rawData.(type) {
+		case []string:
+			arr := []bson.ObjectId{}
+			for _, item := range rawData.([]string) {
+				arr = append(arr, bson.ObjectIdHex(item))
+			}
+			rawData = arr
+		case []bson.ObjectId:
+			rawData = rawData.([]bson.ObjectId)
+		}
+		query = C.Find(kuu.H{
+			"_id": kuu.H{
+				"$in": rawData,
+			},
+		})
+	} else {
+		switch rawData.(type) {
+		case string:
+			rawData = bson.ObjectIdHex(rawData.(string))
+		case bson.ObjectId:
+			rawData = rawData.(bson.ObjectId)
+		}
+		query = C.FindId(rawData)
+	}
+	if field.JoinSelect != nil {
+		query.Select(field.JoinSelect)
+	}
+	var result interface{}
+	if field.IsArray {
+		result = []kuu.H{}
+		query.All(&result)
+	} else {
+		result = kuu.H{}
+		query.One(&result)
+	}
+	return result
+}
+
+// 按查询方式：
+// 单个查询
+// 		单值字段
+//		数组字段
+// 列表查询
+//		单值字段
+//		数组字段
