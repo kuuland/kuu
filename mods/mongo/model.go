@@ -289,7 +289,8 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if err := query.All(&result); err != nil {
 		return nil, err
 	}
-	kuu.JSONConvert(&result, list)
+	listJoin(m.Scope.Session, m.schema, p.Project, result)
+	kuu.JSONConvert(result, list)
 	data := kuu.H{
 		"list":         list,
 		"totalrecords": totalRecords,
@@ -360,7 +361,7 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	err := query.One(&result)
 	if err == nil {
-		fillSingleJoin(m.Scope.Session, m.schema, p.Project, result)
+		oneJoin(m.Scope.Session, m.schema, p.Project, result)
 		kuu.JSONConvert(&result, data)
 	}
 	m.Scope.CallMethod(AfterFindEnum, m.schema)
@@ -396,6 +397,7 @@ func (m *Model) One(a interface{}, data interface{}) error {
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	err := query.One(&result)
 	if err == nil {
+		oneJoin(m.Scope.Session, m.schema, p.Project, result)
 		kuu.JSONConvert(&result, data)
 	}
 	m.Scope.CallMethod(AfterFindEnum, m.schema)
@@ -526,74 +528,230 @@ func checkUpdateSet(doc kuu.H) kuu.H {
 	return doc
 }
 
-func fillSingleJoin(session *mgo.Session, schema *kuu.Schema, findSelect map[string]int, result kuu.H) {
+func listJoin(session *mgo.Session, schema *kuu.Schema, project map[string]int, list []kuu.H) {
+	fields := getJoinFields(schema, project)
+	for _, field := range fields {
+		// 拼装查询条件
+		arr := []bson.ObjectId{}
+		for _, result := range list {
+			rawData := result[field.Code]
+			if rawData == nil {
+				continue
+			}
+			if field.IsArray {
+				var itemArr []bson.ObjectId
+				switch rawData.(type) {
+				case []string:
+					for _, item := range rawData.([]string) {
+						id := bson.ObjectIdHex(item)
+						if id != "" {
+							arr = append(arr, id)
+							itemArr = append(itemArr, id)
+						}
+					}
+				case []bson.ObjectId:
+					for _, item := range rawData.([]bson.ObjectId) {
+						id := item
+						arr = append(arr, id)
+						itemArr = append(itemArr, id)
+					}
+				case []interface{}:
+					for _, item := range rawData.([]interface{}) {
+						var id bson.ObjectId
+						switch item.(type) {
+						case bson.ObjectId:
+							id = item.(bson.ObjectId)
+						case string:
+							id = bson.ObjectIdHex(item.(string))
+						}
+						if id != "" {
+							arr = append(arr, id)
+							itemArr = append(itemArr, id)
+						}
+					}
+				}
+				result[field.Code] = itemArr
+			} else {
+				var id bson.ObjectId
+				switch rawData.(type) {
+				case bson.ObjectId:
+					id = rawData.(bson.ObjectId)
+				case string:
+					id = bson.ObjectIdHex(rawData.(string))
+				}
+				if id != "" {
+					arr = append(arr, id)
+					result[field.Code] = id
+				}
+			}
+		}
+		if len(arr) == 0 {
+			continue
+		}
+		// 执行查询
+		var ret []kuu.H
+		findJoinData(session, field, kuu.H{
+			"_id": kuu.H{
+				"$in": arr,
+			},
+		}, &ret)
+		// 逐条填充引用数据
+		hexMap := getHexMap(ret)
+		for _, result := range list {
+			if result[field.Code] == nil {
+				continue
+			}
+			if field.IsArray {
+				if s, ok := (result[field.Code]).([]bson.ObjectId); ok {
+					l := make([]interface{}, len(s))
+					for i, item := range s {
+						key := item.Hex()
+						if key == "" {
+							l[i] = item
+						} else {
+							l[i] = hexMap[key]
+						}
+					}
+					result[field.Code] = l
+				}
+			} else {
+				if s, ok := (result[field.Code]).(bson.ObjectId); ok {
+					if s != "" {
+						result[field.Code] = hexMap[s.Hex()]
+					}
+				}
+			}
+		}
+	}
+}
+
+func oneJoin(session *mgo.Session, schema *kuu.Schema, project map[string]int, result kuu.H) {
+	fields := getJoinFields(schema, project)
+	for _, field := range fields {
+		// 拼装查询条件
+		rawData := result[field.Code]
+		if rawData == nil {
+			continue
+		}
+		arr := []bson.ObjectId{}
+		if field.IsArray {
+			var itemArr []bson.ObjectId
+			switch rawData.(type) {
+			case []string:
+				for _, item := range rawData.([]string) {
+					id := bson.ObjectIdHex(item)
+					if id != "" {
+						arr = append(arr, id)
+						itemArr = append(itemArr, id)
+					}
+				}
+			case []bson.ObjectId:
+				for _, item := range rawData.([]bson.ObjectId) {
+					id := item
+					arr = append(arr, id)
+					itemArr = append(itemArr, id)
+				}
+			case []interface{}:
+				for _, item := range rawData.([]interface{}) {
+					var id bson.ObjectId
+					switch item.(type) {
+					case bson.ObjectId:
+						id = item.(bson.ObjectId)
+					case string:
+						id = bson.ObjectIdHex(item.(string))
+					}
+					if id != "" {
+						arr = append(arr, id)
+						itemArr = append(itemArr, id)
+					}
+				}
+			}
+			result[field.Code] = itemArr
+		} else {
+			var id bson.ObjectId
+			switch rawData.(type) {
+			case bson.ObjectId:
+				id = rawData.(bson.ObjectId)
+			case string:
+				id = bson.ObjectIdHex(rawData.(string))
+			}
+			if id != "" {
+				arr = append(arr, id)
+				result[field.Code] = id
+			}
+		}
+		// 执行查询
+		var ret []kuu.H
+		findJoinData(session, field, kuu.H{
+			"_id": kuu.H{
+				"$in": arr,
+			},
+		}, &ret)
+		// 替换引用数据
+		hexMap := getHexMap(ret)
+		if field.IsArray {
+			if s, ok := (result[field.Code]).([]bson.ObjectId); ok {
+				l := make([]interface{}, len(s))
+				for i, item := range s {
+					key := item.Hex()
+					if key == "" {
+						l[i] = item
+					} else {
+						l[i] = hexMap[key]
+					}
+				}
+				result[field.Code] = l
+			}
+		} else {
+			if s, ok := (result[field.Code]).(bson.ObjectId); ok {
+				if s != "" {
+					result[field.Code] = hexMap[s.Hex()]
+				}
+			}
+		}
+		result[field.Code] = ret
+	}
+}
+
+func getJoinFields(schema *kuu.Schema, project map[string]int) []*kuu.SchemaField {
 	fields := []*kuu.SchemaField{}
 	for _, field := range schema.Fields {
 		if field.JoinName == "" {
 			continue
 		}
-		if findSelect == nil {
+		if project == nil {
 			fields = append(fields, field)
-		} else if _, ok := findSelect[field.Name]; ok {
+		} else if _, ok := project[field.Name]; ok {
 			fields = append(fields, field)
 		}
 	}
-	for _, field := range fields {
-		ret := joinFind(session, field, result[field.Code])
-		result[field.Code] = ret
-	}
+	return fields
 }
 
-func joinFind(session *mgo.Session, field *kuu.SchemaField, rawData interface{}) interface{} {
-	if session == nil || field == nil || rawData == nil {
-		return rawData
+// 查询引用数据
+func findJoinData(session *mgo.Session, field *kuu.SchemaField, selector interface{}, result *[]kuu.H) {
+	if session == nil || field == nil {
+		return
 	}
 	joinSchema := kuu.GetSchema(field.JoinName)
 	C := C(joinSchema.Collection, session)
-	var query *mgo.Query
-	if field.IsArray {
-		switch rawData.(type) {
-		case []string:
-			arr := []bson.ObjectId{}
-			for _, item := range rawData.([]string) {
-				arr = append(arr, bson.ObjectIdHex(item))
-			}
-			rawData = arr
-		case []bson.ObjectId:
-			rawData = rawData.([]bson.ObjectId)
-		}
-		query = C.Find(kuu.H{
-			"_id": kuu.H{
-				"$in": rawData,
-			},
-		})
-	} else {
-		switch rawData.(type) {
-		case string:
-			rawData = bson.ObjectIdHex(rawData.(string))
-		case bson.ObjectId:
-			rawData = rawData.(bson.ObjectId)
-		}
-		query = C.FindId(rawData)
-	}
+	query := C.Find(selector)
 	if field.JoinSelect != nil {
+		if s, ok := field.JoinSelect["_id"]; ok && s == 0 {
+			delete(field.JoinSelect, "_id")
+		}
 		query.Select(field.JoinSelect)
 	}
-	var result interface{}
-	if field.IsArray {
-		result = []kuu.H{}
-		query.All(&result)
-	} else {
-		result = kuu.H{}
-		query.One(&result)
-	}
-	return result
+	query.All(result)
+	return
 }
 
-// 按查询方式：
-// 单个查询
-// 		单值字段
-//		数组字段
-// 列表查询
-//		单值字段
-//		数组字段
+func getHexMap(ret []kuu.H) kuu.H {
+	hexMap := kuu.H{}
+	for _, item := range ret {
+		if s, ok := item["_id"].(bson.ObjectId); ok {
+			hexMap[s.Hex()] = item
+		}
+	}
+	return hexMap
+}
