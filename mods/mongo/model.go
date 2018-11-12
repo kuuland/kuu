@@ -79,7 +79,7 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 				doc["CreatedBy"] = doc["CreatedBy"].(bson.ObjectId)
 			}
 		}
-
+		//transformJoinDataWhenSave(doc, m.schema)
 		docs[index] = doc
 	}
 	C := C(m.Collection)
@@ -754,4 +754,68 @@ func getHexMap(ret []kuu.H) kuu.H {
 		}
 	}
 	return hexMap
+}
+
+func transformJoinDataWhenSave(doc kuu.H, schema *kuu.Schema) {
+	fields := getJoinFields(schema, nil)
+	for _, field := range fields {
+		rawData := doc[field.Code]
+		if rawData == nil {
+			continue
+		}
+		if field.IsArray {
+			rawD := rawData.([]interface{})
+			newD := []bson.ObjectId{}
+			for _, t := range rawD {
+				var item kuu.H
+				kuu.JSONConvert(t, item)
+				if item == nil {
+					continue
+				}
+				if item["_id"] != "" {
+					var id bson.ObjectId
+					switch item["_id"].(type) {
+					case string:
+						id = bson.ObjectIdHex(item["_id"].(string))
+
+					case bson.ObjectId:
+						id = item["_id"].(bson.ObjectId)
+					}
+					if id != "" {
+						newD = append(newD, id)
+					}
+				}
+			}
+			doc[field.Code] = newD
+		} else {
+			var item kuu.H
+			kuu.JSONConvert(rawData, item)
+			if item == nil {
+				continue
+			}
+			var id bson.ObjectId
+			if item["_id"] != "" {
+				switch item["_id"].(type) {
+				case string:
+					id = bson.ObjectIdHex(item["_id"].(string))
+
+				case bson.ObjectId:
+					id = item["_id"].(bson.ObjectId)
+				}
+			}
+			doc[field.Code] = id
+		}
+	}
+}
+
+// TODO transformJoinDataOnSave
+// object => _id or []object => []_id
+func transformJoinDataOnSave() {
+
+}
+
+// TODO transformJoinDataOnQuery
+// _id => object._id or []_id  => []object._id
+func transformJoinDataOnQuery() {
+
 }
