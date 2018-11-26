@@ -38,7 +38,7 @@ func Model(name string) IModel {
 
 // Op 获取操作实例（实时解析）
 func Op(m interface{}) IModel {
-	schema, _ := parseSchema(m)
+	schema := parseSchema(m)
 	if schema != nil {
 		return Model(schema.Name)
 	}

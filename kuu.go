@@ -61,13 +61,13 @@ func GetSchema(name string) *Schema {
 // RegisterModel 模型注册
 func RegisterModel(args ...interface{}) {
 	for _, m := range args {
-		schema, config := parseSchema(m)
+		schema := parseSchema(m)
 		Schemas[schema.Name] = schema
-		Emit("OnModel", schema, config)
+		Emit("OnModel", schema, schema.Config)
 	}
 }
 
-func parseSchema(m interface{}) (*Schema, H) {
+func parseSchema(m interface{}) *Schema {
 	v := reflect.ValueOf(m)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -165,7 +165,7 @@ func parseSchema(m interface{}) (*Schema, H) {
 	if schema.Adapter == nil {
 		panic("Please register 'kuu.ModelAdapter' before using 'kuu.RegisterModel'")
 	}
-	return schema, config
+	return schema
 }
 
 func parseJoinSelect(join string) (name string, s map[string]int) {

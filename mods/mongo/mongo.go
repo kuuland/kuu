@@ -18,5 +18,6 @@ func init() {
 
 // All 模块声明
 func All() *kuu.Mod {
+	kuu.ModelAdapter = &Model{}
 	return &kuu.Mod{}
 }

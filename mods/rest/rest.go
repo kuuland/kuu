@@ -36,13 +36,23 @@ type Params struct {
 	Cond    kuu.H
 }
 
+var cacheSchema = map[string]*kuu.Schema{}
+
 func init() {
 	kuu.On("OnNew", func(args ...interface{}) {
 		k = args[0].(*kuu.Kuu)
+		for key, schema := range cacheSchema {
+			MountAll(k, schema.Name)
+			delete(cacheSchema, key)
+		}
 	})
 	kuu.On("OnModel", func(args ...interface{}) {
 		schema := args[0].(*kuu.Schema)
-		MountAll(k, schema.Name)
+		if k == nil {
+			cacheSchema[schema.Name] = schema
+		} else {
+			MountAll(k, schema.Name)
+		}
 	})
 }
 
