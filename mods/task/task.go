@@ -13,34 +13,36 @@ import (
 
 // 任务运行模式
 const (
-	SerialMode   = iota // 线性
+	SerialMode   = iota // 串行
 	ParallelMode        // 并行
 )
 
 var (
-	c     = cron.New()
-	tasks = map[string]*Task{}
+	// Cron 调度器实例
+	Cron = cron.New()
+	// Tasks 任务列表
+	Tasks = map[string]*Task{}
 )
 
 func init() {
 	kuu.On("OnNew", func(args ...interface{}) {
 		k := args[0].(*kuu.Kuu)
 		if url := k.Config["taskURL"]; url != nil {
+			// 支持通过URL加载远程任务列表
 			loadTasksFromURL(url.(string))
-			c.Start()
+			Cron.Start()
 		}
 	})
 }
 
 // Task 任务
 type Task struct {
-	Name    string `json:"name"`
-	Spec    string `json:"spec"`
-	Func    func() `json:"-"`
-	URL     string `json:"url"`
-	RunInit int    `json:"runInit"`
-	Running bool   `json:"running"`
-	Mode    int    `json:"mode"`
+	Name    string `json:"name" displayName:"任务名称"`      // 任务名称，为空时与Spec一致
+	Spec    string `json:"spec" displayName:"任务cron表达式"` // 规则详见：https://godoc.org/github.com/robfig/cron
+	Cmd     func() `json:"-" displayName:"任务触发函数"`       // 任务触发时，调用此函数，与URL不能同时使用
+	URL     string `json:"url" displayName:"远程任务URL"`    // 任务被触发时，调用此URL
+	Running bool   `json:"running" displayName:"是否正在运行"` // 任务正在运行时，该值为true
+	Mode    int    `json:"mode" displayName:"任务运行模式"`    // 当任务频率过高时，需选择正确的运行模式：串行表示下一次的任务执行必须在上一次执行结束后才会触发，并行无此限制。
 }
 
 func loadTasksFromURL(taskURL string) {
@@ -73,47 +75,61 @@ func fetch(path string) []byte {
 }
 
 // Add 添加任务
-func Add(ts ...*Task) {
+func Add(ts ...*Task) error {
 	if ts == nil || len(ts) == 0 {
-		return
+		return nil
 	}
 	for _, t := range ts {
-		if t.Func == nil && t.URL == "" {
+		if t.Cmd == nil && t.URL == "" {
 			continue
 		} else if t.URL != "" {
 			if len(strings.Split(t.URL, " ")) != 2 {
 				continue
 			}
-			t.Func = func() {
+			t.Cmd = func() {
 				fetch(t.URL)
 			}
 		}
-		if t.Func != nil {
-			fn := t.Func
-			t.Func = func() {
-				if t.Running == true && t.Mode == SerialMode {
-					return
-				}
-				t.Running = true
-				fn()
-				t.Running = false
+		cmd := t.Cmd
+		t.Cmd = func() {
+			if t.Running == true && t.Mode == SerialMode {
+				return
 			}
-			c.AddFunc(t.Spec, t.Func)
-			if t.Name != "" {
-				tasks[t.Name] = t
-			}
+			t.Running = true
+			cmd()
+			t.Running = false
+		}
+		err := Cron.AddFunc(t.Spec, t.Cmd)
+		if err != nil {
+			return err
+		}
+		if t.Name != "" {
+			Tasks[t.Name] = t
 		}
 	}
+	return nil
+}
+
+// AddFunc 快捷调用
+func AddFunc(spec string, cmd func()) error {
+	return Add(&Task{
+		Name: spec,
+		Spec: spec,
+		Cmd:  cmd,
+	})
 }
 
 // TasksHandler 任务列表路由
 func TasksHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, kuu.StdOK(tasks))
+	c.JSON(http.StatusOK, kuu.StdOK(Tasks))
 }
 
 // All 模块声明
 func All() *kuu.Mod {
 	return &kuu.Mod{
+		Models: []interface{}{
+			&Task{},
+		},
 		Routes: kuu.Routes{
 			kuu.RouteInfo{
 				Method:  "GET",
