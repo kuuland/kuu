@@ -35,3 +35,12 @@ func Model(name string) IModel {
 	}
 	return s.Adapter.New(s)
 }
+
+// Op 获取操作实例（实时解析）
+func Op(m interface{}) IModel {
+	schema, _ := parseSchema(m)
+	if schema != nil {
+		return Model(schema.Name)
+	}
+	return nil
+}

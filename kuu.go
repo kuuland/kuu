@@ -61,93 +61,111 @@ func GetSchema(name string) *Schema {
 // RegisterModel 模型注册
 func RegisterModel(args ...interface{}) {
 	for _, m := range args {
-		v := reflect.ValueOf(m)
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
-		} else {
-			panic(`Model only accepts pointer. Example:
-			Use: kuu.RegisterModel(&Struct{}) instead of kuu.RegisterModel(Struct{})
-		`)
-		}
-		// 判断是否实现了配置接口
-		config := H{}
-		if s, ok := m.(IConfig); ok {
-			config = s.Config()
-		}
-		t := v.Type()
-		schema := &Schema{
-			Name:     t.Name(),
-			FullName: Join(t.PkgPath(), "/", t.Name()),
-			Fields:   make([]*SchemaField, t.NumField()),
-			Origin:   m,
-		}
-		if config["name"] != nil {
-			schema.Name = config["name"].(string)
-		}
-		if config["displayName"] != nil {
-			schema.DisplayName = config["displayName"].(string)
-		} else {
-			schema.DisplayName = schema.Name
-		}
-		if config["collection"] != nil {
-			schema.Collection = config["collection"].(string)
-		} else {
-			schema.Collection = schema.Name
-		}
-		if config["adapter"] != nil {
-			if s, ok := config["adapter"].(IModel); ok {
-				schema.Adapter = s
-			}
-		}
-		if schema.Adapter == nil && ModelAdapter != nil {
-			schema.Adapter = ModelAdapter
-		}
-		if schema.Adapter == nil {
-			panic("Please register 'kuu.ModelAdapter' before using 'kuu.RegisterModel'")
-		}
-		schema.Config = config
-		for i := 0; i < v.NumField(); i++ {
-			field := t.Field(i)
-			tags := field.Tag
-			sField := &SchemaField{
-				Tags:    make(map[string]string),
-				IsArray: false,
-			}
-			parseModelTags(sField, tags)
-			sField.Code = field.Name
-			if sField.Tags["name"] != "" {
-				sField.Name = tags.Get("name")
-			} else {
-				sField.Name = sField.Code
-			}
-			if sField.Tags["alias"] != "" {
-				sField.Name = tags.Get("alias")
-			}
-			if sField.Tags["join"] != "" {
-				sField.JoinName, sField.JoinSelect = parseJoinSelect(tags.Get("join"))
-			}
-			if _, ok := sField.Tags["array"]; ok {
-				sField.IsArray = true
-			}
-			sField.Default = tags.Get("default")
-			if sField.Tags["type"] != "" {
-				sField.Type = tags.Get("type")
-			} else {
-				sField.Type = field.Type.Name()
-			}
-			if _, ok := sField.Tags["required"]; ok {
-				required, err := strconv.ParseBool(tags.Get("required"))
-				if err != nil {
-					sField.Required = required
-				} else {
-					sField.Required = false
-				}
-			}
-			schema.Fields[i] = sField
-		}
+		schema, config := parseSchema(m)
 		Schemas[schema.Name] = schema
 		Emit("OnModel", schema, config)
 	}
+}
+
+func parseSchema(m interface{}) (*Schema, H) {
+	v := reflect.ValueOf(m)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	} else {
+		panic(`Model only accepts pointer. Example:
+		Use: kuu.RegisterModel(&Struct{}) instead of kuu.RegisterModel(Struct{})
+	`)
+	}
+	// 判断是否实现了配置接口
+	config := H{}
+	if s, ok := m.(IConfig); ok {
+		config = s.Config()
+	}
+	t := v.Type()
+	schema := &Schema{
+		Name:     t.Name(),
+		FullName: Join(t.PkgPath(), "/", t.Name()),
+		Fields:   make([]*SchemaField, t.NumField()),
+		Origin:   m,
+		Config:   config,
+	}
+	// 解析字段列表
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		tags := field.Tag
+		sField := &SchemaField{
+			Tags:    make(map[string]string),
+			IsArray: false,
+		}
+		parseModelTags(sField, tags)
+		sField.Code = field.Name
+		if sField.Tags["name"] != "" {
+			sField.Name = tags.Get("name")
+		} else {
+			sField.Name = sField.Code
+		}
+		if sField.Tags["alias"] != "" {
+			sField.Name = tags.Get("alias")
+		}
+		if sField.Tags["join"] != "" {
+			sField.JoinName, sField.JoinSelect = parseJoinSelect(tags.Get("join"))
+		}
+		if _, ok := sField.Tags["array"]; ok {
+			sField.IsArray = true
+		}
+		sField.Default = tags.Get("default")
+		if sField.Tags["type"] != "" {
+			sField.Type = tags.Get("type")
+		} else {
+			sField.Type = field.Type.Name()
+		}
+		if _, ok := sField.Tags["required"]; ok {
+			required, err := strconv.ParseBool(tags.Get("required"))
+			if err != nil {
+				sField.Required = required
+			} else {
+				sField.Required = false
+			}
+		}
+		schema.Fields[i] = sField
+		if sField.Code == "ID" {
+			if s, ok := sField.Tags["name"]; ok {
+				config["name"] = s
+			}
+			if s, ok := sField.Tags["displayName"]; ok {
+				config["displayName"] = s
+			}
+			if s, ok := sField.Tags["collection"]; ok {
+				config["collection"] = s
+			}
+		}
+	}
+	// 模型配置
+	if config["name"] != nil {
+		schema.Name = config["name"].(string)
+	}
+	if config["displayName"] != nil {
+		schema.DisplayName = config["displayName"].(string)
+	} else {
+		schema.DisplayName = schema.Name
+	}
+	if config["collection"] != nil {
+		schema.Collection = config["collection"].(string)
+	} else {
+		schema.Collection = schema.Name
+	}
+	if config["adapter"] != nil {
+		if s, ok := config["adapter"].(IModel); ok {
+			schema.Adapter = s
+		}
+	}
+	if schema.Adapter == nil && ModelAdapter != nil {
+		schema.Adapter = ModelAdapter
+	}
+	if schema.Adapter == nil {
+		panic("Please register 'kuu.ModelAdapter' before using 'kuu.RegisterModel'")
+	}
+	return schema, config
 }
 
 func parseJoinSelect(join string) (name string, s map[string]int) {
