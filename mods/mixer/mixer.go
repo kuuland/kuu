@@ -50,7 +50,7 @@ func Run(k *kuu.Kuu, addr ...string) (err error) {
 		kuu.Error("failed to listen: %v", err)
 		return err
 	}
-	// 初始化连接复用器
+	// 初始化链路复用器
 	m := cmux.New(lis)
 	// 定义匹配优先级：gRPC > HTTP
 	grpcL := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))

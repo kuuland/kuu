@@ -28,15 +28,16 @@ const (
 
 // User 用户数据模型
 type User struct {
-	Username string    `name:"账号" required:"true"`
-	Password string    `name:"密码" required:"true"`
-	Name     string    `name:"姓名"`
-	Birth    time.Time `name:"出生日期"`
-	Avatar   string    `name:"头像"`
-	Sex      int       `name:"性别"`
-	Disable  bool      `name:"是否禁用"`
-	Mobile   string    `name:"手机号"`
-	Email    string    `name:"邮箱账号"`
+	Username    string    `name:"账号" required:"true"`
+	Password    string    `name:"密码" required:"true"`
+	Name        string    `name:"姓名"`
+	Birth       time.Time `name:"出生日期"`
+	Avatar      string    `name:"头像"`
+	Sex         int       `name:"性别"`
+	Disable     bool      `name:"是否禁用"`
+	Mobile      string    `name:"手机号"`
+	Email       string    `name:"邮箱账号"`
+	IsDeveloper bool      `name:"是否开发者"`
 }
 
 // UserGroup 用户组数据模型
