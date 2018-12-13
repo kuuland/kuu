@@ -27,7 +27,7 @@ var (
 	}
 	secretGetters = map[string]func() string{}
 	secretSetters = map[string]func(){}
-	whilelist     = []string{
+	whiteList     = []string{
 		"POST /login",
 	}
 	defaultMessages = map[string]string{
@@ -94,12 +94,12 @@ func GetDecodedData(c *gin.Context) jwt.MapClaims {
 	return data
 }
 
-func whilelistFilter(c *gin.Context) bool {
+func whiteListFilter(c *gin.Context) bool {
 	wl := false
-	if len(whilelist) > 0 {
+	if len(whiteList) > 0 {
 		value := kuu.Join(c.Request.Method, " ", c.Request.URL.Path)
 		value = strings.ToLower(value)
-		for _, item := range whilelist {
+		for _, item := range whiteList {
 			if s := strings.Split(item, " "); len(s) == 1 {
 				item = kuu.Join(c.Request.Method, " ", item)
 			}
@@ -113,15 +113,15 @@ func whilelistFilter(c *gin.Context) bool {
 	return wl
 }
 
-// AddWhilelist 添加白名单
-func AddWhilelist(list []string, replace bool) []string {
+// AddWhiteList 添加白名单
+func AddWhiteList(list []string, replace bool) []string {
 	if list != nil && len(list) > 0 {
-		z := make([]string, len(whilelist)+len(list))
+		z := make([]string, len(whiteList)+len(list))
 		l := []([]string){}
 		if replace {
 			l = append(l, list)
 		} else {
-			l = append(l, whilelist)
+			l = append(l, whiteList)
 			l = append(l, list)
 		}
 		exists := map[string]bool{}
@@ -136,16 +136,16 @@ func AddWhilelist(list []string, replace bool) []string {
 			}
 			offset += len(arr)
 		}
-		whilelist = z
+		whiteList = z
 	}
-	return whilelist
+	return whiteList
 }
 
 // AuthMiddleware 令牌鉴权中间件
 func AuthMiddleware(c *gin.Context) {
 	data := GetDecodedData(c)
 	c.Set("JWTDecoded", data)
-	wl := whilelistFilter(c)
+	wl := whiteListFilter(c)
 	if wl == false && (data == nil || data.Valid() != nil || !CustomAuthFilter(c)) {
 		CustomErrorHandler(c)
 		return
