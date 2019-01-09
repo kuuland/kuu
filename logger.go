@@ -28,15 +28,17 @@ func init() {
 func setLogOut(filePath string) {
 	if logsDir == "" {
 		config, err := ParseKuuJSON()
-		if err == nil && config["logsDir"] != nil {
-			dir := config["logsDir"].(string)
+		if err == nil && config["logs"] != nil {
+			dir := config["logs"].(string)
 			if !path.IsAbs(dir) {
 				dir = path.Join(ROOT, dir)
 			}
 			logsDir = dir
-		} else {
-			logsDir = ROOT
 		}
+	}
+	if logsDir == "" {
+		Logger.Out = os.Stdout
+		return
 	}
 	EnsureDir(logsDir)
 	filePath = path.Join(logsDir, filePath)
