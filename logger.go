@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	log        = logrus.New()
+	// Logger 日志实例
+	Logger     = logrus.New()
 	dateFormat = time.Now().Format("2006-01-02")
 	dateFile   *os.File
 	logsDir    = os.Getenv("KUU_LOGS")
@@ -21,7 +22,7 @@ func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	setLogOut(Join("kuu.", dateFormat, ".log"))
-	log.AddHook(new(outputHook))
+	Logger.AddHook(new(outputHook))
 }
 
 func setLogOut(filePath string) {
@@ -41,13 +42,13 @@ func setLogOut(filePath string) {
 	filePath = path.Join(logsDir, filePath)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
-		log.Out = file
+		Logger.Out = file
 		if dateFile != nil {
 			dateFile.Close()
 		}
 		dateFile = file
 	} else {
-		log.Info("Failed to log to file, using default stderr")
+		Logger.Info("Failed to log to file, using default stderr")
 	}
 }
 
@@ -83,25 +84,25 @@ func split(args ...interface{}) (string, []interface{}) {
 // Debug 输出Debug级别的日志
 func Debug(args ...interface{}) {
 	format, a := split(args...)
-	log.Debugf(format, a...)
+	Logger.Debugf(format, a...)
 }
 
 // Info 输出Info级别的日志
 func Info(args ...interface{}) {
 	format, a := split(args...)
-	log.Infof(format, a...)
+	Logger.Infof(format, a...)
 }
 
 // Print 输出Print级别的日志
 func Print(args ...interface{}) {
 	format, a := split(args...)
-	log.Printf(format, a...)
+	Logger.Printf(format, a...)
 }
 
 // Warn 输出Warn级别的日志
 func Warn(args ...interface{}) {
 	format, a := split(args...)
-	log.Warnf(format, a...)
+	Logger.Warnf(format, a...)
 }
 
 // Error 输出Error级别的日志
@@ -111,19 +112,19 @@ func Error(args ...interface{}) {
 		args[0] = args[0].(error).Error()
 	}
 	format, a := split(args...)
-	log.Errorf(format, a...)
+	Logger.Errorf(format, a...)
 }
 
 // Fatal 输出Fatal级别的日志
 func Fatal(args ...interface{}) {
 	format, a := split(args...)
-	log.Fatalf(format, a...)
+	Logger.Fatalf(format, a...)
 }
 
 // Panic 输出Panic级别的日志
 func Panic(args ...interface{}) {
 	format, a := split(args...)
-	log.Panicf(format, a...)
+	Logger.Panicf(format, a...)
 }
 
 // Debug 应用实例函数
