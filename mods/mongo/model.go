@@ -291,6 +291,9 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	}
 	listJoin(m.Scope.Session, m.schema, p.Project, result)
 	kuu.JSONConvert(result, list)
+	if list == nil {
+		list = make([]kuu.H, 0)
+	}
 	data := kuu.H{
 		"list":         list,
 		"totalrecords": totalRecords,
