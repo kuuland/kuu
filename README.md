@@ -50,6 +50,7 @@ func main() {
 ## FAQ
 
 ### Why is it called Kuu?
+
 > Kuu is the name of a cat, click to go to [The story of Kuu and Shino](http://www.sohu.com/a/225954042_509045).
 
 ![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
@@ -62,4 +63,3 @@ func main() {
 ## License
 
 Kuu is available under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
-
