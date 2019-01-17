@@ -257,7 +257,11 @@ func (k *Kuu) loadMods() {
 	}
 	// 挂载模块路由
 	for _, r := range modRoutes {
-		k.Handle(r.Method, r.Path, r.Handler)
+		routePrefix := ""
+		if k.Config["routePrefix"] != nil {
+			routePrefix = k.Config["routePrefix"].(string)
+		}
+		k.Handle(r.Method, Join(routePrefix, r.Path), r.Handler)
 	}
 	// 挂载模块模型
 	for _, m := range modModels {
