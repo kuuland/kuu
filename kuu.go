@@ -49,8 +49,9 @@ type H map[string]interface{}
 // Kuu 是框架的实例，它包含系统配置、数据模型等信息
 type Kuu struct {
 	*gin.Engine
-	Config H
-	Name   string
+	Config      H
+	Name        string
+	RoutePrefix string
 }
 
 // GetSchema 获取模型信息
@@ -248,6 +249,9 @@ func (k *Kuu) loadConfigFile() {
 			k.Config[key] = value
 		}
 	}
+	if k.Config["routePrefix"] != nil {
+		k.RoutePrefix = k.Config["routePrefix"].(string)
+	}
 }
 
 func (k *Kuu) loadMods() {
@@ -257,11 +261,7 @@ func (k *Kuu) loadMods() {
 	}
 	// 挂载模块路由
 	for _, r := range modRoutes {
-		routePrefix := ""
-		if k.Config["routePrefix"] != nil {
-			routePrefix = k.Config["routePrefix"].(string)
-		}
-		k.Handle(r.Method, Join(routePrefix, r.Path), r.Handler)
+		k.Handle(r.Method, Join(k.RoutePrefix, r.Path), r.Handler)
 	}
 	// 挂载模块模型
 	for _, m := range modModels {

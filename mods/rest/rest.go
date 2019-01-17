@@ -137,7 +137,7 @@ func handleError(err error, c *gin.Context) {
 
 // MountAll 挂载模型RESTful接口
 func MountAll(k *kuu.Kuu, name string) {
-	path := kuu.Join("/", strings.ToLower(name))
+	path := kuu.Join("/", k.RoutePrefix, strings.ToLower(name))
 	k.POST(path, Create(k, name))
 	k.DELETE(path, Remove(k, name))
 	k.PUT(path, Update(k, name))
