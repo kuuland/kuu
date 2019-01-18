@@ -239,6 +239,11 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
 	}
+	if p.Cond["_id"] != nil {
+		if v, ok := p.Cond["_id"].(string); ok {
+			p.Cond["_id"] = bson.ObjectIdHex(v)
+		}
+	}
 	if p.Cond["$and"] != nil {
 		var and []kuu.H
 		kuu.JSONConvert(p.Cond["$and"], &and)
@@ -340,11 +345,6 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 	}
 	if p.Cond == nil {
 		p.Cond = make(kuu.H)
-	}
-	if p.Cond["_id"] != nil {
-		if v, ok := p.Cond["_id"].(string); ok {
-			p.Cond["_id"] = bson.ObjectIdHex(v)
-		}
 	}
 	if p.ID == "" {
 		kuu.JSONConvert(id, p)
