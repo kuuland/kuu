@@ -32,12 +32,10 @@ func CloneDeep(src, dst interface{}) error {
 
 // CopyBody 复制请求体
 func CopyBody(c *gin.Context, docs interface{}) (err error) {
-	var dst io.Reader
-	if err = CloneDeep(c.Request.Body, dst); err == nil {
-		var data []byte
-		if data, err = ioutil.ReadAll(dst); err == nil {
-			json.Unmarshal(data, docs)
-		}
+	var buf bytes.Buffer
+	dst := io.TeeReader(c.Request.Body, &buf)
+	if data, err := ioutil.ReadAll(dst); err == nil {
+		json.Unmarshal(data, docs)
 	}
 	return err
 }
