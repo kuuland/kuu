@@ -21,15 +21,6 @@ func Join(args ...string) string {
 	return b.String()
 }
 
-// CloneDeep 用于深度拷贝
-func CloneDeep(src, dst interface{}) error {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
-	}
-	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
-}
-
 // CopyBody 复制请求体
 func CopyBody(c *gin.Context, docs interface{}) (err error) {
 	var buf bytes.Buffer
