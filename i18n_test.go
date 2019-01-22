@@ -10,21 +10,21 @@ func init() {
 		"logout":  "Log out",
 		"login":   "Log in",
 		"signup":  "Sign up",
-		"success": "Congratulations, your ID {{.username}} registered successfully.",
+		"success": "Congratulations, your ID {{username}} registered successfully.",
 	}
 	Langs["zh-CN"] = LangMessages{
 		"hello":   "你好",
 		"logout":  "退出",
 		"login":   "登录",
 		"signup":  "注册",
-		"success": "恭喜，你的账号 {{.username}} 已注册成功！",
+		"success": "恭喜，你的账号 {{username}} 已注册成功！",
 	}
 	Langs["zh-TW"] = LangMessages{
 		"hello":   "你好",
 		"logout":  "退出",
 		"login":   "登錄",
 		"signup":  "註冊",
-		"success": "恭喜，你的賬號 {{.username}} 已註冊成功！",
+		"success": "恭喜，你的賬號 {{username}} 已註冊成功！",
 	}
 }
 
@@ -49,21 +49,21 @@ func ExampleL() {
 
 func ExampleL_template() {
 	Langs["en"] = LangMessages{
-		"success": "Congratulations, your ID {{.username}} registered successfully.",
+		"success": "Congratulations, your ID {{username}} registered successfully.",
 	}
 	Langs["zh-CN"] = LangMessages{
-		"success": "恭喜，你的账号 {{.username}} 已注册成功！",
+		"success": "恭喜，你的账号 {{username}} 已注册成功！",
 	}
 	Langs["zh-TW"] = LangMessages{
-		"success": "恭喜，你的賬號 {{.username}} 已註冊成功！",
+		"success": "恭喜，你的賬號 {{username}} 已註冊成功！",
 	}
-	fmt.Println(L(nil, "success", nil, H{
+	fmt.Println(L("en", "success", H{
 		"username": "kuu",
 	}))
-	fmt.Println(L(nil, "success", "zh-CN", H{
+	fmt.Println(L("zh-CN", "success", H{
 		"username": "kuu",
 	}))
-	fmt.Println(L(nil, "success", "zh-TW", H{
+	fmt.Println(L("zh-TW", "success", H{
 		"username": "kuu",
 	}))
 	// Output:
@@ -73,11 +73,9 @@ func ExampleL_template() {
 }
 
 func ExampleL_defaultLang() {
-	fmt.Println(L(nil, "signup"))
-	DefaultLang = "zh-CN"
-	fmt.Println(L(nil, "signup"))
-	DefaultLang = "zh-TW"
-	fmt.Println(L(nil, "signup"))
+	fmt.Println(L("en", "signup"))
+	fmt.Println(L("zh-CN", "signup"))
+	fmt.Println(L("zh-TW", "signup"))
 	// Output:
 	// Sign up
 	// 注册

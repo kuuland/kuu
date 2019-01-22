@@ -132,7 +132,7 @@ func ParseParams(c *gin.Context) *Params {
 
 func handleError(err error, c *gin.Context) {
 	kuu.Error(err)
-	c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "request_error")))
+	c.JSON(http.StatusOK, kuu.StdError(kuu.L(c, "request_error")))
 }
 
 // MountAll 挂载模型RESTful接口
@@ -182,6 +182,20 @@ func All() *kuu.Mod {
 				Method:  "GET",
 				Path:    "/meta",
 				Handler: MetadataHandler,
+			},
+		},
+		Langs: map[string]kuu.LangMessages{
+			"en": kuu.LangMessages{
+				"request_error":    "Request failed!",
+				"entity_not_exist": "Record does not exist!",
+			},
+			"zh_CN": kuu.LangMessages{
+				"request_error":    "请求失败！",
+				"entity_not_exist": "记录不存在！",
+			},
+			"zh_TW": kuu.LangMessages{
+				"request_error":    "請求失敗！",
+				"entity_not_exist": "記錄不存在！",
 			},
 		},
 	}

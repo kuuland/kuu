@@ -26,7 +26,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 		err := m.ID(p, &data)
 		if err != nil {
 			kuu.Error(err)
-			c.JSON(http.StatusOK, kuu.StdError(kuu.SafeL(defaultMessages, c, "entity_not_exist")))
+			c.JSON(http.StatusOK, kuu.StdError(kuu.L(c, "entity_not_exist")))
 			return
 		}
 		// 构造返回

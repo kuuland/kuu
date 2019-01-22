@@ -6,18 +6,29 @@ import (
 )
 
 const (
+	// BeforeCreateRouteEnum 新增前置
 	BeforeCreateRouteEnum = iota
+	// BeforeUpdateRouteEnum 更新前置
 	BeforeUpdateRouteEnum
+	// AfterUpdateRouteEnum 更新后置
 	AfterUpdateRouteEnum
+	// AfterCreateRouteEnum 新增后置
 	AfterCreateRouteEnum
+	// BeforeRemoveRouteEnum 删除前置
 	BeforeRemoveRouteEnum
+	// AfterRemoveRouteEnum 删除后置
 	AfterRemoveRouteEnum
+	// BeforeListRouteEnum 列表前置
 	BeforeListRouteEnum
+	// AfterListRouteEnum 列表后置
 	AfterListRouteEnum
+	// BeforeIDRouteEnum ID后置
 	BeforeIDRouteEnum
+	// AfterIDRouteEnum ID后置
 	AfterIDRouteEnum
 )
 
+// Scope 钩子上下文实体
 type Scope struct {
 	Context      *gin.Context
 	Cache        kuu.H
@@ -33,6 +44,7 @@ type Scope struct {
 	UpdateAll    bool
 }
 
+// CallMethod 调用钩子函数
 func (scope *Scope) CallMethod(action int, schema *kuu.Schema) (err error) {
 	switch action {
 	case BeforeCreateRouteEnum:

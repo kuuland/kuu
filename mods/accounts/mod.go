@@ -70,5 +70,22 @@ func All(loginHandler func(*gin.Context) (interface{}, error)) *kuu.Mod {
 			routes.LogoutHandler,
 			routes.ValidHandler,
 		},
+		Langs: map[string]kuu.LangMessages{
+			"en": kuu.LangMessages{
+				"login_error": "Login failed, please contact the administrator or try again later!",
+				"auth_error":  "Your session has expired, please log in again!",
+				"logout":      "Logout successful!",
+			},
+			"zh_CN": kuu.LangMessages{
+				"login_error": "登录失败，请稍后重试或联系管理员！",
+				"auth_error":  "您的会话已过期，请重新登录！",
+				"logout":      "登录成功！",
+			},
+			"zh_TW": kuu.LangMessages{
+				"login_error": "登錄失敗，請稍後重試或聯繫系統管理員！",
+				"auth_error":  "您的會話已過期，請重新登錄！",
+				"logout":      "登錄成功！",
+			},
+		},
 	}
 }
