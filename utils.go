@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"io"
 	"io/ioutil"

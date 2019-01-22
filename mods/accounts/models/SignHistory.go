@@ -8,7 +8,7 @@ type SignHistory struct {
 	ReqData   string `name:"请求数据"`
 	LoginData string `name:"登录数据"`
 	Token     string `name:"令牌信息"`
-	Method    string `name:"登入/登出"`
+	Method    string `name:"登录方式" remark:"login/logout"`
 	// 标准字段
 	CreatedAt time.Time `name:"创建时间"`
 	UpdatedAt time.Time `name:"修改时间"`

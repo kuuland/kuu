@@ -8,6 +8,9 @@ type UserSecret struct {
 	UserID string `name:"关联用户ID"`
 	Secret string `name:"使用密钥"`
 	Token  string `name:"令牌信息"`
+	Iat    int64  `name:"签发时间戳"`
+	Exp    int64  `name:"过期时间戳"`
+	Method string `name:"登录方式" remark:"login/logout"`
 	// 标准字段
 	CreatedAt time.Time `name:"创建时间"`
 	UpdatedAt time.Time `name:"修改时间"`

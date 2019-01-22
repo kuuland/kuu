@@ -9,6 +9,7 @@ type Mod struct {
 	Routes     Routes
 	Middleware Middleware
 	Models     []interface{}
+	Langs      map[string]LangMessages
 }
 
 // RouteInfo 路由声明
@@ -23,3 +24,4 @@ type Routes []RouteInfo
 
 // Middleware 中间件数组
 type Middleware []gin.HandlerFunc
+

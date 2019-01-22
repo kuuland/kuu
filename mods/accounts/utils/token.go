@@ -9,11 +9,6 @@ import (
 	"github.com/kuuland/kuu/mods/accounts/models"
 )
 
-var (
-	// ExpiresSeconds 过期秒数
-	ExpiresSeconds = 7200
-)
-
 // ParseToken 从请求中解析token
 func ParseToken(c *gin.Context) string {
 	// querystring > header > cookie
@@ -28,29 +23,45 @@ func ParseToken(c *gin.Context) string {
 	return token
 }
 
+// ParseUserID 从请求中解析UserID
+func ParseUserID(c *gin.Context) string {
+	// querystring > header > cookie
+	var userID string
+	userID = c.Query(UserIDKey)
+	if userID == "" {
+		userID = c.GetHeader(UserIDKey)
+	}
+	if userID == "" {
+		userID, _ = c.Cookie(UserIDKey)
+	}
+	return userID
+}
+
 // DecodedContext 从请求中获取解码数据
-func DecodedContext(c *gin.Context) jwt.MapClaims {
+func DecodedContext(c *gin.Context) (jwt.MapClaims, *models.UserSecret) {
 	token := ParseToken(c)
+	userID := ParseUserID(c)
 	if token == "" {
 		kuu.Error("No token found in the request!")
-		return nil
+		return nil, nil
 	}
 	UserSecret := kuu.Model("UserSecret")
-	var secretData = &models.UserSecret{}
+	var secret = &models.UserSecret{}
 	UserSecret.One(kuu.H{
-		"Cond": kuu.H{"Token": token},
+		"Cond": kuu.H{"UserID": userID},
 		"Sort": "-UpdatedAt,-CreatedAt",
-	}, secretData)
-	if secretData == nil || secretData.Secret == "" {
+	}, secret)
+	if secret == nil || secret.Secret == "" {
 		kuu.Error("Secret not found based on token '%s'!", token)
-		return nil
+		return nil, nil
 	}
-	return Decoded(token, secretData.Secret)
+	claims := Decoded(token, secret.Secret)
+	return claims, secret
 }
 
 // Encoded 加密
-func Encoded(data jwt.MapClaims, secret string) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, data)
+func Encoded(claims jwt.MapClaims, secret string) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		kuu.Error(err)
@@ -69,8 +80,7 @@ func Decoded(tokenString string, secret string) jwt.MapClaims {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims
-	} else {
-		kuu.Error(err)
 	}
+	kuu.Error(err)
 	return nil
 }

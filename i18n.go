@@ -1,41 +1,58 @@
 package kuu
 
 import (
-	"bytes"
-	"html/template"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hoisie/mustache"
 )
 
-// TODO 需实现：
-// 1.自动新增到数据库
-// 2.自动翻译不存在的语言值
+// LangMessages 国际化字符串对照表
+type LangMessages map[string]string
 
-var (
-	// DefaultLang 默认国际化语言编码
-	DefaultLang = "en"
-	// Langs 国际化语言集合
-	Langs = map[string](LangMessages){}
-)
+// Langs 语言配置库
+var Langs = map[string]LangMessages{}
+
+func mergeLangs(merge map[string]LangMessages) {
+	if merge == nil {
+		return
+	}
+	for lang, messages := range merge {
+		if Langs[lang] == nil {
+			Langs[lang] = messages
+		} else {
+			for key, value := range messages {
+				if Langs[lang][key] != "" {
+					continue
+				}
+				Langs[lang][key] = value
+			}
+		}
+	}
+}
+
+func handleOnNew(k *Kuu) {
+	config := map[string]LangMessages{}
+	if k.Config["i18n"] != nil {
+		JSONConvert(k.Config["i18n"], config)
+	}
+	mergeLangs(config)
+}
+
+func handleOnImport(p *Mod) {
+	mergeLangs(p.Langs)
+}
 
 func init() {
 	On("OnNew", func(args ...interface{}) {
 		k := args[0].(*Kuu)
-		var config = map[string](LangMessages){}
-		if k.Config["i18n"] != nil {
-			JSONConvert(k.Config["i18n"], &config)
-		}
-		if config != nil {
-			for key, value := range config {
-				Langs[key] = value
-			}
-		}
+		handleOnNew(k)
+	})
+	On("OnImport", func(args ...interface{}) {
+		p := args[0].(*Mod)
+		handleOnImport(p)
 	})
 }
-
-// LangMessages 语言消息集合
-type LangMessages map[string]string
 
 func parseAcceptLanguage(c *gin.Context) string {
 	header := c.GetHeader("Accept-Language")
@@ -49,53 +66,45 @@ func parseAcceptLanguage(c *gin.Context) string {
 	return ""
 }
 
-// L 获取国际化信息值，可选参数为语言编码和模板数据：(language string, data H)
-func L(c *gin.Context, key string, args ...interface{}) string {
+func renderMessage(lang string, key string, defaultMessage string, context H) string {
+	if key == "" || Langs[lang] == nil || Langs[lang][key] == "" {
+		if defaultMessage != "" {
+			return defaultMessage
+		}
+		return key
+	}
+	data := Langs[lang][key]
+	return mustache.Render(data, context)
+}
+
+// L 国际化函数
+func L(langOrContext interface{}, key string, defaultMsgAndArgs ...interface{}) string {
+	var lang string
+	if v, ok := langOrContext.(*gin.Context); ok {
+		lang = parseAcceptLanguage(v)
+	} else if v, ok := langOrContext.(string); ok {
+		lang = v
+	}
+	if lang == "" {
+		panic("Language cannot be empty")
+	}
 	var (
-		language string
-		data     H
+		defaultMessage string
+		context        H
 	)
-	if len(args) > 0 {
-		if args[0] != nil {
-			language = args[0].(string)
+	if len(defaultMsgAndArgs) > 0 {
+		if v, ok := defaultMsgAndArgs[0].(string); ok {
+			defaultMessage = v
+		} else if v, ok := defaultMsgAndArgs[0].(H); ok {
+			context = v
+		} else {
+			defaultMessage = key
 		}
 	}
-	if len(args) > 1 {
-		if args[1] != nil {
-			data = args[1].(H)
+	if len(defaultMsgAndArgs) > 1 {
+		if v, ok := defaultMsgAndArgs[1].(H); ok {
+			context = v
 		}
 	}
-	if language == "" && c != nil {
-		language = parseAcceptLanguage(c)
-	}
-	return localeMessage(key, language, data)
-}
-
-// SafeL 包含默认值的L函数
-func SafeL(defaultMessages map[string]string, c *gin.Context, key string, args ...interface{}) string {
-	value := L(c, key, args...)
-	if (value == "" || value == key) && defaultMessages[key] != "" {
-		value = defaultMessages[key]
-	}
-	return value
-}
-
-func localeMessage(key string, l string, data H) string {
-	if l == "" {
-		l = DefaultLang
-	}
-	if key == "" || Langs[l] == nil || Langs[l][key] == "" {
-		return key
-	}
-
-	value := Langs[l][key]
-	var buf bytes.Buffer
-	tmpl, err := template.New(l).Parse(value)
-	if err != nil {
-		return key
-	}
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return key
-	}
-	return buf.String()
+	return renderMessage(lang, key, defaultMessage, context)
 }

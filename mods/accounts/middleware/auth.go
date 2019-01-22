@@ -11,18 +11,26 @@ import (
 
 // Auth 认证中间件
 func Auth(c *gin.Context) {
-	data := utils.DecodedContext(c)
-	c.Set("UserData", data)
-	if whiteListCheck(c) == true || (data != nil && data.Valid() == nil) {
+	if whiteListCheck(c) == true {
 		c.Next()
 	} else {
-		if data == nil {
-			kuu.Error("Token decoding failed")
+		// 从请求参数中解码令牌
+		claims, secret := utils.DecodedContext(c)
+		valid := claims.Valid()
+		if claims != nil && valid == nil {
+			// 更新令牌和密钥到上下文缓存中
+			c.Set(utils.ContextSecretKey, secret)
+			c.Set(utils.ContextClaimsKey, claims)
+			c.Next()
 		} else {
-			kuu.Error("Token decoding failed: %s", data.Valid().Error())
+			if claims == nil {
+				kuu.Error("Token decoding failed")
+			} else {
+				kuu.Error("Token decoding failed: %s", valid.Error())
+			}
+			result := kuu.SafeL(utils.DefaultMessages, c, "auth_error")
+			c.AbortWithStatusJSON(http.StatusOK, kuu.StdErrorWithCode(result, 555))
 		}
-		result := kuu.SafeL(utils.DefaultMessages, c, "auth_error")
-		c.AbortWithStatusJSON(http.StatusOK, kuu.StdErrorWithCode(result, 555))
 	}
 }
 

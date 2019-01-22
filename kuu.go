@@ -299,6 +299,7 @@ func New(cfg ...H) *Kuu {
 // Import 导入一个或多个模块
 func Import(ps ...*Mod) {
 	for _, p := range ps {
+		Emit("OnImport", p)
 		for _, m := range p.Middleware {
 			if m != nil {
 				modMiddleware = append(modMiddleware, m)
