@@ -79,6 +79,9 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 				doc["CreatedBy"] = doc["CreatedBy"].(bson.ObjectId)
 			}
 		}
+		// 设置UpdatedXx初始值等于CreatedXx
+		doc["UpdatedAt"] = doc["CreatedAt"]
+		doc["UpdatedBy"] = doc["CreatedBy"]
 		docs[index] = doc
 	}
 	C := C(m.Collection)
