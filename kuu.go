@@ -105,9 +105,6 @@ func parseSchema(m interface{}) *Schema {
 		} else {
 			sField.Name = sField.Code
 		}
-		if sField.Tags["alias"] != "" {
-			sField.Name = tags.Get("alias")
-		}
 		if sField.Tags["join"] != "" {
 			sField.JoinName, sField.JoinSelect = parseJoinSelect(tags.Get("join"))
 		}

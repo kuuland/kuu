@@ -95,10 +95,92 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 	}()
 	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
 	m.Scope.CallMethod(BeforeCreateEnum, m.schema)
+	// 先保存外键
+	handleJoinBeforeCreate(docs, m.schema)
 	err := C.Insert(docs...)
 	m.Scope.CallMethod(AfterCreateEnum, m.schema)
 	m.Scope.CallMethod(AfterSaveEnum, m.schema)
 	return docs, err
+}
+
+func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{} {
+	for index, item := range docs {
+		var doc kuu.H
+		kuu.JSONConvert(item, &doc)
+		// 找出引用字段
+		joinFields := getJoinFields(schema, nil)
+		for _, field := range joinFields {
+			refData := doc[field.Code]
+			if field.IsArray {
+				// 数组
+				if v, ok := refData.([]string); ok {
+					arr := []interface{}{}
+					for _, str := range v {
+						arr = append(arr, bson.ObjectIdHex(str))
+					}
+					doc[field.Code] = arr
+				} else if v, ok := refData.([]bson.ObjectId); ok {
+					doc[field.Code] = v
+				} else {
+					var refDocs []kuu.H
+					kuu.JSONConvert(doc[field.Code], &refDocs)
+					arr := []interface{}{}
+					newDocs := []kuu.H{}
+					for _, refDoc := range refDocs {
+						if refDoc["_id"] != nil {
+							if v, ok := refDoc["_id"].(string); ok {
+								arr = append(arr, bson.ObjectIdHex(v))
+							} else if v, ok := refDoc["_id"].(bson.ObjectId); ok {
+								arr = append(arr, v)
+							}
+						} else {
+							newDocs = append(newDocs, refDoc)
+						}
+					}
+					if len(newDocs) > 0 {
+						RefModel := kuu.Model(field.JoinName)
+						if ret, err := RefModel.Create(newDocs); err == nil {
+							var retDocs []kuu.H
+							kuu.JSONConvert(ret, retDocs)
+							for _, retDoc := range retDocs {
+								arr = append(arr, retDoc["_id"])
+							}
+						}
+					}
+					doc[field.Code] = arr
+				}
+			} else {
+				// 单个
+				if v, ok := refData.(string); ok {
+					doc[field.Code] = bson.ObjectIdHex(v)
+				} else if v, ok := refData.(bson.ObjectId); ok {
+					doc[field.Code] = v
+				} else {
+					var refDoc kuu.H
+					kuu.JSONConvert(doc[field.Code], &refDoc)
+					if refDoc == nil {
+						continue
+					}
+					if refDoc["_id"] == nil {
+						RefModel := kuu.Model(field.JoinName)
+						if ret, err := RefModel.Create(refDoc); err == nil {
+							var newDoc kuu.H
+							kuu.JSONConvert(ret[0], newDoc)
+							doc[field.Code] = newDoc["_id"]
+						}
+					} else {
+						if v, ok := refDoc["_id"].(string); ok {
+							doc[field.Code] = bson.ObjectIdHex(v)
+						} else if v, ok := refDoc["_id"].(bson.ObjectId); ok {
+							doc[field.Code] = v
+						}
+					}
+				}
+			}
+		}
+		docs[index] = doc
+	}
+	return docs
 }
 
 // Remove 实现基于条件的逻辑删除
