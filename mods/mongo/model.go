@@ -69,7 +69,6 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
-		doc["_id"] = bson.NewObjectId()
 		doc["CreatedAt"] = time.Now()
 		if doc["CreatedBy"] != nil {
 			switch doc["CreatedBy"].(type) {
@@ -111,49 +110,65 @@ func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{
 		joinFields := getJoinFields(schema, nil)
 		for _, field := range joinFields {
 			refData := doc[field.Code]
+			if refData == nil {
+				continue
+			}
 			if field.IsArray {
 				// 数组
 				if v, ok := refData.([]string); ok {
 					arr := []interface{}{}
 					for _, str := range v {
+						if str == "" {
+							continue
+						}
 						arr = append(arr, bson.ObjectIdHex(str))
 					}
 					doc[field.Code] = arr
 				} else if v, ok := refData.([]bson.ObjectId); ok {
 					doc[field.Code] = v
 				} else {
-					var refDocs []kuu.H
+					var refDocs []interface{}
 					kuu.JSONConvert(doc[field.Code], &refDocs)
-					arr := []interface{}{}
+					arr := []bson.ObjectId{}
 					newDocs := []kuu.H{}
-					for _, refDoc := range refDocs {
-						if refDoc["_id"] != nil {
-							if v, ok := refDoc["_id"].(string); ok {
-								arr = append(arr, bson.ObjectIdHex(v))
-							} else if v, ok := refDoc["_id"].(bson.ObjectId); ok {
-								arr = append(arr, v)
-							}
+					for _, refItem := range refDocs {
+						var refDoc kuu.H
+						kuu.JSONConvert(refItem, &refDoc)
+						if v, ok := refDoc["_id"].(string); ok && v != "" {
+							arr = append(arr, bson.ObjectIdHex(v))
+						} else if v, ok := refDoc["_id"].(bson.ObjectId); ok && v != "" {
+							arr = append(arr, v)
 						} else {
+							id := bson.NewObjectId()
+							refDoc["_id"] = id
+							arr = append(arr, id)
 							newDocs = append(newDocs, refDoc)
 						}
 					}
 					if len(newDocs) > 0 {
+						doc["_id"] = bson.NewObjectId()
 						RefModel := kuu.Model(field.JoinName)
-						if ret, err := RefModel.Create(newDocs); err == nil {
-							var retDocs []kuu.H
-							kuu.JSONConvert(ret, retDocs)
-							for _, retDoc := range retDocs {
-								arr = append(arr, retDoc["_id"])
+						RefSchema := kuu.GetSchema(field.JoinName)
+						// 判断是否存在父引用字段
+						for _, f := range RefSchema.Fields {
+							if f.JoinName != schema.Name {
+								continue
 							}
+							for _, newDoc := range newDocs {
+								newDoc[f.Code] = doc["_id"]
+							}
+						}
+						if _, err := RefModel.Create(newDocs); err != nil {
+							kuu.Error(err)
 						}
 					}
 					doc[field.Code] = arr
 				}
 			} else {
 				// 单个
-				if v, ok := refData.(string); ok {
+				if v, ok := refData.(string); ok && v != "" {
 					doc[field.Code] = bson.ObjectIdHex(v)
-				} else if v, ok := refData.(bson.ObjectId); ok {
+				} else if v, ok := refData.(bson.ObjectId); ok && v != "" {
 					doc[field.Code] = v
 				} else {
 					var refDoc kuu.H
@@ -161,22 +176,28 @@ func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{
 					if refDoc == nil {
 						continue
 					}
-					if refDoc["_id"] == nil {
-						RefModel := kuu.Model(field.JoinName)
-						if ret, err := RefModel.Create(refDoc); err == nil {
-							var newDoc kuu.H
-							kuu.JSONConvert(ret[0], newDoc)
-							doc[field.Code] = newDoc["_id"]
-						}
+					if v, ok := refDoc["_id"].(string); ok && v != "" {
+						doc[field.Code] = bson.ObjectIdHex(v)
+					} else if v, ok := refDoc["_id"].(bson.ObjectId); ok && v != "" {
+						doc[field.Code] = v
 					} else {
-						if v, ok := refDoc["_id"].(string); ok {
-							doc[field.Code] = bson.ObjectIdHex(v)
-						} else if v, ok := refDoc["_id"].(bson.ObjectId); ok {
-							doc[field.Code] = v
+						refDoc["_id"] = bson.NewObjectId()
+						doc[field.Code] = refDoc["_id"]
+						RefModel := kuu.Model(field.JoinName)
+						if _, err := RefModel.Create(refDoc); err != nil {
+							kuu.Error(err)
 						}
 					}
 				}
 			}
+		}
+		// 确保_id类型为ObjectId
+		if v, ok := doc["_id"].(string); ok && v != "" {
+			doc["_id"] = bson.ObjectIdHex(v)
+		} else if v, ok := doc["_id"].(bson.ObjectId); ok && v != "" {
+			doc["_id"] = v
+		} else {
+			doc["_id"] = nil
 		}
 		docs[index] = doc
 	}
