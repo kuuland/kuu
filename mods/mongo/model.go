@@ -197,7 +197,7 @@ func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{
 		} else if v, ok := doc["_id"].(bson.ObjectId); ok && v != "" {
 			doc["_id"] = v
 		} else {
-			doc["_id"] = nil
+			delete(doc, "_id")
 		}
 		docs[index] = doc
 	}
