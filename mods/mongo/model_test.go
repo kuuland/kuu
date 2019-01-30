@@ -69,3 +69,16 @@ func TestJoinCreate(t *testing.T) {
 		fmt.Println(ret)
 	}
 }
+
+func TestCheckID(t *testing.T) {
+	before := kuu.H{
+		"_id": kuu.H{
+			"$in": []string{
+				"5c4fd138b0fd26fddb68499b",
+			},
+		},
+	}
+	after := checkID(before)
+	fmt.Println(before)
+	fmt.Println(after)
+}

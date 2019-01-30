@@ -626,8 +626,21 @@ func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
 }
 
 func checkID(cond kuu.H) kuu.H {
-	if cond["_id"] != nil {
-		cond["_id"] = bson.ObjectIdHex(cond["_id"].(string))
+	if v, ok := cond["_id"].(string); ok {
+		cond["_id"] = bson.ObjectIdHex(v)
+	} else if v, ok := cond["_id"].(bson.ObjectId); ok {
+		cond["_id"] = v
+	} else if v, ok := cond["_id"].(kuu.H); ok {
+		if v["$in"] != nil {
+			arr := []bson.ObjectId{}
+			if varr, ok := v["$in"].([]string); ok {
+				for _, str := range varr {
+					arr = append(arr, bson.ObjectIdHex(str))
+				}
+			}
+			v["$in"] = arr
+			cond["_id"] = v
+		}
 	}
 	return cond
 }
