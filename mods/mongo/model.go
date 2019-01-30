@@ -539,29 +539,34 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	if doc == nil {
 		doc = make(kuu.H)
 	}
-	doc["IsDeleted"] = true
-	doc["UpdatedAt"] = time.Now()
-	if doc["UpdatedBy"] != nil {
-		switch doc["UpdatedBy"].(type) {
-		case string:
-			doc["UpdatedBy"] = bson.ObjectIdHex(doc["UpdatedBy"].(string))
-		case bson.ObjectId:
-			doc["UpdatedBy"] = doc["UpdatedBy"].(bson.ObjectId)
-		}
-	}
 	// 确保_id参数为ObjectId类型
 	cond = checkID(cond)
 	doc = checkUpdateSet(doc)
+	_set := doc["$set"].(kuu.H)
 	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
+	delete(_set, "_id")
+	delete(_set, "CreatedAt")
+	delete(_set, "CreatedBy")
+	_set["IsDeleted"] = true
+	_set["UpdatedAt"] = time.Now()
+	if _set["UpdatedBy"] != nil {
+		switch _set["UpdatedBy"].(type) {
+		case string:
+			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
+		case bson.ObjectId:
+			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		}
+	}
+	doc["$set"] = _set
 	m.Scope.CallMethod(BeforeRemoveEnum, m.schema)
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
 	}
+	// 外键数据检测
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
-	doc["$set"] = rets[0]
+	_set = rets[0].(kuu.H)
+	_set["UpdatedAt"] = time.Now()
+	doc["$set"] = _set
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterRemoveEnum, m.schema)
 	return ret, err
@@ -605,52 +610,37 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 		m.Session = nil
 		m.Scope = nil
 	}()
-	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
-	doc = setUpdateValue(doc, "IsDeleted", nil)
-	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
-	if doc["UpdatedBy"] != nil {
-		switch doc["UpdatedBy"].(type) {
-		case string:
-			doc["UpdatedBy"] = bson.ObjectIdHex(doc["UpdatedBy"].(string))
-		case bson.ObjectId:
-			doc["UpdatedBy"] = doc["UpdatedBy"].(bson.ObjectId)
-		}
-	}
 	cond = checkID(cond)
 	doc = checkUpdateSet(doc)
+	_set := doc["$set"].(kuu.H)
+	// 删除不合法字段
+	delete(_set, "_id")
+	delete(_set, "CreatedAt")
+	delete(_set, "CreatedBy")
+	delete(_set, "IsDeleted")
+	_set["IsDeleted"] = true
+	_set["UpdatedAt"] = time.Now()
+	if _set["UpdatedBy"] != nil {
+		switch _set["UpdatedBy"].(type) {
+		case string:
+			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
+		case bson.ObjectId:
+			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		}
+	}
+	doc["$set"] = _set
 	m.Scope.CallMethod(BeforeUpdateEnum, m.schema)
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
 	}
+	// 外键数据检测
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
-	doc["$set"] = rets[0]
+	_set = rets[0].(kuu.H)
+	_set["UpdatedAt"] = time.Now()
+	doc["$set"] = _set
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
 	return ret, err
-}
-
-func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
-	if doc["$set"] != nil {
-		set := kuu.H{}
-		kuu.JSONConvert(doc["$set"], &set)
-		if value == nil {
-			delete(set, key)
-		} else {
-			set[key] = value
-		}
-		doc["$set"] = set
-	} else {
-		if value == nil {
-			delete(doc, key)
-		} else {
-			doc[key] = value
-		}
-
-	}
-	return doc
 }
 
 func checkID(cond kuu.H) kuu.H {
