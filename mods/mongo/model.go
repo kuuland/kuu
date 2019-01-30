@@ -536,6 +536,11 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	}
 	doc["IsDeleted"] = true
 	doc["UpdatedAt"] = time.Now()
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
+	doc = setUpdateValue(doc, "IsDeleted", nil)
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
 		case string:
@@ -595,6 +600,11 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 		m.Scope = nil
 	}()
 	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
+	doc = setUpdateValue(doc, "IsDeleted", nil)
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
 		case string:
@@ -618,10 +628,19 @@ func setUpdateValue(doc kuu.H, key string, value interface{}) kuu.H {
 	if doc["$set"] != nil {
 		set := kuu.H{}
 		kuu.JSONConvert(doc["$set"], &set)
-		set[key] = value
+		if value == nil {
+			delete(set, key)
+		} else {
+			set[key] = value
+		}
 		doc["$set"] = set
 	} else {
-		doc[key] = value
+		if value == nil {
+			delete(doc, key)
+		} else {
+			doc[key] = value
+		}
+
 	}
 	return doc
 }
