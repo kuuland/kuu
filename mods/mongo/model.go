@@ -549,16 +549,16 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	// 确保_id参数为ObjectId类型
 	cond = checkID(cond)
 	doc = checkUpdateSet(doc)
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
 	m.Scope.CallMethod(BeforeRemoveEnum, m.schema)
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
 	}
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
 	doc["$set"] = rets[0]
-	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterRemoveEnum, m.schema)
 	return ret, err
@@ -602,6 +602,11 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 		m.Session = nil
 		m.Scope = nil
 	}()
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
+	doc = setUpdateValue(doc, "IsDeleted", nil)
 	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
@@ -619,11 +624,6 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	}
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
 	doc["$set"] = rets[0]
-	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
-	doc = setUpdateValue(doc, "IsDeleted", nil)
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
 	return ret, err
