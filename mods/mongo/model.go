@@ -106,6 +106,14 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
+		// 确保_id类型为ObjectId
+		if v, ok := doc["_id"].(string); ok && v != "" {
+			doc["_id"] = bson.ObjectIdHex(v)
+		} else if v, ok := doc["_id"].(bson.ObjectId); ok && v != "" {
+			doc["_id"] = v
+		} else {
+			delete(doc, "_id")
+		}
 		// 找出引用字段
 		joinFields := getJoinFields(schema, nil)
 		for _, field := range joinFields {
@@ -146,15 +154,15 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 						}
 					}
 					if len(newDocs) > 0 {
-						if v, ok := doc["_id"].(bson.ObjectId); !ok || v == "" {
-							doc["_id"] = bson.NewObjectId()
-						}
 						RefModel := kuu.Model(field.JoinName)
 						RefSchema := kuu.GetSchema(field.JoinName)
 						// 判断是否存在父引用字段
 						for _, f := range RefSchema.Fields {
 							if f.JoinName != schema.Name {
 								continue
+							}
+							if v, ok := doc["_id"].(bson.ObjectId); !ok || v == "" {
+								doc["_id"] = bson.NewObjectId()
 							}
 							for _, newDoc := range newDocs {
 								newDoc[f.Code] = doc["_id"]
@@ -192,14 +200,6 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 					}
 				}
 			}
-		}
-		// 确保_id类型为ObjectId
-		if v, ok := doc["_id"].(string); ok && v != "" {
-			doc["_id"] = bson.ObjectIdHex(v)
-		} else if v, ok := doc["_id"].(bson.ObjectId); ok && v != "" {
-			doc["_id"] = v
-		} else {
-			delete(doc, "_id")
 		}
 		docs[index] = doc
 	}
@@ -538,10 +538,6 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	}
 	doc["IsDeleted"] = true
 	doc["UpdatedAt"] = time.Now()
-	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
 		case string:
@@ -559,6 +555,10 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	}
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
 	doc["$set"] = rets[0]
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterRemoveEnum, m.schema)
 	return ret, err
@@ -603,11 +603,6 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 		m.Scope = nil
 	}()
 	doc = setUpdateValue(doc, "UpdatedAt", time.Now())
-	// 删除不合法字段
-	doc = setUpdateValue(doc, "_id", nil)
-	doc = setUpdateValue(doc, "CreatedAt", nil)
-	doc = setUpdateValue(doc, "CreatedBy", nil)
-	doc = setUpdateValue(doc, "IsDeleted", nil)
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
 		case string:
@@ -624,6 +619,11 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	}
 	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
 	doc["$set"] = rets[0]
+	// 删除不合法字段
+	doc = setUpdateValue(doc, "_id", nil)
+	doc = setUpdateValue(doc, "CreatedAt", nil)
+	doc = setUpdateValue(doc, "CreatedBy", nil)
+	doc = setUpdateValue(doc, "IsDeleted", nil)
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
 	return ret, err
