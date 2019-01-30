@@ -95,14 +95,14 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
 	m.Scope.CallMethod(BeforeCreateEnum, m.schema)
 	// 先保存外键
-	handleJoinBeforeCreate(docs, m.schema)
+	docs = handleJoinBeforeSave(docs, m.schema)
 	err := C.Insert(docs...)
 	m.Scope.CallMethod(AfterCreateEnum, m.schema)
 	m.Scope.CallMethod(AfterSaveEnum, m.schema)
 	return docs, err
 }
 
-func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{} {
+func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} {
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
@@ -146,7 +146,9 @@ func handleJoinBeforeCreate(docs []interface{}, schema *kuu.Schema) []interface{
 						}
 					}
 					if len(newDocs) > 0 {
-						doc["_id"] = bson.NewObjectId()
+						if v, ok := doc["_id"].(bson.ObjectId); !ok || v == "" {
+							doc["_id"] = bson.NewObjectId()
+						}
 						RefModel := kuu.Model(field.JoinName)
 						RefSchema := kuu.GetSchema(field.JoinName)
 						// 判断是否存在父引用字段
@@ -555,6 +557,8 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
 	}
+	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
+	doc["$set"] = rets[0]
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterRemoveEnum, m.schema)
 	return ret, err
@@ -618,6 +622,8 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
 	}
+	rets := handleJoinBeforeSave([]interface{}{doc["$set"]}, m.schema)
+	doc["$set"] = rets[0]
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
 	return ret, err
