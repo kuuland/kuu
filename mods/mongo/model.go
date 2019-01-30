@@ -135,39 +135,42 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 				} else if v, ok := refData.([]bson.ObjectId); ok {
 					doc[field.Code] = v
 				} else {
+					RefModel := kuu.Model(field.JoinName)
 					var refDocs []interface{}
 					kuu.JSONConvert(doc[field.Code], &refDocs)
 					arr := []bson.ObjectId{}
 					newDocs := []kuu.H{}
 					for _, refItem := range refDocs {
-						var refDoc kuu.H
+						var (
+							refDoc   kuu.H
+							existsID bson.ObjectId
+						)
 						kuu.JSONConvert(refItem, &refDoc)
 						if v, ok := refDoc["_id"].(string); ok && v != "" {
-							arr = append(arr, bson.ObjectIdHex(v))
+							existsID = bson.ObjectIdHex(v)
+							arr = append(arr, existsID)
 						} else if v, ok := refDoc["_id"].(bson.ObjectId); ok && v != "" {
-							arr = append(arr, v)
+							existsID = v
+							arr = append(arr, existsID)
 						} else {
 							id := bson.NewObjectId()
 							refDoc["_id"] = id
 							arr = append(arr, id)
 							newDocs = append(newDocs, refDoc)
 						}
-					}
-					if len(newDocs) > 0 {
-						RefModel := kuu.Model(field.JoinName)
-						RefSchema := kuu.GetSchema(field.JoinName)
-						// 判断是否存在父引用字段
-						for _, f := range RefSchema.Fields {
-							if f.JoinName != schema.Name {
-								continue
-							}
-							if v, ok := doc["_id"].(bson.ObjectId); !ok || v == "" {
-								doc["_id"] = bson.NewObjectId()
-							}
-							for _, newDoc := range newDocs {
-								newDoc[f.Code] = doc["_id"]
+						if existsID != "" {
+							// 作更新操作
+							var existsDoc kuu.H
+							kuu.JSONConvert(refDoc, &existsDoc)
+							delete(existsDoc, "_id")
+							if len(existsDoc) > 0 {
+								if err := RefModel.Update(kuu.H{"_id": existsID}, refDoc); err != nil {
+									kuu.Error(err)
+								}
 							}
 						}
+					}
+					if len(newDocs) > 0 {
 						if _, err := RefModel.Create(newDocs); err != nil {
 							kuu.Error(err)
 						}
