@@ -544,6 +544,7 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 			doc["UpdatedBy"] = doc["UpdatedBy"].(bson.ObjectId)
 		}
 	}
+	// 确保_id参数为ObjectId类型
 	cond = checkID(cond)
 	doc = checkUpdateSet(doc)
 	m.Scope.CallMethod(BeforeRemoveEnum, m.schema)
@@ -630,11 +631,25 @@ func checkID(cond kuu.H) kuu.H {
 		cond["_id"] = bson.ObjectIdHex(v)
 	} else if v, ok := cond["_id"].(bson.ObjectId); ok {
 		cond["_id"] = v
-	} else if v, ok := cond["_id"].(kuu.H); ok {
+	} else {
+		var v kuu.H
+		kuu.JSONConvert(cond["_id"], &v)
 		if v["$in"] != nil {
 			arr := []bson.ObjectId{}
-			if varr, ok := v["$in"].([]string); ok {
-				for _, str := range varr {
+			if vv, ok := v["$in"].([]interface{}); ok {
+				for _, str := range vv {
+					var a bson.ObjectId
+					if v, ok := str.(string); ok && v != "" {
+						a = bson.ObjectIdHex(v)
+					} else if v, ok := str.(bson.ObjectId); ok && v != "" {
+						a = v
+					}
+					if a != "" {
+						arr = append(arr, a)
+					}
+				}
+			} else if vv, ok := v["$in"].([]string); ok {
+				for _, str := range vv {
 					arr = append(arr, bson.ObjectIdHex(str))
 				}
 			}

@@ -69,12 +69,25 @@ func TestJoinCreate(t *testing.T) {
 		fmt.Println(ret)
 	}
 }
+func TestJoinRemove(t *testing.T) {
+	cond := kuu.H{
+		"_id": kuu.H{
+			"$in": []string{
+				"5c4fc6fe1bac965d989600db",
+			},
+		},
+	}
+	DictModel := kuu.Model("Dict")
+	if err := DictModel.Remove(cond); err != nil {
+		kuu.Error(err)
+	}
+}
 
 func TestCheckID(t *testing.T) {
 	before := kuu.H{
 		"_id": kuu.H{
 			"$in": []string{
-				"5c4fd138b0fd26fddb68499b",
+				"5c4fc6fe1bac965d989600db",
 			},
 		},
 	}
