@@ -540,7 +540,6 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	doc = setUpdateValue(doc, "_id", nil)
 	doc = setUpdateValue(doc, "CreatedAt", nil)
 	doc = setUpdateValue(doc, "CreatedBy", nil)
-	doc = setUpdateValue(doc, "IsDeleted", nil)
 	if doc["UpdatedBy"] != nil {
 		switch doc["UpdatedBy"].(type) {
 		case string:
