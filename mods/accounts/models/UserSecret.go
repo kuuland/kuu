@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 // UserSecret 用户密钥
 type UserSecret struct {
 	ID     string `json:"_id" displayName:"用户密钥"`
@@ -12,8 +10,8 @@ type UserSecret struct {
 	Exp    int64  `name:"过期时间戳"`
 	Method string `name:"登录方式" remark:"login/logout"`
 	// 标准字段
-	CreatedAt time.Time `name:"创建时间"`
-	UpdatedAt time.Time `name:"修改时间"`
+	CreatedAt int64 `name:"创建时间"`
+	UpdatedAt int64 `name:"修改时间"`
 	IsDeleted bool      `name:"是否已删除"`
 	Remark    string    `name:"备注"`
 }

@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 // SignHistory 用户登入/登出历史
 type SignHistory struct {
 	ID        string `json:"_id" displayName:"用户登入/登出历史"`
@@ -10,8 +8,8 @@ type SignHistory struct {
 	Token     string `name:"令牌信息"`
 	Method    string `name:"登录方式" remark:"login/logout"`
 	// 标准字段
-	CreatedAt time.Time `name:"创建时间"`
-	UpdatedAt time.Time `name:"修改时间"`
+	CreatedAt int64 `name:"创建时间"`
+	UpdatedAt int64 `name:"修改时间"`
 	IsDeleted bool      `name:"是否已删除"`
 	Remark    string    `name:"备注"`
 }
