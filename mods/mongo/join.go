@@ -122,7 +122,7 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 		joinFields := getJoinFields(schema, nil)
 		for _, field := range joinFields {
 			refData := doc[field.Code]
-			if refData == nil || field.Name == "CreatedBy" || field.Name == "UpdatedBy" {
+			if refData == nil || field.Code == "CreatedBy" || field.Code == "UpdatedBy" {
 				continue
 			}
 			if field.IsArray {
