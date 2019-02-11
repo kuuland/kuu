@@ -516,8 +516,6 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	delete(_set, "_id")
 	delete(_set, "CreatedAt")
 	delete(_set, "CreatedBy")
-	delete(_set, "IsDeleted")
-	_set["IsDeleted"] = true
 	_set["UpdatedAt"] = now.Unix()
 	_set["UpdatedAtFmt"] = now.Format(timeFormat)
 	if _set["UpdatedBy"] != nil {
