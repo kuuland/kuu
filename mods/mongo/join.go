@@ -122,7 +122,7 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 		joinFields := getJoinFields(schema, nil)
 		for _, field := range joinFields {
 			refData := doc[field.Code]
-			if refData == nil || field.Code == "CreatedBy" || field.Code == "UpdatedBy" {
+			if refData == nil {
 				continue
 			}
 			if field.IsArray {
@@ -174,7 +174,7 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 							}
 						}
 					}
-					if len(newDocs) > 0 {
+					if len(newDocs) > 0 && (field.Code != "CreatedBy" && field.Code != "UpdatedBy") {
 						if _, err := RefModel.Create(newDocs); err != nil {
 							kuu.Error(err)
 						}
@@ -197,7 +197,7 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 						doc[field.Code] = bson.ObjectIdHex(v)
 					} else if v, ok := refDoc["_id"].(bson.ObjectId); ok && v != "" {
 						doc[field.Code] = v
-					} else {
+					} else if field.Code != "CreatedBy" && field.Code != "UpdatedBy" {
 						refDoc["_id"] = bson.NewObjectId()
 						doc[field.Code] = refDoc["_id"]
 						RefModel := kuu.Model(field.JoinName)
