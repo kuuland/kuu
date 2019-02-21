@@ -28,7 +28,7 @@ func Auth(c *gin.Context) {
 			} else {
 				kuu.Error("Token decoding failed: %s", valid.Error())
 			}
-			result := kuu.L(c, "auth_error")
+			result := kuu.L(c, "auth_error", "Your session may have expired, please try signing in again")
 			c.AbortWithStatusJSON(http.StatusOK, kuu.StdErrorWithCode(result, 555))
 		}
 	}
