@@ -22,7 +22,7 @@ var LoginHandler = kuu.RouteInfo{
 		payload, err := utils.LoginHandler(c)
 		claims := jwt.MapClaims{}
 		secret := uuid.NewV4().String()
-		kuu.JSONConvert(payload, claims)
+		kuu.JSONConvert(&payload, claims)
 		if err != nil {
 			c.JSON(http.StatusOK, kuu.StdError(err.Error()))
 			return

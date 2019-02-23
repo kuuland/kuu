@@ -10,7 +10,7 @@ import (
 )
 
 // SetLoginHandler 设置登录处理函数
-func SetLoginHandler(handler func(*gin.Context) (interface{}, error)) {
+func SetLoginHandler(handler func(*gin.Context) (kuu.H, error)) {
 	utils.LoginHandler = handler
 }
 
@@ -53,7 +53,7 @@ func SetWhiteList(list []string, replace bool) []string {
 }
 
 // All 模块声明
-func All(loginHandler func(*gin.Context) (interface{}, error)) *kuu.Mod {
+func All(loginHandler func(*gin.Context) (kuu.H, error)) *kuu.Mod {
 	if loginHandler != nil {
 		SetLoginHandler(loginHandler)
 	}
