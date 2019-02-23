@@ -78,8 +78,11 @@ func Decoded(tokenString string, secret string) jwt.MapClaims {
 		return []byte(secret), nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims
+	if token != nil {
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if ok && token.Valid {
+			return claims
+		}
 	}
 	kuu.Error(err)
 	return nil
