@@ -49,7 +49,7 @@ func DecodedContext(c *gin.Context) (jwt.MapClaims, *models.UserSecret) {
 	var secret = &models.UserSecret{}
 	UserSecret.One(kuu.H{
 		"Cond": kuu.H{"UserID": userID},
-		"Sort": "-UpdatedAt,-CreatedAt",
+		"Sort": []string{"-UpdatedAt", "-CreatedAt"},
 	}, secret)
 	if secret == nil || secret.Secret == "" {
 		kuu.Error("Secret not found based on token '%s'!", token)

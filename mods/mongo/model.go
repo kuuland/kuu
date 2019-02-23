@@ -295,7 +295,9 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Range == PAGE {
 		query.Skip((p.Page - 1) * p.Size).Limit(p.Size)
 	}
-	query.Sort(p.Sort...)
+	if p.Sort != nil && len(p.Sort) > 0 {
+		query.Sort(p.Sort...)
+	}
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	var result []kuu.H
 	if err := query.All(&result); err != nil {
@@ -408,8 +410,11 @@ func (m *Model) One(a interface{}, data interface{}) error {
 	if p.Project != nil {
 		query.Select(p.Project)
 	}
-	result := kuu.H{}
+	if p.Sort != nil && len(p.Sort) > 0 {
+		query.Sort(p.Sort...)
+	}
 	m.Scope.CallMethod(BeforeFindEnum, m.schema)
+	result := kuu.H{}
 	err := query.One(&result)
 	if err == nil {
 		oneJoin(m.Scope.Session, m.schema, p.Project, result)
