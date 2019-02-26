@@ -21,7 +21,7 @@ func List(k *kuu.Kuu, name string) func(*gin.Context) {
 		scope.Params = p
 		scope.Model = m
 		scope.CallMethod(BeforeListRouteEnum, schema)
-		var list []kuu.H
+		list := []kuu.H{}
 		data, err := m.List(p, &list)
 		if err != nil {
 			handleError(err, c)
