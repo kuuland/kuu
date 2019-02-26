@@ -146,25 +146,25 @@ func MountAll(k *kuu.Kuu, name string) {
 }
 
 func setCreatedBy(c *gin.Context, docs []kuu.H) []kuu.H {
-	var jwtData kuu.H
-	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-		kuu.JSONConvert(&value, &jwtData)
+	var uid string
+	if v, e := c.Get("LoginUID"); e {
+		uid = v.(string)
 	}
-	for _, item := range docs {
-		if jwtData != nil && jwtData["_id"] != nil {
-			item["CreatedBy"] = jwtData["_id"]
+	if uid != "" {
+		for _, item := range docs {
+			item["CreatedBy"] = uid
 		}
 	}
 	return docs
 }
 
 func setUpdatedBy(c *gin.Context, data kuu.H) kuu.H {
-	var jwtData kuu.H
-	if value, exists := c.Get("JWTDecoded"); exists && value != nil {
-		kuu.JSONConvert(&value, &jwtData)
+	var uid string
+	if v, e := c.Get("LoginUID"); e {
+		uid = v.(string)
 	}
-	if data["UpdatedBy"] == nil && jwtData != nil && jwtData["_id"] != nil {
-		data["UpdatedBy"] = jwtData["_id"]
+	if uid != "" {
+		data["UpdatedBy"] = uid
 	}
 	return data
 }
