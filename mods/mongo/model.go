@@ -71,6 +71,11 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 	for index, item := range docs {
 		var doc kuu.H
 		kuu.JSONConvert(item, &doc)
+		origin := m.schema.Origin
+		m.schema.Origin = &doc
+		m.Scope.CallMethod(BeforeSaveEnum, m.schema)
+		m.Scope.CallMethod(BeforeCreateEnum, m.schema)
+		m.schema.Origin = origin
 		doc["CreatedAt"] = now.Unix()
 		doc["CreatedAtFmt"] = now.Format(timeFormat)
 		if doc["CreatedBy"] != nil {
@@ -95,8 +100,6 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		m.Session = nil
 		m.Scope = nil
 	}()
-	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
-	m.Scope.CallMethod(BeforeCreateEnum, m.schema)
 	// 先保存外键
 	docs = handleJoinBeforeSave(docs, m.schema)
 	err := C.Insert(docs...)
