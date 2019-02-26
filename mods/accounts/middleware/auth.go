@@ -1,12 +1,11 @@
 package middleware
 
 import (
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/mods/accounts/utils"
+	"net/http"
+	"regexp"
 )
 
 // Auth 认证中间件
@@ -35,21 +34,15 @@ func Auth(c *gin.Context) {
 }
 
 func whiteListCheck(c *gin.Context) bool {
-	ret := false
 	if len(utils.WhiteList) == 0 {
-		return ret
+		return false
 	}
-	value := kuu.Join(c.Request.Method, " ", c.Request.URL.Path)
-	value = strings.ToLower(value)
+	input := kuu.Join(c.Request.Method, " ", c.Request.URL.Path)
 	for _, item := range utils.WhiteList {
-		if s := strings.Split(item, " "); len(s) == 1 {
-			item = kuu.Join(c.Request.Method, " ", item)
-		}
-		item = strings.ToLower(item)
-		if value == item {
-			ret = true
-			break
+		reg := regexp.MustCompile(item)
+		if reg.MatchString(input) {
+			return true
 		}
 	}
-	return ret
+	return false
 }
