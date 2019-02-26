@@ -21,6 +21,9 @@ func Create(k *kuu.Kuu, name string) func(*gin.Context) {
 			return
 		}
 		docs = setCreatedBy(c, docs)
+		for index, doc := range docs {
+			docs[index] = setUpdatedBy(c, doc)
+		}
 		// 执行查询
 		m := kuu.Model(name)
 		scope.Model = m
