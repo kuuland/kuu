@@ -20,6 +20,8 @@ func Auth(c *gin.Context) {
 			// 更新令牌和密钥到上下文缓存中
 			c.Set(utils.ContextSecretKey, secret)
 			c.Set(utils.ContextClaimsKey, claims)
+			c.Set("LoginToken", utils.ParseToken(c))
+			c.Set("LoginUID", utils.ParseUserID(c))
 			c.Next()
 		} else {
 			if claims == nil {
