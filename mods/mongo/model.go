@@ -83,6 +83,7 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		}
 		// 设置UpdatedXx初始值等于CreatedXx
 		doc["UpdatedAt"] = doc["CreatedAt"]
+		doc["UpdatedAtFmt"] = doc["CreatedAtFmt"]
 		doc["UpdatedBy"] = doc["CreatedBy"]
 		docs[index] = doc
 	}
