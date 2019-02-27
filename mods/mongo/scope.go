@@ -26,6 +26,7 @@ type Scope struct {
 	Collection *mgo.Collection
 	Query      *mgo.Query
 	Cache      kuu.H
+	CreateData *[]interface{}
 }
 
 func (scope *Scope) CallMethod(action int, schema *kuu.Schema) (err error) {
