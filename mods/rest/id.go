@@ -13,6 +13,7 @@ func ID(k *kuu.Kuu, name string) func(*gin.Context) {
 	handler := func(c *gin.Context) {
 		scope := &Scope{
 			Context: c,
+			Cache:   make(kuu.H),
 		}
 		// 参数处理
 		p := ParseParams(c)
