@@ -5,6 +5,16 @@ import (
 	"github.com/kuuland/kuu"
 )
 
+type Scope struct {
+	Operation  string
+	Session    *mgo.Session
+	Collection *mgo.Collection
+	Query      *mgo.Query
+	Cache      kuu.H
+	CreateData *[]interface{}
+	Schema     *kuu.Schema
+}
+
 const (
 	BeforeSaveEnum = iota
 	BeforeCreateEnum
@@ -20,16 +30,49 @@ const (
 	AfterFindEnum
 )
 
-type Scope struct {
-	Operation  string
-	Session    *mgo.Session
-	Collection *mgo.Collection
-	Query      *mgo.Query
-	Cache      kuu.H
-	CreateData *[]interface{}
+var globalHooks map[int32][]func(*Scope) error
+
+// AddGlobalHook 添加全局持久化钩子
+func AddGlobalHook(action int32, handler func(*Scope) error) {
+	if handler == nil {
+		return
+	}
+	if globalHooks == nil {
+		globalHooks = make(map[int32][]func(*Scope) error, 0)
+	}
+	hooks := globalHooks[action]
+	if hooks == nil {
+		hooks = make([]func(*Scope) error, 0)
+	}
+	hooks = append(hooks, handler)
+	globalHooks[action] = hooks
 }
 
-func (scope *Scope) CallMethod(action int, schema *kuu.Schema) (err error) {
+func callGlobalHooks(action int32, scope *Scope) error {
+	if globalHooks == nil {
+		return nil
+	}
+	for key, value := range globalHooks {
+		if key != action {
+			continue
+		}
+		for _, handler := range value {
+			if err := handler(scope); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// CallMethod 调用钩子
+func (scope *Scope) CallMethod(action int32, schema *kuu.Schema) (err error) {
+	scope.Schema = schema
+	// 调用全局钩子
+	if err = callGlobalHooks(action, scope); err != nil {
+		return
+	}
+	// 调用模型钩子
 	switch action {
 	case BeforeSaveEnum:
 		if s, ok := schema.Origin.(IBeforeSave); ok {
@@ -80,5 +123,6 @@ func (scope *Scope) CallMethod(action int, schema *kuu.Schema) (err error) {
 			err = s.AfterFind(scope)
 		}
 	}
+	scope.Schema = nil
 	return err
 }
