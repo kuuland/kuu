@@ -23,7 +23,7 @@ var (
 	// Schemas 数据模型集合
 	Schemas = map[string]*Schema{}
 	// Data 全局数据缓存集
-	Data = map[string]string{}
+	Data = H{}
 )
 
 var (
