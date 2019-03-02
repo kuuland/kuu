@@ -3,10 +3,12 @@ package kuu
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -20,6 +22,8 @@ var (
 	ENV string
 	// Schemas 数据模型集合
 	Schemas = map[string]*Schema{}
+	// Data 全局数据缓存集
+	Data = map[string]string{}
 )
 
 var (
@@ -374,6 +378,19 @@ func StdError(msg string) H {
 // StdErrorWithCode 只包含错误信息和错误码的Std
 func StdErrorWithCode(msg string, code int) H {
 	return Std(nil, msg, code)
+}
+
+// GoID 获取Goroutine ID
+func GoID() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	s := string(buf[:n])
+	idField := strings.Fields(strings.TrimPrefix(s, "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
 }
 
 func resolveConfig(config []H) H {
