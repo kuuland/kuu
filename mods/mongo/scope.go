@@ -9,7 +9,7 @@ type Scope struct {
 	Operation  string
 	Session    *mgo.Session
 	Collection *mgo.Collection
-	Query      *mgo.Query
+	Params     *Params
 	Cache      kuu.H
 	CreateData *[]interface{}
 	Schema     *kuu.Schema

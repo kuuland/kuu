@@ -285,8 +285,9 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 		m.Scope = nil
 	}()
 	p.Cond = handleJoinBeforeQuery(p.Cond, m.schema)
+	m.Scope.Params = p
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	query := C.Find(p.Cond)
-	m.Scope.Query = query
 	totalRecords, err := query.Count()
 	if err != nil {
 		return nil, err
@@ -300,7 +301,6 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Sort != nil && len(p.Sort) > 0 {
 		query.Sort(p.Sort...)
 	}
-	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	var result []kuu.H
 	if err := query.All(&result); err != nil {
 		return nil, err
@@ -370,14 +370,14 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 		m.Session = nil
 		m.Scope = nil
 	}()
+	m.Scope.Params = p
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	v := p.ID
 	query := C.FindId(bson.ObjectIdHex(v))
-	m.Scope.Query = query
 	if p.Project != nil {
 		query.Select(p.Project)
 	}
 	result := kuu.H{}
-	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	err := query.One(&result)
 	if err == nil {
 		oneJoin(m.Scope.Session, m.schema, p.Project, result)
@@ -407,15 +407,15 @@ func (m *Model) One(a interface{}, data interface{}) error {
 		m.Session = nil
 		m.Scope = nil
 	}()
+	m.Scope.Params = p
+	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	query := C.Find(p.Cond)
-	m.Scope.Query = query
 	if p.Project != nil {
 		query.Select(p.Project)
 	}
 	if p.Sort != nil && len(p.Sort) > 0 {
 		query.Sort(p.Sort...)
 	}
-	m.Scope.CallMethod(BeforeFindEnum, m.schema)
 	result := kuu.H{}
 	err := query.One(&result)
 	if err == nil {

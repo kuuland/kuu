@@ -52,39 +52,6 @@ func ensureJoinDoc(doc kuu.H, schema *kuu.Schema) kuu.H {
 	return doc
 }
 
-//func toObjectId(q kuu.H, field *kuu.SchemaField) kuu.H {
-//	ret := make(kuu.H)
-//	for key, val := range q {
-//		if reflect.TypeOf(val) == reflect.TypeOf(q) && val != nil {
-//			val = toObjectId(val.(kuu.H), field)
-//		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
-//			arr := make([]kuu.H, 0, 0)
-//			if reflect.TypeOf(val).String() == "[]map[string]interface {}" {
-//				temp := val.([]kuu.H)
-//				for i := 0; i < len(temp); i++ {
-//					v := temp[i]
-//					v = toObjectId(v)
-//					arr = append(arr, v)
-//				}
-//			} else {
-//				if reflect.TypeOf(val).String() != "map[string]interface {}" {
-//					ret[key] = val
-//					continue
-//				}
-//				temp := val.([]interface{})
-//				for i := 0; i < len(temp); i++ {
-//					v := temp[i].(kuu.H)
-//					v = toObjectId(v)
-//					arr = append(arr, v)
-//				}
-//			}
-//			val = arr
-//		}
-//		ret[strings.ToLower(key)] = val
-//	}
-//	return ret
-//}
-
 func handleJoinBeforeQuery(cond kuu.H, schema *kuu.Schema) kuu.H {
 	if cond["$and"] != nil {
 		if v, ok := cond["$and"].([]interface{}); ok {
