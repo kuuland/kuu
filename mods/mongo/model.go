@@ -3,6 +3,7 @@ package mongo
 import (
 	"errors"
 	"math"
+	"reflect"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -251,15 +252,25 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Cond["_id"] != nil {
 		if v, ok := p.Cond["_id"].(string); ok {
 			p.Cond["_id"] = bson.ObjectIdHex(v)
-		} else if v, ok := p.Cond["_id"].(kuu.H); ok {
-			if strIDs, ok := v["$in"].([]string); ok {
-				_in := make([]bson.ObjectId, len(strIDs))
-				for index, item := range strIDs {
-					_in[index] = bson.ObjectIdHex(item)
+		} else {
+			rv := reflect.ValueOf(p.Cond["_id"])
+			switch rv.Kind() {
+			case reflect.Map:
+				_id := p.Cond["_id"].(map[string]interface{})
+				if _, ok := _id["$in"]; ok {
+					oldArr := _id["$in"].([]interface{})
+					newArr := make([]bson.ObjectId, 0)
+					for _, item := range oldArr {
+						if v, ok := item.(string); ok {
+							newArr = append(newArr, bson.ObjectIdHex(v))
+						} else if v, ok := item.(bson.ObjectId); ok {
+							newArr = append(newArr, v)
+						}
+					}
+					_id["$in"] = newArr
 				}
-				v["$in"] = _in
+				p.Cond["_id"] = _id
 			}
-			p.Cond["_id"] = v
 		}
 	}
 	if p.Cond["$and"] != nil {
