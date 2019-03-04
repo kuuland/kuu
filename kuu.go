@@ -393,6 +393,47 @@ func GoID() int {
 	return id
 }
 
+// SetGoroutineCache 设置线程缓存
+func SetGoroutineCache(key string, val interface{}) {
+	goid := strconv.Itoa(GoID())
+	var data H
+	if v, ok := Data[goid].(H); ok {
+		data = v
+	} else {
+		data = make(H)
+	}
+	data[key] = val
+	Data[goid] = data
+}
+
+// GetGoroutineCache 获取线程缓存中的指定键的值
+func GetGoroutineCache(key string) (val interface{}) {
+	goid := strconv.Itoa(GoID())
+	if v, ok := Data[goid].(H); ok {
+		val = v[key]
+	}
+	return
+}
+
+// DelGoroutineCache 删除线程缓存中的指定键
+func DelGoroutineCache(key string) {
+	goid := strconv.Itoa(GoID())
+	var data H
+	if v, ok := Data[goid].(H); ok {
+		data = v
+	} else {
+		data = make(H)
+	}
+	delete(data, key)
+	Data[goid] = data
+}
+
+// ClearGoroutineCache 清空线程所有缓存
+func ClearGoroutineCache() {
+	goid := strconv.Itoa(GoID())
+	delete(Data, goid)
+}
+
 func resolveConfig(config []H) H {
 	switch len(config) {
 	case 0:
