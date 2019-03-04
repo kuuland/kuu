@@ -18,11 +18,19 @@ func Auth(c *gin.Context) {
 		valid := claims.Valid()
 		if claims != nil && valid == nil {
 			// 更新令牌和密钥到上下文缓存中
+			tokenCacheKey, tokenCacheVal := "LoginToken", utils.ParseToken(c)
+			uidCacheKey, uidCacheVal := "LoginUID", utils.ParseUserID(c)
+
 			c.Set(utils.ContextSecretKey, secret)
 			c.Set(utils.ContextClaimsKey, claims)
-			c.Set("LoginToken", utils.ParseToken(c))
-			c.Set("LoginUID", utils.ParseUserID(c))
+			c.Set(tokenCacheKey, tokenCacheVal)
+			c.Set(uidCacheKey, uidCacheVal)
+			kuu.SetGoroutineCache(tokenCacheKey, tokenCacheKey)
+			kuu.SetGoroutineCache(uidCacheKey, uidCacheVal)
+
 			c.Next()
+
+			kuu.ClearGoroutineCache()
 		} else {
 			if claims == nil {
 				kuu.Error("Token decoding failed")

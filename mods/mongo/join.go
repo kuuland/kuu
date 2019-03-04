@@ -361,7 +361,6 @@ func oneJoin(session *mgo.Session, schema *kuu.Schema, project map[string]int, r
 				}
 			}
 		}
-		result[field.Code] = ret
 	}
 }
 
