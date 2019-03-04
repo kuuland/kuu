@@ -251,6 +251,15 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Cond["_id"] != nil {
 		if v, ok := p.Cond["_id"].(string); ok {
 			p.Cond["_id"] = bson.ObjectIdHex(v)
+		} else if v, ok := p.Cond["_id"].(kuu.H); ok {
+			if strIDs, ok := v["$in"].([]string); ok {
+				_in := make([]bson.ObjectId, len(strIDs))
+				for index, item := range strIDs {
+					_in[index] = bson.ObjectIdHex(item)
+				}
+				v["$in"] = _in
+			}
+			p.Cond["_id"] = v
 		}
 	}
 	if p.Cond["$and"] != nil {
