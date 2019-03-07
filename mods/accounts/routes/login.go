@@ -49,6 +49,8 @@ var LoginHandler = kuu.RouteInfo{
 			c.JSON(http.StatusOK, kuu.StdError("Login failed, please contact the administrator"))
 			return
 		}
+		// 保存登入历史
+		utils.CreateSignHistory(c, secretData, false)
 		// 设置Cookie
 		c.SetCookie(utils.TokenKey, secretData.Token, utils.ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(utils.UserIDKey, secretData.UserID, utils.ExpiresSeconds, "/", "", false, true)

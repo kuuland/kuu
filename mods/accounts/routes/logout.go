@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -44,29 +43,7 @@ var LogoutHandler = kuu.RouteInfo{
 			return
 		}
 		// 更新登录历史
-		hisData := &models.SignHistory{
-			Token:  secret.Token,
-			Method: "logout",
-		}
-		reqData := kuu.H{
-			"Headers": c.Request.Header,
-			"Query":   c.Request.URL.Query(),
-		}
-		body := kuu.H{}
-		kuu.CopyBody(c, body)
-		reqData["Body"] = body
-		if v, err := json.Marshal(reqData); err == nil {
-			hisData.ReqData = string(v)
-		}
-		if v, err := json.Marshal(secret); err == nil {
-			hisData.LoginData = string(v)
-		}
-		SignHistory := kuu.Model("SignHistory")
-		if _, err := SignHistory.Create(hisData); err != nil {
-			kuu.Error(err)
-			c.JSON(http.StatusOK, kuu.StdError("Logout failed, please contact the administrator!"))
-			return
-		}
+		utils.CreateSignHistory(c, secret, true)
 		// 设置Cookie过期
 		c.SetCookie(utils.TokenKey, secret.Token, -1, "/", "", false, true)
 		c.SetCookie(utils.UserIDKey, secret.UserID, -1, "/", "", false, true)
