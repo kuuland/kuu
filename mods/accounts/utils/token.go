@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/mods/accounts/models"

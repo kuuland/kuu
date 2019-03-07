@@ -14,9 +14,9 @@ type Dict struct {
 	IsBuiltIn bool        `name:"是否系统内置"`
 	// 标准字段
 	CreatedBy interface{} `name:"创建人" join:"User<Username,Name>"`
-	CreatedAt int64   `name:"创建时间"`
+	CreatedAt int64       `name:"创建时间"`
 	UpdatedBy interface{} `name:"创建人" join:"User<Username,Name>"`
-	UpdatedAt int64   `name:"修改时间"`
+	UpdatedAt int64       `name:"修改时间"`
 	IsDeleted bool        `name:"是否已删除"`
 	Remark    string      `name:"备注"`
 }
@@ -30,9 +30,9 @@ type DictValue struct {
 	IsBuiltIn bool   `name:"是否系统内置"`
 	// 标准字段
 	CreatedBy interface{} `name:"创建人" join:"User<Username,Name>"`
-	CreatedAt int64   `name:"创建时间"`
+	CreatedAt int64       `name:"创建时间"`
 	UpdatedBy interface{} `name:"创建人" join:"User<Username,Name>"`
-	UpdatedAt int64   `name:"修改时间"`
+	UpdatedAt int64       `name:"修改时间"`
 	IsDeleted bool        `name:"是否已删除"`
 	Remark    string      `name:"备注"`
 }

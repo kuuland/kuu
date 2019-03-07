@@ -6,9 +6,10 @@ import (
 	"github.com/kuuland/kuu"
 )
 
-func getJoinFields(schema *kuu.Schema, project map[string]int) []*kuu.SchemaField {
-	fields := []*kuu.SchemaField{}
-	for _, field := range schema.Fields {
+func getJoinFields(schema *kuu.Schema, project map[string]int) []kuu.SchemaField {
+	fields := []kuu.SchemaField{}
+	rawFields := *schema.Fields
+	for _, field := range rawFields {
 		if field.JoinName == "" {
 			continue
 		}
@@ -365,8 +366,8 @@ func oneJoin(session *mgo.Session, schema *kuu.Schema, project map[string]int, r
 }
 
 // 查询引用数据
-func findJoinData(session *mgo.Session, field *kuu.SchemaField, selector interface{}, result *[]kuu.H) {
-	if session == nil || field == nil {
+func findJoinData(session *mgo.Session, field kuu.SchemaField, selector interface{}, result *[]kuu.H) {
+	if session == nil || field.Code == "" {
 		return
 	}
 	joinSchema := kuu.GetSchema(field.JoinName)

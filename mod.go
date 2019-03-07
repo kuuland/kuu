@@ -24,4 +24,3 @@ type Routes []RouteInfo
 
 // Middleware 中间件数组
 type Middleware []gin.HandlerFunc
-

@@ -65,7 +65,7 @@ func ExampleModel_list() {
 		Size: 50,
 		Sort: []string{"-CreatedAt"},
 		Project: map[string]int{
-			"Password": -1,
+			"Password": 0,
 		},
 	}, &userList)
 	// 全量查询
@@ -73,7 +73,7 @@ func ExampleModel_list() {
 		Range: ALL,
 		Sort:  []string{"-CreatedAt"},
 		Project: map[string]int{
-			"Password": -1,
+			"Password": 0,
 		},
 	}, userList)
 }

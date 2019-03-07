@@ -59,7 +59,7 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Create",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	docs := []interface{}{}
 	if kuu.IsArray(data) {
@@ -235,7 +235,7 @@ func (m *Model) UpdateAll(selector interface{}, data interface{}) (interface{}, 
 func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	m.Scope = &Scope{
 		Operation: "List",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	p := &Params{}
 	kuu.JSONConvert(a, p)
@@ -352,7 +352,9 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 	if p.Range != "" {
 		data["range"] = p.Range
 	}
+	m.Scope.ListData = data
 	m.Scope.CallMethod(AfterFindEnum, m.schema)
+	data = m.Scope.ListData
 	return data, nil
 }
 
@@ -360,7 +362,7 @@ func (m *Model) List(a interface{}, list interface{}) (kuu.H, error) {
 func (m *Model) ID(id interface{}, data interface{}) error {
 	m.Scope = &Scope{
 		Operation: "ID",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	p := &Params{}
 	switch id.(type) {
@@ -411,7 +413,7 @@ func (m *Model) ID(id interface{}, data interface{}) error {
 func (m *Model) One(a interface{}, data interface{}) error {
 	m.Scope = &Scope{
 		Operation: "One",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	p := &Params{}
 	kuu.JSONConvert(a, p)
@@ -450,7 +452,7 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Remove",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	C := C(m.Collection)
 	m.Session = C.Database.Session
@@ -500,7 +502,7 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 func (m *Model) phyRemove(cond kuu.H, all bool) (ret interface{}, err error) {
 	m.Scope = &Scope{
 		Operation: "PhyRemove",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	C := C(m.Collection)
 	m.Session = C.Database.Session
@@ -525,7 +527,7 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Update",
-		Cache:     make(kuu.H),
+		Cache:     &kuu.H{},
 	}
 	C := C(m.Collection)
 	m.Session = C.Database.Session

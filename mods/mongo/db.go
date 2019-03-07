@@ -1,7 +1,6 @@
 package mongo
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -33,7 +32,7 @@ func Connect(uri string) *mgo.Session {
 func New(m *Connection) *mgo.Session {
 	session, err := mgo.DialWithTimeout(m.URI, 10*time.Second)
 	if err != nil {
-		log.Println(err)
+		kuu.Error(err)
 		panic(err)
 	}
 	if m.UseDB == "" {
@@ -45,7 +44,7 @@ func New(m *Connection) *mgo.Session {
 	m.session = session
 	connections[m.Name] = m
 
-	log.Println(kuu.Join("MongoDB '", m.UseDB, "' is connected."))
+	kuu.Info(kuu.Join("MongoDB '", m.UseDB, "' is connected."))
 	return session
 }
 

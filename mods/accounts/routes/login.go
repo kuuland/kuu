@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/kuuland/kuu/mods/accounts/models"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/kuuland/kuu"
 	"github.com/kuuland/kuu/mods/accounts/utils"

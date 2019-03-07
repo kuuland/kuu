@@ -10,7 +10,8 @@ type Scope struct {
 	Session    *mgo.Session
 	Collection *mgo.Collection
 	Params     *Params
-	Cache      kuu.H
+	ListData   kuu.H
+	Cache      *kuu.H
 	CreateData *[]interface{}
 	Schema     *kuu.Schema
 }

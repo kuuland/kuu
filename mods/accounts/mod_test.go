@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/kuuland/kuu/mods/accounts/utils"
 )
 

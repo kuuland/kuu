@@ -87,10 +87,11 @@ func parseSchema(m interface{}) *Schema {
 		config = s.Config()
 	}
 	t := v.Type()
+	fields := make([]SchemaField, 0)
 	schema := &Schema{
 		Name:     t.Name(),
 		FullName: Join(t.PkgPath(), "/", t.Name()),
-		Fields:   make([]*SchemaField, t.NumField()),
+		Fields:   &fields,
 		Origin:   m,
 		Config:   config,
 	}
@@ -98,11 +99,11 @@ func parseSchema(m interface{}) *Schema {
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		tags := field.Tag
-		sField := &SchemaField{
+		sField := SchemaField{
 			Tags:    make(map[string]string),
 			IsArray: false,
 		}
-		parseModelTags(sField, tags)
+		parseModelTags(&sField, tags)
 		sField.Code = field.Name
 		if sField.Tags["name"] != "" {
 			sField.Name = tags.Get("name")
@@ -129,7 +130,7 @@ func parseSchema(m interface{}) *Schema {
 				sField.Required = false
 			}
 		}
-		schema.Fields[i] = sField
+		fields = append(fields, sField)
 		if sField.Code == "ID" {
 			if s, ok := sField.Tags["name"]; ok {
 				config["name"] = s
@@ -140,11 +141,20 @@ func parseSchema(m interface{}) *Schema {
 			if s, ok := sField.Tags["collection"]; ok {
 				config["collection"] = s
 			}
+			if s, ok := sField.Tags["noauth"]; ok {
+				config["noauth"] = s
+			}
 		}
 	}
 	// 模型配置
 	if config["name"] != nil {
 		schema.Name = config["name"].(string)
+	}
+	if config["noauth"] != nil {
+		str := config["noauth"].(string)
+		if v, err := strconv.ParseBool(str); err == nil {
+			schema.NoAuth = v
+		}
 	}
 	if config["displayName"] != nil {
 		schema.DisplayName = config["displayName"].(string)
@@ -407,12 +417,12 @@ func SetGoroutineCache(key string, val interface{}) {
 }
 
 // GetGoroutineCache 获取线程缓存中的指定键的值
-func GetGoroutineCache(key string) (val interface{}) {
+func GetGoroutineCache() H {
 	goid := strconv.Itoa(GoID())
 	if v, ok := Data[goid].(H); ok {
-		val = v[key]
+		return v
 	}
-	return
+	return H{}
 }
 
 // DelGoroutineCache 删除线程缓存中的指定键

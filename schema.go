@@ -8,9 +8,9 @@ type IConfig interface {
 // Base 定义了数据模型的一些基本字段
 type Base struct {
 	CreatedBy interface{} `name:"创建人"`
-	CreatedAt int64   `name:"创建时间"`
+	CreatedAt int64       `name:"创建时间"`
 	UpdatedBy interface{} `name:"修改人"`
-	UpdatedAt int64   `name:"修改时间"`
+	UpdatedAt int64       `name:"修改时间"`
 	IsDeleted bool        `name:"是否已删除"`
 	Remark    string      `name:"备注"`
 }
@@ -21,7 +21,8 @@ type Schema struct {
 	DisplayName string
 	FullName    string
 	Collection  string
-	Fields      []*SchemaField
+	NoAuth      bool
+	Fields      *[]SchemaField
 	Origin      interface{} `json:"-"`
 	Config      H
 	Adapter     IModel `json:"-"`

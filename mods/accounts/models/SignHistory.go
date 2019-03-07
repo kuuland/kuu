@@ -2,7 +2,7 @@ package models
 
 // SignHistory 用户登入/登出历史
 type SignHistory struct {
-	ID        string      `json:"_id" displayName:"用户登入/登出历史"`
+	ID        string      `json:"_id" displayName:"用户登入/登出历史" noauth:"true"`
 	ReqData   interface{} `name:"请求数据"`
 	LoginData interface{} `name:"登录数据"`
 	Token     string      `name:"令牌信息"`
