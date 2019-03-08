@@ -559,6 +559,7 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 
 	m.Scope.UpdateCond = &cond
 	m.Scope.UpdateDoc = &doc
+	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
 	m.Scope.CallMethod(BeforeUpdateEnum, m.schema)
 	if all {
 		ret, err = C.UpdateAll(cond, doc)
@@ -569,6 +570,7 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 	doc["$set"] = _set
 	err = C.Update(cond, doc)
 	m.Scope.CallMethod(AfterUpdateEnum, m.schema)
+	m.Scope.CallMethod(AfterSaveEnum, m.schema)
 	return ret, err
 }
 

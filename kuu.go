@@ -34,6 +34,7 @@ var (
 )
 
 func init() {
+	gin.SetMode(gin.ReleaseMode)
 	env := os.Getenv("KUU_ENV") // KUU_ENV = 'dev' | 'test' | 'prod'
 	if env == "" {
 		env = "dev"
