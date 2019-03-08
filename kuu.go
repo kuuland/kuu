@@ -426,7 +426,7 @@ func GetGoroutineCache() H {
 }
 
 // DelGoroutineCache 删除线程缓存中的指定键
-func DelGoroutineCache(key string) {
+func DelGoroutineCache(keys ...string) {
 	goid := strconv.Itoa(GoID())
 	var data H
 	if v, ok := Data[goid].(H); ok {
@@ -434,7 +434,9 @@ func DelGoroutineCache(key string) {
 	} else {
 		data = make(H)
 	}
-	delete(data, key)
+	for _, key := range keys {
+		delete(data, key)
+	}
 	Data[goid] = data
 }
 

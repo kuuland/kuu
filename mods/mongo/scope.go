@@ -13,6 +13,8 @@ type Scope struct {
 	ListData   kuu.H
 	Cache      *kuu.H
 	CreateData *[]interface{}
+	UpdateCond *kuu.H
+	UpdateDoc  *kuu.H
 	Schema     *kuu.Schema
 }
 
