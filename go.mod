@@ -25,3 +25,8 @@ require (
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
+
+replace (
+	golang.org/x/net => github.com/golang/net v0.0.0-20190311031020-56fb01167e7d
+	golang.org/x/sync => github.com/golang/sync v0.0.0-20190227155943-e225da77a7e6
+)
