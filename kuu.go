@@ -3,12 +3,10 @@ package kuu
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -389,62 +387,6 @@ func StdError(msg string) H {
 // StdErrorWithCode 只包含错误信息和错误码的Std
 func StdErrorWithCode(msg string, code int) H {
 	return Std(nil, msg, code)
-}
-
-// GoID 获取Goroutine ID
-func GoID() int {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	s := string(buf[:n])
-	idField := strings.Fields(strings.TrimPrefix(s, "goroutine "))[0]
-	id, err := strconv.Atoi(idField)
-	if err != nil {
-		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
-	}
-	return id
-}
-
-// SetGoroutineCache 设置线程缓存
-func SetGoroutineCache(key string, val interface{}) {
-	goid := strconv.Itoa(GoID())
-	var data H
-	if v, ok := Data[goid].(H); ok {
-		data = v
-	} else {
-		data = make(H)
-	}
-	data[key] = val
-	Data[goid] = data
-}
-
-// GetGoroutineCache 获取线程缓存中的指定键的值
-func GetGoroutineCache() H {
-	goid := strconv.Itoa(GoID())
-	if v, ok := Data[goid].(H); ok {
-		return v
-	}
-	return H{}
-}
-
-// DelGoroutineCache 删除线程缓存中的指定键
-func DelGoroutineCache(keys ...string) {
-	goid := strconv.Itoa(GoID())
-	var data H
-	if v, ok := Data[goid].(H); ok {
-		data = v
-	} else {
-		data = make(H)
-	}
-	for _, key := range keys {
-		delete(data, key)
-	}
-	Data[goid] = data
-}
-
-// ClearGoroutineCache 清空线程所有缓存
-func ClearGoroutineCache() {
-	goid := strconv.Itoa(GoID())
-	delete(Data, goid)
 }
 
 func resolveConfig(config []H) H {

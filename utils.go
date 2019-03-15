@@ -3,10 +3,16 @@ package kuu
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -95,4 +101,68 @@ func IsPtr(a interface{}) bool {
 func IsArray(a interface{}) bool {
 	kind := GetKind(a)
 	return kind == reflect.Slice || kind == reflect.Array
+}
+
+// GoID 获取Goroutine ID
+func GoID() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	s := string(buf[:n])
+	idField := strings.Fields(strings.TrimPrefix(s, "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
+}
+
+// SetGoroutineCache 设置线程缓存
+func SetGoroutineCache(key string, val interface{}) {
+	goid := strconv.Itoa(GoID())
+	var data H
+	if v, ok := Data[goid].(H); ok {
+		data = v
+	} else {
+		data = make(H)
+	}
+	data[key] = val
+	Data[goid] = data
+}
+
+// GetGoroutineCache 获取线程缓存中的指定键的值
+func GetGoroutineCache() H {
+	goid := strconv.Itoa(GoID())
+	if v, ok := Data[goid].(H); ok {
+		return v
+	}
+	return H{}
+}
+
+// DelGoroutineCache 删除线程缓存中的指定键
+func DelGoroutineCache(keys ...string) {
+	goid := strconv.Itoa(GoID())
+	var data H
+	if v, ok := Data[goid].(H); ok {
+		data = v
+	} else {
+		data = make(H)
+	}
+	for _, key := range keys {
+		delete(data, key)
+	}
+	Data[goid] = data
+}
+
+// ClearGoroutineCache 清空线程所有缓存
+func ClearGoroutineCache() {
+	goid := strconv.Itoa(GoID())
+	delete(Data, goid)
+}
+
+func Cwd() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Replace(dir, "\\", "/", -1)
 }
