@@ -307,6 +307,12 @@ func New(cfg ...H) *Kuu {
 	k := Kuu{
 		Engine: gin.New(),
 	}
+	k.Config = config
+	k.loadConfigFile()
+	if _, has := k.Config["cors"]; has {
+		k.Warn("Mounted CORS middleware.")
+		k.Use(CORSMiddleware())
+	}
 	k.Use(gin.Logger(), gin.Recovery())
 	if config == nil {
 		config = H{}
@@ -315,12 +321,6 @@ func New(cfg ...H) *Kuu {
 		k.Name = config["name"].(string)
 	}
 	apps = append(apps, &k)
-	k.Config = config
-	k.loadConfigFile()
-	if _, has := k.Config["cors"]; has {
-		k.Warn("Mounted CORS middleware.")
-		k.Use(CORSMiddleware())
-	}
 	k.loadMods()
 	Emit("OnNew", &k)
 	return &k
