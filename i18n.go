@@ -85,9 +85,6 @@ func L(langOrContext interface{}, key string, defaultMsgAndArgs ...interface{}) 
 	} else if v, ok := langOrContext.(string); ok {
 		lang = v
 	}
-	if lang == "" {
-		panic("Language cannot be empty")
-	}
 	var (
 		defaultMessage string
 		context        H
@@ -104,6 +101,13 @@ func L(langOrContext interface{}, key string, defaultMsgAndArgs ...interface{}) 
 	if len(defaultMsgAndArgs) > 1 {
 		if v, ok := defaultMsgAndArgs[1].(H); ok {
 			context = v
+		}
+	}
+	if lang == "" {
+		if defaultMessage != "" {
+			return defaultMessage
+		} else {
+			return key
 		}
 	}
 	return renderMessage(lang, key, defaultMessage, context)

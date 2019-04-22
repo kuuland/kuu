@@ -10,6 +10,10 @@ import (
 
 // Auth 认证中间件
 func Auth(c *gin.Context) {
+	if c.Request.Method == "OPTIONS" {
+		c.AbortWithStatusJSON(http.StatusOK, kuu.StdOK("ok"))
+		return
+	}
 	if whiteListCheck(c) == true {
 		c.Next()
 	} else {
