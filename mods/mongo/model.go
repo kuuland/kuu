@@ -86,6 +86,7 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		doc["UpdatedAt"] = doc["CreatedAt"]
 		doc["UpdatedAtFmt"] = doc["CreatedAtFmt"]
 		doc["UpdatedBy"] = doc["CreatedBy"]
+		doc["_id"] = bson.NewObjectId()
 		docs[index] = doc
 	}
 	C := C(m.Collection)
@@ -97,19 +98,15 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		m.Session = nil
 		m.Scope = nil
 	}()
-	pts := make([]interface{}, 0)
-	for _, item := range docs {
-		pts = append(pts, &item)
-	}
-	err := C.Insert(pts...)
-	m.Scope.CreateData = &pts
+	m.Scope.CreateData = &docs
 	m.Scope.CallMethod(BeforeSaveEnum, m.schema)
 	m.Scope.CallMethod(BeforeCreateEnum, m.schema)
 	// 先保存外键
 	docs = handleJoinBeforeSave(docs, m.schema)
+	err := C.Insert(docs...)
 	m.Scope.CallMethod(AfterCreateEnum, m.schema)
 	m.Scope.CallMethod(AfterSaveEnum, m.schema)
-	return pts, err
+	return docs, err
 }
 
 // Remove 实现基于条件的逻辑删除
