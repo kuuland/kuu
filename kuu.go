@@ -33,7 +33,6 @@ var (
 )
 
 func init() {
-	gin.SetMode(gin.ReleaseMode)
 	env := os.Getenv("KUU_ENV") // KUU_ENV = 'dev' | 'test' | 'prod'
 	if env == "" {
 		env = "dev"
@@ -296,8 +295,12 @@ func (k *Kuu) loadMods() {
 }
 
 // Run 重写启动函数
-func (k *Kuu) Run(addr ...string) (err error) {
+func (k *Kuu) Run(addr ...string) error {
 	Emit("BeforeRun", k)
+	if !gin.IsDebugging() {
+		address := resolveAddress(addr)
+		Info("Listening and serving HTTP on %s\n", address)
+	}
 	return k.Engine.Run(addr...)
 }
 
@@ -417,5 +420,19 @@ func resolveConfig(config []H) H {
 		return config[0]
 	default:
 		return H{}
+	}
+}
+
+func resolveAddress(addr []string) string {
+	switch len(addr) {
+	case 0:
+		if port := os.Getenv("PORT"); port != "" {
+			return ":" + port
+		}
+		return ":8080"
+	case 1:
+		return addr[0]
+	default:
+		panic("too much parameters")
 	}
 }
