@@ -86,7 +86,17 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 		doc["UpdatedAt"] = doc["CreatedAt"]
 		doc["UpdatedAtFmt"] = doc["CreatedAtFmt"]
 		doc["UpdatedBy"] = doc["CreatedBy"]
-		doc["_id"] = bson.NewObjectId()
+		if _, exists := doc["_id"]; exists {
+			if v, ok := doc["_id"].(string); ok && v != "" {
+				doc["_id"] = bson.ObjectIdHex(v)
+			} else if v, ok := doc["_id"].(bson.ObjectId); ok && v != "" {
+				doc["_id"] = v
+			} else {
+				doc["_id"] = bson.NewObjectId()
+			}
+		} else {
+			doc["_id"] = bson.NewObjectId()
+		}
 		docs[index] = doc
 	}
 	C := C(m.Collection)
