@@ -176,9 +176,26 @@ func handleJoinBeforeSave(docs []interface{}, schema *kuu.Schema) []interface{} 
 				}
 			}
 		}
+		DetectObjectId(doc, []string{"CreatedBy", "UpdatedBy", "Org"})
 		docs[index] = doc
 	}
 	return docs
+}
+
+func DetectObjectId(doc kuu.H, keys []string) {
+	for _, key := range keys {
+		if doc[key] == nil {
+			continue
+		}
+		switch doc[key].(type) {
+		case string:
+			doc[key] = bson.ObjectIdHex(doc[key].(string))
+		case bson.ObjectId:
+			doc[key] = doc[key].(bson.ObjectId)
+		default:
+			delete(doc, key)
+		}
+	}
 }
 
 func listJoin(session *mgo.Session, schema *kuu.Schema, project map[string]int, list []kuu.H) {
