@@ -81,8 +81,11 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 				doc["CreatedBy"] = bson.ObjectIdHex(doc["CreatedBy"].(string))
 			case bson.ObjectId:
 				doc["CreatedBy"] = doc["CreatedBy"].(bson.ObjectId)
+			default:
+				delete(doc, "CreatedBy")
 			}
-		} else if routineCache["LoginUID"] != nil {
+		}
+		if doc["CreatedBy"] == nil && routineCache["LoginUID"] != nil {
 			if v, ok := routineCache["LoginUID"]; ok {
 				doc["CreatedBy"] = bson.ObjectIdHex(v.(string))
 			}
@@ -500,8 +503,11 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
 		case bson.ObjectId:
 			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		default:
+			delete(_set, "UpdatedBy")
 		}
-	} else if routineCache["LoginUID"] != nil {
+	}
+	if _set["UpdatedBy"] == nil && routineCache["LoginUID"] != nil {
 		if v, ok := routineCache["LoginUID"]; ok {
 			_set["UpdatedBy"] = bson.ObjectIdHex(v.(string))
 		}
@@ -575,8 +581,11 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
 		case bson.ObjectId:
 			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		default:
+			delete(_set, "UpdatedBy")
 		}
-	} else if routineCache["LoginUID"] != nil {
+	}
+	if _set["UpdatedBy"] == nil && routineCache["LoginUID"] != nil {
 		if v, ok := routineCache["LoginUID"]; ok {
 			_set["UpdatedBy"] = bson.ObjectIdHex(v.(string))
 		}

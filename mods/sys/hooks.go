@@ -63,6 +63,7 @@ func hooksInit() {
 				"$or": []kuu.H{
 					{"Org": kuu.H{"$exists": false}},
 					{"Org": kuu.H{"$in": orgIDs}},
+					{"CreatedBy": bson.ObjectIdHex(uid)},
 				},
 			})
 			cond["$and"] = and

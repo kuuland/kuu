@@ -29,7 +29,7 @@ func Auth(c *gin.Context) {
 			c.Set(utils.ContextClaimsKey, claims)
 			c.Set(tokenCacheKey, tokenCacheVal)
 			c.Set(uidCacheKey, uidCacheVal)
-			kuu.SetGoroutineCache(tokenCacheKey, tokenCacheKey)
+			kuu.SetGoroutineCache(tokenCacheKey, tokenCacheVal)
 			kuu.SetGoroutineCache(uidCacheKey, uidCacheVal)
 
 			c.Next()
