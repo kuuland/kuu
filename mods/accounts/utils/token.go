@@ -48,11 +48,15 @@ func DecodedContext(c *gin.Context) (jwt.MapClaims, *models.UserSecret) {
 	UserSecret := kuu.Model("UserSecret")
 	var secret = &models.UserSecret{}
 	UserSecret.One(kuu.H{
-		"Cond": kuu.H{"UserID": userID},
+		"Cond": kuu.H{"UserID": userID, "Token": token},
 		"Sort": []string{"-UpdatedAt", "-CreatedAt"},
 	}, secret)
 	if secret == nil || secret.Secret == "" {
 		kuu.Error("Secret not found based on token '%s'!", token)
+		return nil, nil
+	}
+	if secret.Method == "logout" {
+		kuu.Error("Token has been forced to expire '%s'!", token)
 		return nil, nil
 	}
 	claims := Decoded(token, secret.Secret)

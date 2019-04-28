@@ -29,15 +29,7 @@ var LogoutHandler = kuu.RouteInfo{
 		}
 		// 更新用户密钥
 		UserSecret := kuu.Model("UserSecret")
-		secretData := &models.UserSecret{
-			UserID: secret.UserID,
-			Secret: secret.Secret,
-			Token:  secret.Token,
-			Iat:    secret.Iat,
-			Exp:    secret.Exp,
-			Method: "logout",
-		}
-		if _, err := UserSecret.Create(secretData); err != nil {
+		if err := UserSecret.Update(kuu.H{"_id": secret.ID}, kuu.H{"Method": "logout"}); err != nil {
 			kuu.Error(err)
 			c.JSON(http.StatusOK, kuu.StdError("Logout failed, please contact the administrator!"))
 			return
