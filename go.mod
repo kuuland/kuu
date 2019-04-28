@@ -18,6 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.3.0
 	github.com/soheilhy/cmux v0.1.4
 	github.com/ugorji/go/codec v0.0.0-20181209151446-772ced7fd4c2 // indirect
+	golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	golang.org/x/net v0.0.0-20190119204137-ed066c81e75e // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
 	google.golang.org/grpc v1.18.0
