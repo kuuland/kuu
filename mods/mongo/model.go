@@ -56,6 +56,7 @@ func (m *Model) Schema() *kuu.Schema {
 
 // Create 实现新增（支持传入单个或者数组）
 func (m *Model) Create(data interface{}) ([]interface{}, error) {
+	routineCache := kuu.GetGoroutineCache()
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Create",
@@ -80,6 +81,10 @@ func (m *Model) Create(data interface{}) ([]interface{}, error) {
 				doc["CreatedBy"] = bson.ObjectIdHex(doc["CreatedBy"].(string))
 			case bson.ObjectId:
 				doc["CreatedBy"] = doc["CreatedBy"].(bson.ObjectId)
+			}
+		} else if routineCache["LoginUID"] != nil {
+			if v, ok := routineCache["LoginUID"]; ok {
+				doc["CreatedBy"] = bson.ObjectIdHex(v.(string))
 			}
 		}
 		// 设置UpdatedXx初始值等于CreatedXx
@@ -460,6 +465,7 @@ func (m *Model) One(a interface{}, data interface{}) error {
 }
 
 func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err error) {
+	routineCache := kuu.GetGoroutineCache()
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Remove",
@@ -494,6 +500,10 @@ func (m *Model) remove(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
 		case bson.ObjectId:
 			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		}
+	} else if routineCache["LoginUID"] != nil {
+		if v, ok := routineCache["LoginUID"]; ok {
+			_set["UpdatedBy"] = bson.ObjectIdHex(v.(string))
 		}
 	}
 	doc["$set"] = _set
@@ -535,6 +545,7 @@ func (m *Model) phyRemove(cond kuu.H, all bool) (ret interface{}, err error) {
 }
 
 func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err error) {
+	routineCache := kuu.GetGoroutineCache()
 	now := time.Now()
 	m.Scope = &Scope{
 		Operation: "Update",
@@ -564,6 +575,10 @@ func (m *Model) update(cond kuu.H, doc kuu.H, all bool) (ret interface{}, err er
 			_set["UpdatedBy"] = bson.ObjectIdHex(_set["UpdatedBy"].(string))
 		case bson.ObjectId:
 			_set["UpdatedBy"] = _set["UpdatedBy"].(bson.ObjectId)
+		}
+	} else if routineCache["LoginUID"] != nil {
+		if v, ok := routineCache["LoginUID"]; ok {
+			_set["UpdatedBy"] = bson.ObjectIdHex(v.(string))
 		}
 	}
 	doc["$set"] = _set
