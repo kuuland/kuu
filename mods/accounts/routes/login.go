@@ -54,6 +54,15 @@ var LoginHandler = kuu.RouteInfo{
 		// 设置Cookie
 		c.SetCookie(utils.TokenKey, secretData.Token, utils.ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(utils.UserIDKey, secretData.UserID, utils.ExpiresSeconds, "/", "", false, true)
+		// 设置上下文缓存，便于其他中间件在登录后进行逻辑处理
+		tokenCacheKey, tokenCacheVal := "LoginToken", secretData.Token
+		uidCacheKey, uidCacheVal := "LoginUID", secretData.UserID
+		c.Set(utils.ContextSecretKey, secretData)
+		c.Set(utils.ContextClaimsKey, claims)
+		c.Set(tokenCacheKey, tokenCacheVal)
+		c.Set(uidCacheKey, uidCacheVal)
+		kuu.SetGoroutineCache(tokenCacheKey, tokenCacheKey)
+		kuu.SetGoroutineCache(uidCacheKey, uidCacheVal)
 		c.JSON(http.StatusOK, kuu.StdOK(claims))
 	},
 }
