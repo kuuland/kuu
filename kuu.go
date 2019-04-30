@@ -299,7 +299,7 @@ func (k *Kuu) Run(addr ...string) error {
 	Emit("BeforeRun", k)
 	if !gin.IsDebugging() {
 		address := resolveAddress(addr)
-		Info("Listening and serving HTTP on %s\n", address)
+		Info("Listening and serving HTTP on %s", address)
 	}
 	return k.Engine.Run(addr...)
 }
