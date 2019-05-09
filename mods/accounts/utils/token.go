@@ -52,7 +52,7 @@ func DecodedContext(c *gin.Context) (jwt.MapClaims, *models.UserSecret) {
 		"Sort": []string{"-UpdatedAt", "-CreatedAt"},
 	}, secret)
 	if secret == nil || secret.Secret == "" {
-		kuu.Error("Secret not found based on token '%s'!", token)
+		kuu.Error("Secret not found based on token '%s'(%s)!", token, userID)
 		return nil, nil
 	}
 	if secret.Method == "logout" {
