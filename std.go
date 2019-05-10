@@ -14,41 +14,37 @@ import (
 )
 
 type STDRender struct {
+	Context  *gin.Context `json:"-"`
 	HTTPCode int          `json:"-"`
 	Action   string       `json:"-"`
-	Context  *gin.Context `json:"-"`
 	Data     interface{}  `json:"data"`
 	Code     int32        `json:"code"`
 	Message  string       `json:"msg"`
 }
 
 // STD
-func STD(c *gin.Context) *STDRender {
-	return &STDRender{HTTPCode: http.StatusOK, Context: c, Action: "JSON"}
-}
-
-// OK
-func (r *STDRender) OK(data interface{}, msg ...string) {
-	r.Data = data
+func STD(c *gin.Context, data interface{}, msg ...string) {
+	std := &STDRender{HTTPCode: http.StatusOK, Context: c, Action: "JSON"}
+	std.Data = data
 	if len(msg) > 0 {
-		r.Message = msg[0]
+		std.Message = msg[0]
 	}
-	r.render()
+	std.Render()
 }
 
-// ERROR
-func (r *STDRender) ERROR(msg string, code ...int32) {
-	r.Message = msg
-
+// STDErr
+func STDErr(c *gin.Context, msg string, code ...int32) {
+	std := &STDRender{HTTPCode: http.StatusOK, Context: c, Action: "JSON"}
+	std.Message = msg
 	if len(code) > 0 {
-		r.Code = code[0]
+		std.Code = code[0]
 	} else {
-		r.Code = -1
+		std.Code = -1
 	}
-	r.render()
+	std.Render()
 }
 
-func (r *STDRender) render() {
+func (r *STDRender) Render() {
 	r.Action = strings.TrimSpace(strings.ToUpper(r.Action))
 	switch r.Action {
 	case "JSON":

@@ -4,6 +4,16 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sync"
+
+	"github.com/jinzhu/gorm"
+)
+
+var (
+	pairs          map[string]interface{}
+	inst           *Config
+	dataSourcesMap sync.Map
+	singleDSName   = "kuu_default_db"
 )
 
 // Parse config file when init
@@ -25,12 +35,9 @@ func init() {
 			ERROR(err)
 		}
 	}
-}
+	initDataSources()
 
-var (
-	pairs map[string]interface{}
-	inst  *Config
-)
+}
 
 type Config struct {
 	Keys map[string]interface{}
@@ -86,4 +93,77 @@ func (c *Config) GetFloat64(key string) (f64 float64) {
 		f64, _ = val.(float64)
 	}
 	return
+}
+
+type datasource struct {
+	Name    string
+	Dialect string
+	Args    string
+}
+
+func initDataSources() {
+	dbConfig, has := pairs["db"]
+	if !has {
+		return
+	}
+	if _, ok := dbConfig.([]interface{}); ok {
+		// Multiple data sources
+		var dsArr []datasource
+		GetSoul(dbConfig, &dsArr)
+		if len(dsArr) > 0 {
+			for _, ds := range dsArr {
+				if IsBlank(ds) || ds.Name == "" {
+					continue
+				}
+				if _, ok := dataSourcesMap.Load(ds.Name); ok {
+					continue
+				}
+				db, err := gorm.Open(ds.Dialect, ds.Args)
+				if err != nil {
+					panic(err)
+				} else {
+					dataSourcesMap.Store(ds.Name, db)
+				}
+			}
+		}
+	} else {
+		// Single data source
+		var ds datasource
+		GetSoul(dbConfig, &ds)
+		if !IsBlank(ds) {
+			if ds.Name == "" {
+				ds.Name = singleDSName
+			} else {
+				singleDSName = ds.Name
+			}
+			db, err := gorm.Open(ds.Dialect, ds.Args)
+			if err != nil {
+				panic(err)
+			} else {
+				dataSourcesMap.Store(ds.Name, db)
+			}
+		}
+	}
+}
+
+// DB
+func DB(name ...string) *gorm.DB {
+	key := singleDSName
+	if len(name) > 0 {
+		key = name[0]
+	}
+	if v, ok := dataSourcesMap.Load(key); ok {
+		return v.(*gorm.DB)
+	}
+	PANIC("No data source named \"%s\"", key)
+	return nil
+}
+
+// Release
+func Release() {
+	dataSourcesMap.Range(func(_, value interface{}) bool {
+		db := value.(*gorm.DB)
+		db.Close()
+		return true
+	})
 }

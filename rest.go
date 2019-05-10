@@ -78,25 +78,25 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 				if createMethod != "-" {
 					r.Handle(createMethod, routePath, func(c *gin.Context) {
 						// TODO 新增接口
-						STD(c).OK("新增 " + tableName)
+						STD(c, "新增 "+tableName)
 					})
 				}
 				if deleteMethod != "-" {
 					r.Handle(deleteMethod, routePath, func(c *gin.Context) {
 						// TODO 删除接口
-						STD(c).OK("删除 " + tableName)
+						STD(c, "删除 "+tableName)
 					})
 				}
 				if queryMethod != "-" {
 					r.Handle(queryMethod, routePath, func(c *gin.Context) {
 						// TODO 查询接口
-						STD(c).OK("查询 " + tableName)
+						STD(c, "查询 "+tableName)
 					})
 				}
 				if updateMethod != "-" {
 					r.Handle(updateMethod, routePath, func(c *gin.Context) {
 						// TODO 修改接口
-						STD(c).OK("修改 " + tableName)
+						STD(c, "修改 "+tableName)
 					})
 				}
 			}

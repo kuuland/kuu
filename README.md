@@ -2,20 +2,20 @@
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 
-Scalable Go Web Framework.
+Modular Go Web Framework.
 
 
 ## Features
 
-- 🎉 **插件式设计** -  灵活的插件机制
-- ✨ **领域建模** - 面向数据模型设计
-- 🚀 **配套增删改查API** - 数据模型自动注册CURD路由
-- 🐠 **配套管理UI*** - 自带后台基础管理框架
+- 🎉 **读取应用配置，并缓存至全局**
+- ✨ **定义模块开发规范，自动挂载所有模块**
+- 🚀 **提供全局日志API**
+- 🐠 **提供常用工具函数**
+- 👻 **提供常用的预置模块**
 
 ## Documentation
 
 - [API Reference](https://godoc.org/github.com/kuuland/kuu)
-- [Examples](https://godoc.org/github.com/kuuland/kuu#pkg-examples)
 
 ## Installation
 
@@ -29,36 +29,52 @@ go get -u github.com/kuuland/kuu
 package main
 
 import (
-	"fmt"
-
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"github.com/kuuland/kuu"
-	"github.com/kuuland/kuu/plugins/mongo"
-	"github.com/kuuland/kuu/plugins/task"
 )
 
-func main() {
-	kuu.Import(mongo.All(), task.All())
-	k := kuu.New(kuu.H{
-		"mongo":   "mongodb://root:kuuland@127.0.0.1:27017/kuu?authSource=admin&maxPoolSize=50"
-	})
-	kuu.Info("Hello Kuu.")
-	k.Run(":8080")
+type user struct {
+	kuu string `rest`
+	gorm.Model
+	User string
+	Pass string
 }
 
+func main() {
+	defer kuu.Release()
+	
+	r := gin.Default()
+	r.Use(kuu.CORSMiddleware())
+	kuu.MountRESTful(r, &user{})
+	r.GET("/ping", func(c *gin.Context) {
+		kuu.INFO("Hello Kuu")
+		var users = []user{}
+		kuu.DB().Find(&users)
+		kuu.STD(c, users)
+	})
+	r.Run(":8080")
+}
+
+```
+
+```json
+{
+  "prefix": "/api",
+  "db": {
+    "dialect": "postgres",
+    "args": "host=127.0.0.1 port=5432 user=root dbname=kuu password=hello sslmode=disable"
+  }
+}
 ```
 
 ## FAQ
 
 ### Why is it called Kuu?
 
-> Kuu is the name of a cat, click to go to [The story of Kuu and Shino](http://www.sohu.com/a/225954042_509045).
+> Kuu is the name of a cat, click to read [The story of Kuu and Shino](http://www.sohu.com/a/225954042_509045).
 
 ![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
-
-
-## Plan
-
-![plan](https://raw.githubusercontent.com/kuuland/kuu/master/plan.png)
 
 ## License
 

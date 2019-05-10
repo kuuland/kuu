@@ -74,3 +74,10 @@ func Parse(v string, r interface{}) {
 		ERROR(err)
 	}
 }
+
+// GetSoul
+func GetSoul(src interface{}, dest interface{}) {
+	if bytes, err := json.Marshal(src); err == nil {
+		json.Unmarshal(bytes, dest)
+	}
+}
