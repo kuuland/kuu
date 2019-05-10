@@ -58,6 +58,8 @@ func main() {
 
 ```
 
+kuu.json:
+
 ```json
 {
   "prefix": "/api",

@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"reflect"
 	"strings"
 	"sync"
@@ -77,8 +78,32 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 			} else {
 				if createMethod != "-" {
 					r.Handle(createMethod, routePath, func(c *gin.Context) {
-						// TODO 新增接口
-						STD(c, "新增 "+tableName)
+						var body interface{}
+						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+							ERROR(err)
+							STDErr(c, "Parsing the request body failed")
+							return
+						}
+						indirectScopeValue := indirect(reflect.ValueOf(body))
+						if indirectScopeValue.Kind() == reflect.Slice {
+							arr := make([]interface{}, 0)
+							for i := 0; i < indirectScopeValue.Len(); i++ {
+								doc := reflect.New(reflectType).Interface()
+								GetSoul(indirectScopeValue.Index(i).Interface(), doc)
+								DB().Create(doc)
+								arr = append(arr, doc)
+							}
+							STD(c, arr)
+						} else {
+							doc := reflect.New(reflectType).Interface()
+							if err := c.ShouldBindBodyWith(doc, binding.JSON); err != nil {
+								ERROR(err)
+								STDErr(c, "Parsing the request body failed")
+								return
+							}
+							DB().Create(doc)
+							STD(c, doc)
+						}
 					})
 				}
 				if deleteMethod != "-" {
@@ -102,6 +127,13 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 			}
 		}
 	}
+}
+
+func indirect(reflectValue reflect.Value) reflect.Value {
+	for reflectValue.Kind() == reflect.Ptr {
+		reflectValue = reflectValue.Elem()
+	}
+	return reflectValue
 }
 
 func methodConflict(arr []string) bool {
