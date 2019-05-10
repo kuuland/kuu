@@ -6,7 +6,6 @@ import (
 )
 
 func init() {
-	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 }
 

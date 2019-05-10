@@ -46,7 +46,7 @@ func Import(r *gin.Engine, mods ...*Mod) {
 			if model == nil {
 				continue
 			}
-			// TODO 挂载模型接口
+			MountRESTful(r, model)
 		}
 	}
 }
