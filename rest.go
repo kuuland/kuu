@@ -174,7 +174,7 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						db = db.Find(list)
 						ret["list"] = list
 						// 处理totalrecords、totalpages
-						var totalRecords int64
+						var totalRecords int
 						countDB = countDB.Count(&totalRecords)
 						ret["totalrecords"] = totalRecords
 						ret["totalpages"] = int(math.Ceil(float64(totalRecords) / float64(size)))
