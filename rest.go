@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -114,8 +116,69 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 				}
 				if queryMethod != "-" {
 					r.Handle(queryMethod, routePath, func(c *gin.Context) {
-						// TODO 查询接口
-						STD(c, "查询 "+tableName)
+						ret := map[string]interface{}{}
+						// 处理cond
+						var cond map[string]interface{}
+						rawCond := c.Query("cond")
+						if rawCond != "" {
+							Parse(rawCond, &cond)
+							ret["cond"] = cond
+						}
+						db := DB().Model(reflect.New(reflectType).Interface())
+						if cond != nil {
+							db = db.Where(cond)
+						}
+						countDB := db
+						// 处理project
+						rawProject := c.Query("project")
+						if rawProject != "" {
+							db = db.Select(strings.Split(rawProject, ","))
+							ret["project"] = rawProject
+						}
+						// 处理sort
+						rawSort := c.Query("sort")
+						if rawSort != "" {
+							split := strings.Split(rawSort, ",")
+							for _, name := range split {
+								if strings.HasPrefix(name, "-") {
+									db = db.Order(fmt.Sprintf("%s desc", name[1:]))
+								} else {
+									db = db.Order(name)
+								}
+							}
+							ret["sort"] = rawSort
+						}
+						// 处理range
+						rawRange := strings.ToUpper(c.DefaultQuery("range", "PAGE"))
+						ret["range"] = rawRange
+						// 处理page、size
+						var (
+							page int
+							size int
+						)
+						rawPage := c.DefaultQuery("page", "1")
+						rawSize := c.DefaultQuery("size", "30")
+						if v, err := strconv.Atoi(rawPage); err == nil {
+							page = v
+						}
+						if v, err := strconv.Atoi(rawSize); err == nil {
+							size = v
+						}
+						if rawRange == "PAGE" {
+							db = db.Offset((page - 1) * size).Limit(size)
+							ret["page"] = page
+							ret["size"] = size
+						}
+
+						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
+						db = db.Find(list)
+						ret["list"] = list
+						// 处理totalrecords、totalpages
+						var totalRecords int64
+						countDB = countDB.Count(&totalRecords)
+						ret["totalrecords"] = totalRecords
+						ret["totalpages"] = int(math.Ceil(float64(totalRecords) / float64(size)))
+						STD(c, ret)
 					})
 				}
 				if updateMethod != "-" {

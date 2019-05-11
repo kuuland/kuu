@@ -111,6 +111,7 @@ func initDataSources() {
 		var dsArr []datasource
 		GetSoul(dbConfig, &dsArr)
 		if len(dsArr) > 0 {
+			var first string
 			for _, ds := range dsArr {
 				if IsBlank(ds) || ds.Name == "" {
 					continue
@@ -118,12 +119,18 @@ func initDataSources() {
 				if _, ok := dataSourcesMap.Load(ds.Name); ok {
 					continue
 				}
+				if first == "" {
+					first = ds.Name
+				}
 				db, err := gorm.Open(ds.Dialect, ds.Args)
 				if err != nil {
 					panic(err)
 				} else {
 					dataSourcesMap.Store(ds.Name, db)
 				}
+			}
+			if first != "" {
+				singleDSName = first
 			}
 		}
 	} else {
