@@ -153,7 +153,35 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 							// TODO 实现$in、$nin
 							// TODO 数值查询：$gt、$gte、$lt、$lte
 							// TODO 逻辑查询：$and、$or、$eq、$ne
-							db = db.Where(cond)
+							for key, val := range cond {
+								if m, ok := val.(map[string]interface{}); ok {
+									if raw, has := m["$regex"]; has {
+										keyword := raw.(string)
+										hasPrefix := strings.HasPrefix(keyword, "^")
+										hasSuffix := strings.HasSuffix(keyword, "$")
+										if hasPrefix {
+											keyword = keyword[1:]
+										}
+										if hasSuffix {
+											keyword = keyword[:len(keyword)-1]
+										}
+										a := make([]string, 0)
+										if hasPrefix {
+											a = append(a, "%")
+										}
+										a = append(a, keyword)
+										if hasSuffix {
+											a = append(a, "%")
+										}
+										keyword = strings.Join(a, "")
+										db = db.Where(fmt.Sprintf("\"%s\" LIKE ?", key), keyword)
+										delete(cond, key)
+									}
+								}
+							}
+							if !IsBlank(cond) {
+								db = db.Where(cond)
+							}
 						}
 						countDB := db
 						// 处理project
