@@ -149,8 +149,6 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
-							// TODO 模糊匹配：$regex
-							// TODO 实现$in、$nin
 							// TODO 数值查询：$gt、$gte、$lt、$lte
 							// TODO 逻辑查询：$and、$or、$eq、$ne
 							for key, val := range cond {
@@ -175,8 +173,12 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 										}
 										keyword = strings.Join(a, "")
 										db = db.Where(fmt.Sprintf("\"%s\" LIKE ?", key), keyword)
-										delete(cond, key)
+									} else if raw, has := m["$in"]; has {
+										db = db.Where(fmt.Sprintf("\"%s\" IN (?)", key), raw)
+									} else if raw, has := m["$nin"]; has {
+										db = db.Not(key, raw)
 									}
+									delete(cond, key)
 								}
 							}
 							if !IsBlank(cond) {
