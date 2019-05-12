@@ -44,7 +44,6 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 			// mounted RESTful routes
 			tagSettings := parseTagSetting(fieldStruct.Tag, "rest")
 			routeAlias := strings.TrimSpace(fieldStruct.Tag.Get("route"))
-			tableName := strings.TrimSpace(fieldStruct.Tag.Get("table"))
 			if routeAlias != "" {
 				routePath = fmt.Sprintf("%s/%s", routePrefix, strings.ToLower(routeAlias))
 			}
@@ -83,7 +82,7 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						var body interface{}
 						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "Parsing the request body failed")
+							STDErr(c, "parsing body failed")
 							return
 						}
 						indirectScopeValue := indirect(reflect.ValueOf(body))
@@ -100,7 +99,7 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 							doc := reflect.New(reflectType).Interface()
 							if err := c.ShouldBindBodyWith(doc, binding.JSON); err != nil {
 								ERROR(err)
-								STDErr(c, "Parsing the request body failed")
+								STDErr(c, "parsing body failed")
 								return
 							}
 							DB().Create(doc)
@@ -110,8 +109,32 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 				}
 				if deleteMethod != "-" {
 					r.Handle(deleteMethod, routePath, func(c *gin.Context) {
-						// TODO 删除接口
-						STD(c, "删除 "+tableName)
+						var params map[string]interface{}
+						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+							ERROR(err)
+							STDErr(c, "parsing body failed")
+							return
+						}
+						if params == nil || IsBlank(params) {
+							STDErr(c, "'cond' is required")
+							return
+						}
+						_, multi := params["multi"]
+						if IsBlank(params["cond"]) && !multi {
+							STDErr(c, "'multi' is required for batch delete")
+							return
+						}
+						var value interface{}
+						if multi {
+							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
+							db := DB().Where(params["cond"])
+							db.Find(value).Delete(reflect.New(reflectType).Interface())
+						} else {
+							value = reflect.New(reflectType).Interface()
+							db := DB().Where(params["cond"])
+							db.First(value).Delete(value)
+						}
+						STD(c, value)
 					})
 				}
 				if queryMethod != "-" {
@@ -126,6 +149,10 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
+							// TODO 模糊匹配：$regex
+							// TODO 实现$in、$nin
+							// TODO 数值查询：$gt、$gte、$lt、$lte
+							// TODO 逻辑查询：$and、$or、$eq、$ne
 							db = db.Where(cond)
 						}
 						countDB := db
@@ -177,14 +204,46 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						var totalRecords int
 						countDB = countDB.Count(&totalRecords)
 						ret["totalrecords"] = totalRecords
-						ret["totalpages"] = int(math.Ceil(float64(totalRecords) / float64(size)))
+						if rawRange == "PAGE" {
+							ret["totalpages"] = int(math.Ceil(float64(totalRecords) / float64(size)))
+						}
 						STD(c, ret)
 					})
 				}
 				if updateMethod != "-" {
 					r.Handle(updateMethod, routePath, func(c *gin.Context) {
-						// TODO 修改接口
-						STD(c, "修改 "+tableName)
+						var params map[string]interface{}
+						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+							ERROR(err)
+							STDErr(c, "parsing body failed")
+							return
+						}
+						if params == nil || IsBlank(params) {
+							STDErr(c, "'cond' and 'doc' are required")
+							return
+						}
+						_, multi := params["multi"]
+						if IsBlank(params["cond"]) && !multi {
+							STDErr(c, "'multi' is required for batch update")
+							return
+						}
+						if IsBlank(params["doc"]) {
+							STDErr(c, "'doc' is required")
+							return
+						}
+
+						var value interface{}
+						db := DB().Model(reflect.New(reflectType).Interface()).Where(params["cond"])
+						if multi {
+							db.Updates(params["doc"])
+							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
+							db.Find(value)
+						} else {
+							value = reflect.New(reflectType).Interface()
+							db.First(value).Model(value).Updates(params["doc"])
+							db.First(value)
+						}
+						STD(c, value)
 					})
 				}
 			}

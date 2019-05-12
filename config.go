@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -127,6 +128,9 @@ func initDataSources() {
 					panic(err)
 				} else {
 					dataSourcesMap.Store(ds.Name, db)
+					if gin.IsDebugging() {
+						db.LogMode(true)
+					}
 				}
 			}
 			if first != "" {
@@ -148,6 +152,9 @@ func initDataSources() {
 				panic(err)
 			} else {
 				dataSourcesMap.Store(ds.Name, db)
+				if gin.IsDebugging() {
+					db.LogMode(true)
+				}
 			}
 		}
 	}

@@ -10,6 +10,9 @@ import (
 
 // IsBlank
 func IsBlank(value interface{}) bool {
+	if value == nil {
+		return true
+	}
 	indirectValue := indirectValue(value)
 	switch indirectValue.Kind() {
 	case reflect.String:
@@ -22,6 +25,8 @@ func IsBlank(value interface{}) bool {
 		return indirectValue.Uint() == 0
 	case reflect.Float32, reflect.Float64:
 		return indirectValue.Float() == 0
+	case reflect.Map:
+		return indirectValue.Len() == 0
 	case reflect.Interface, reflect.Ptr:
 		return indirectValue.IsNil()
 	}
