@@ -177,6 +177,32 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 										db = db.Where(fmt.Sprintf("\"%s\" IN (?)", key), raw)
 									} else if raw, has := m["$nin"]; has {
 										db = db.Not(key, raw)
+									} else {
+										gt, hgt := m["$gt"]
+										gte, hgte := m["$gte"]
+										lt, hlt := m["$lt"]
+										lte, hlte := m["$lte"]
+										if hgt {
+											if hlt {
+												db = db.Where(fmt.Sprintf("\"%s\" > ? AND \"%s\" < ?", key, key), gt, lt)
+											} else if hlte {
+												db = db.Where(fmt.Sprintf("\"%s\" > ? AND \"%s\" <= ?", key, key), gt, lte)
+											} else {
+												db = db.Where(fmt.Sprintf("\"%s\" > ?", key), gt)
+											}
+										} else if hgte {
+											if hlt {
+												db = db.Where(fmt.Sprintf("\"%s\" >= ? AND \"%s\" < ?", key, key), gte, lt)
+											} else if hlte {
+												db = db.Where(fmt.Sprintf("\"%s\" >= ? AND \"%s\" <= ?", key, key), gte, lte)
+											} else {
+												db = db.Where(fmt.Sprintf("\"%s\" >= ?", key), gte)
+											}
+										} else if hlt {
+											db = db.Where(fmt.Sprintf("\"%s\" < ?", key), lt)
+										} else if hlte {
+											db = db.Where(fmt.Sprintf("\"%s\" <= ?", key), lte)
+										}
 									}
 									delete(cond, key)
 								}
