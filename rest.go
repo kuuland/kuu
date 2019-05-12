@@ -149,8 +149,7 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
-							// TODO 数值查询：$gt、$gte、$lt、$lte
-							// TODO 逻辑查询：$and、$or、$eq、$ne
+							// TODO 逻辑查询：$and、$or
 							for key, val := range cond {
 								if m, ok := val.(map[string]interface{}); ok {
 									if raw, has := m["$regex"]; has {
@@ -176,6 +175,10 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 									} else if raw, has := m["$in"]; has {
 										db = db.Where(fmt.Sprintf("\"%s\" IN (?)", key), raw)
 									} else if raw, has := m["$nin"]; has {
+										db = db.Not(key, raw)
+									} else if raw, has := m["$eq"]; has {
+										db = db.Where(fmt.Sprintf("\"%s\" = ?", key), raw)
+									} else if raw, has := m["$ne"]; has {
 										db = db.Not(key, raw)
 									} else {
 										gt, hgt := m["$gt"]
