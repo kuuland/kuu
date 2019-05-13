@@ -465,6 +465,7 @@ func main() {
 - [Accounts module](https://github.com/kuuland/accounts) - [JWT-based](https://jwt.io/) token issuance, login authentication, etc.
 - [System module](https://github.com/kuuland/sys) - Menu, [admin](https://github.com/kuuland/ui), roles, organization, etc.
 - [Internationalization(i18n)](https://github.com/kuuland/i18n) - Translation tools for multilingual applications.
+- [Admin](https://github.com/kuuland/ui) - A React boilerplate.
 
 ## FAQ
 
