@@ -462,7 +462,7 @@ func main() {
 ### Preset modules
 
 - [Accounts module](https://github.com/kuuland/kuu-accounts-mod) - [JWT-based](https://jwt.io/) token issuance, login authentication, etc.
-- [System module](https://github.com/kuuland/kuu-sys-mod) - Menu, admin, roles, organization, etc.
+- [System module](https://github.com/kuuland/kuu-sys-mod) - Menu, [admin](https://github.com/kuuland/ui), roles, organization, etc.
 - [Internationalization(i18n)](https://github.com/kuuland/kuu-i18n-mod) - Translation tools for multilingual applications.
 
 ## FAQ
