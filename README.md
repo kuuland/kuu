@@ -460,9 +460,9 @@ func main() {
 
 ## FAQ
 
-### Why is it called Kuu?
+### Why called Kuu?
 
-> Kuu is the name of a cat, click to read [The story of Kuu and Shino](http://www.sohu.com/a/225954042_509045).
+> Kuu is a lovely cat, click to read [The story of Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino).
 
 ![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
 
