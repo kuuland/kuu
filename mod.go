@@ -46,8 +46,7 @@ func Import(r *gin.Engine, mods ...*Mod) {
 			if model == nil {
 				continue
 			}
-			DB().AutoMigrate(model)
-			MountRESTful(r, model)
+			RESTful(r, model)
 		}
 	}
 }

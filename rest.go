@@ -13,12 +13,14 @@ import (
 
 var modelStructsMap sync.Map
 
-func MountRESTful(r *gin.Engine, value interface{}) {
+// RESTful
+func RESTful(r *gin.Engine, value interface{}) {
 	// Scope value can't be nil
 	if value == nil {
 		return
 	}
 
+	DB().AutoMigrate(value)
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()
@@ -149,64 +151,43 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
-							// TODO 逻辑查询：$and、$or
 							for key, val := range cond {
-								if m, ok := val.(map[string]interface{}); ok {
-									if raw, has := m["$regex"]; has {
-										keyword := raw.(string)
-										hasPrefix := strings.HasPrefix(keyword, "^")
-										hasSuffix := strings.HasSuffix(keyword, "$")
-										if hasPrefix {
-											keyword = keyword[1:]
-										}
-										if hasSuffix {
-											keyword = keyword[:len(keyword)-1]
-										}
-										a := make([]string, 0)
-										if hasPrefix {
-											a = append(a, "%")
-										}
-										a = append(a, keyword)
-										if hasSuffix {
-											a = append(a, "%")
-										}
-										keyword = strings.Join(a, "")
-										db = db.Where(fmt.Sprintf("\"%s\" LIKE ?", key), keyword)
-									} else if raw, has := m["$in"]; has {
-										db = db.Where(fmt.Sprintf("\"%s\" IN (?)", key), raw)
-									} else if raw, has := m["$nin"]; has {
-										db = db.Not(key, raw)
-									} else if raw, has := m["$eq"]; has {
-										db = db.Where(fmt.Sprintf("\"%s\" = ?", key), raw)
-									} else if raw, has := m["$ne"]; has {
-										db = db.Not(key, raw)
-									} else {
-										gt, hgt := m["$gt"]
-										gte, hgte := m["$gte"]
-										lt, hlt := m["$lt"]
-										lte, hlte := m["$lte"]
-										if hgt {
-											if hlt {
-												db = db.Where(fmt.Sprintf("\"%s\" > ? AND \"%s\" < ?", key, key), gt, lt)
-											} else if hlte {
-												db = db.Where(fmt.Sprintf("\"%s\" > ? AND \"%s\" <= ?", key, key), gt, lte)
-											} else {
-												db = db.Where(fmt.Sprintf("\"%s\" > ?", key), gt)
+								if key == "$and" || key == "$or" {
+									// arr = [{"pass":"123"},{"pass":{"$regex":"^333"}}]
+									if arr, ok := val.([]interface{}); ok {
+										queries := make([]string, 0)
+										args := make([]interface{}, 0)
+										for _, item := range arr {
+											// obj = {"pass":"123"}
+											obj, ok := item.(map[string]interface{})
+											if !ok {
+												continue
 											}
-										} else if hgte {
-											if hlt {
-												db = db.Where(fmt.Sprintf("\"%s\" >= ? AND \"%s\" < ?", key, key), gte, lt)
-											} else if hlte {
-												db = db.Where(fmt.Sprintf("\"%s\" >= ? AND \"%s\" <= ?", key, key), gte, lte)
-											} else {
-												db = db.Where(fmt.Sprintf("\"%s\" >= ?", key), gte)
+											for k, v := range obj {
+												if m, ok := v.(map[string]interface{}); ok {
+													q, a := fieldQuery(m, k)
+													if !IsBlank(q) && !IsBlank(a) {
+														queries = append(queries, q)
+														args = append(args, a...)
+													}
+												} else {
+													queries = append(queries, fmt.Sprintf("\"%s\" = ?", k))
+													args = append(args, v)
+												}
 											}
-										} else if hlt {
-											db = db.Where(fmt.Sprintf("\"%s\" < ?", key), lt)
-										} else if hlte {
-											db = db.Where(fmt.Sprintf("\"%s\" <= ?", key), lte)
+										}
+										if !IsBlank(queries) && !IsBlank(args) {
+											if key == "$or" {
+												db = db.Where(strings.Join(queries, " OR "), args...)
+											} else {
+												db = db.Where(strings.Join(queries, " AND "), args...)
+											}
 										}
 									}
+									delete(cond, key)
+								} else if m, ok := val.(map[string]interface{}); ok {
+									query, args := fieldQuery(m, key)
+									db = db.Where(query, args...)
 									delete(cond, key)
 								}
 							}
@@ -308,6 +289,65 @@ func MountRESTful(r *gin.Engine, value interface{}) {
 			}
 		}
 	}
+}
+
+func fieldQuery(m map[string]interface{}, key string) (query string, args []interface{}) {
+	if raw, has := m["$regex"]; has {
+		keyword := raw.(string)
+		hasPrefix := strings.HasPrefix(keyword, "^")
+		hasSuffix := strings.HasSuffix(keyword, "$")
+		if hasPrefix {
+			keyword = keyword[1:]
+		}
+		if hasSuffix {
+			keyword = keyword[:len(keyword)-1]
+		}
+		a := make([]string, 0)
+		if hasPrefix {
+			a = append(a, "%")
+		}
+		a = append(a, keyword)
+		if hasSuffix {
+			a = append(a, "%")
+		}
+		keyword = strings.Join(a, "")
+		return fmt.Sprintf("\"%s\" LIKE ?", key), []interface{}{keyword}
+	} else if raw, has := m["$in"]; has {
+		return fmt.Sprintf("\"%s\" IN (?)", key), []interface{}{raw}
+	} else if raw, has := m["$nin"]; has {
+		return fmt.Sprintf("\"%s\" NOT IN (?)", key), []interface{}{raw}
+	} else if raw, has := m["$eq"]; has {
+		return fmt.Sprintf("\"%s\" = ?", key), []interface{}{raw}
+	} else if raw, has := m["$ne"]; has {
+		return fmt.Sprintf("\"%s\" <> ?", key), []interface{}{raw}
+	} else {
+		gt, hgt := m["$gt"]
+		gte, hgte := m["$gte"]
+		lt, hlt := m["$lt"]
+		lte, hlte := m["$lte"]
+		if hgt {
+			if hlt {
+				return fmt.Sprintf("\"%s\" > ? AND \"%s\" < ?", key, key), []interface{}{gt, lt}
+			} else if hlte {
+				return fmt.Sprintf("\"%s\" > ? AND \"%s\" <= ?", key, key), []interface{}{gt, lte}
+			} else {
+				return fmt.Sprintf("\"%s\" > ?", key), []interface{}{gt}
+			}
+		} else if hgte {
+			if hlt {
+				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" < ?", key, key), []interface{}{gte, lt}
+			} else if hlte {
+				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" <= ?", key, key), []interface{}{gte, lte}
+			} else {
+				return fmt.Sprintf("\"%s\" >= ?", key), []interface{}{gte}
+			}
+		} else if hlt {
+			return fmt.Sprintf("\"%s\" < ?", key), []interface{}{lt}
+		} else if hlte {
+			return fmt.Sprintf("\"%s\" <= ?", key), []interface{}{lte}
+		}
+	}
+	return
 }
 
 func indirect(reflectValue reflect.Value) reflect.Value {

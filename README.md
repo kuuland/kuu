@@ -46,7 +46,7 @@ func main() {
 	
 	r := gin.Default()
 	r.Use(kuu.CORSMiddleware())
-	kuu.MountRESTful(r, &user{})
+	kuu.RESTful(r, &user{})
 	r.GET("/ping", func(c *gin.Context) {
 		kuu.INFO("Hello Kuu")
 		var users = []user{}
