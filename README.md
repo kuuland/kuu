@@ -15,6 +15,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
     - [Common Functions](#common-functions)
+    - [Preset modules](#preset-modules)
 - [API Reference](https://godoc.org/github.com/kuuland/kuu)
 
 ## Installation
@@ -457,6 +458,12 @@ func main() {
 	kuu.Stringify(&params, true)
 }
 ```
+
+### Preset modules
+
+- [Accounts module](https://github.com/kuuland/kuu-accounts-mod) - [JWT-based](https://jwt.io/) token issuance, login authentication, etc.
+- [System module](https://github.com/kuuland/kuu-sys-mod) - Menu, admin, roles, organization, etc.
+- [Internationalization(i18n)](https://github.com/kuuland/kuu-i18n-mod) - Translation tools for multilingual applications.
 
 ## FAQ
 
