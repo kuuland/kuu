@@ -320,6 +320,8 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 		return fmt.Sprintf("\"%s\" = ?", key), []interface{}{raw}
 	} else if raw, has := m["$ne"]; has {
 		return fmt.Sprintf("\"%s\" <> ?", key), []interface{}{raw}
+	} else if raw, has := m["$exists"]; has {
+		return fmt.Sprintf("\"%s\" IS NOT NULL", key), []interface{}{raw}
 	} else {
 		gt, hgt := m["$gt"]
 		gte, hgte := m["$gte"]
