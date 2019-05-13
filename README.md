@@ -16,7 +16,8 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Standard response format](#standard-response-format)
     - [Common Functions](#common-functions)
     - [Preset modules](#preset-modules)
-- [API Reference](https://godoc.org/github.com/kuuland/kuu)
+- [FAQ](#faq)
+- [License](#license)
 
 ## Installation
 
