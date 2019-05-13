@@ -86,7 +86,10 @@ $ go run example.go
 
 ### Global configuration
 
-kuu.json:
+```sh
+# assume the following codes in kuu.json file
+$ cat kuu.json
+```
 
 ```json
 {
