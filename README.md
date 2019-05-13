@@ -218,8 +218,8 @@ func All() *kuu.Mod {
 func main() {
 	defer kuu.Release()
 	r := gin.Default()
-	kuu.Import(r, All()) // import custom module
-	kuu.Import(r, accounts.All(), sys.All()) // import preset modules
+	kuu.Import(r, All())                       // import custom module
+	kuu.Import(r, accounts.All(), sys.All())   // import preset modules
 }
 ```
 
