@@ -81,9 +81,25 @@ func (c *Config) GetInt(key string) (i int) {
 }
 
 // GetInt64 returns the value associated with the key as an integer.
+func (c *Config) GetInt32(key string) (i32 int32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i32, _ = val.(int32)
+	}
+	return
+}
+
+// GetInt64 returns the value associated with the key as an integer.
 func (c *Config) GetInt64(key string) (i64 int64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		i64, _ = val.(int64)
+	}
+	return
+}
+
+// GetFloat64 returns the value associated with the key as a float32.
+func (c *Config) GetFloat32(key string) (f32 float32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		f32, _ = val.(float32)
 	}
 	return
 }
