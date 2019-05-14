@@ -7,9 +7,10 @@ import (
 
 // Mod
 type Mod struct {
-	Middleware gin.HandlersChain
-	Routes     gin.RoutesInfo
-	Models     []interface{}
+	Middleware  gin.HandlersChain
+	Routes      gin.RoutesInfo
+	Models      []interface{}
+	AfterImport func()
 }
 
 // Import
@@ -39,6 +40,9 @@ func Import(r *gin.Engine, mods ...*Mod) {
 				continue
 			}
 			RESTful(r, model)
+		}
+		if mod.AfterImport != nil {
+			mod.AfterImport()
 		}
 	}
 }

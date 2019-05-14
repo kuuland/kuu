@@ -10,6 +10,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 - [Quick start](#quick-start)
 - [Features](#features)
     - [Global configuration](#global-configuration)
+    - [Data Source Management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
@@ -114,6 +115,55 @@ func main() {
 	kuu.C().GetFloat64("digit")   // output 45.22
 }
 ```
+
+### Data Source Management
+
+Single data source:
+
+```json
+{
+  "db": {
+    "dialect": "postgres",
+    "args": "host=127.0.0.1 port=5432 user=root dbname=db1 password=hello sslmode=disable"
+  }
+}
+```
+
+```go
+r.GET("/ping", func(c *gin.Context) {
+    var users []user
+    kuu.DB().Find(&users)
+    kuu.STD(c, &users)
+})
+```
+
+Multiple data source:
+
+```json
+{
+  "db": [
+    {
+      "name": "ds1",
+      "dialect": "postgres",
+      "args": "host=127.0.0.1 port=5432 user=root dbname=db1 password=hello sslmode=disable"
+    },
+    {
+      "name": "ds2",
+      "dialect": "postgres",
+      "args": "host=127.0.0.1 port=5432 user=root dbname=db1 password=hello sslmode=disable"
+    }
+  ]
+}
+```
+
+```go
+r.GET("/ping", func(c *gin.Context) {
+    var users []user
+    kuu.DB("ds1").Find(&users)
+    kuu.STD(c, &users)
+})
+```
+
 
 ### RESTful APIs for struct
 
