@@ -80,7 +80,7 @@ func main() {
 
 ```sh
 # run main.go and visit 0.0.0.0:8080/ping on browser
-$ go run example.go
+$ go run main.go
 ```
 
 ## Features
