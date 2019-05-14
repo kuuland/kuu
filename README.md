@@ -14,7 +14,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
-    - [Common Functions](#common-functions)
+    - [Common functions](#common-functions)
     - [Preset modules](#preset-modules)
 - [FAQ](#faq)
 - [License](#license)
@@ -445,7 +445,7 @@ func main() {
 }
 ```
 
-### Common Functions
+### Common functions
 
 ```go
 func main() {
