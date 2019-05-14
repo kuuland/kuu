@@ -58,8 +58,7 @@ import (
 )
 
 type user struct {
-	kuu string `rest`
-	gorm.Model
+	gorm.Model `rest:"*"`
 	User string
 	Pass string
 }
@@ -121,15 +120,14 @@ func main() {
 Automatically mount RESTful APIs for struct:
 
 ```go
-type user struct {
-	kuu string `rest`
-	gorm.Model
-	User string
-	Pass string
+type User struct {
+	gorm.Model `rest:"*"`
+	Code string
+	Name string
 }
 
 func main() {
-	kuu.RESTful(r, &user{})
+	kuu.RESTful(r, &User{})
 }
 ```
 
@@ -140,33 +138,62 @@ func main() {
 [GIN-debug] PUT    /api/user  --> github.com/kuuland/kuu.RESTful.func4 (4 handlers)
 ```
 
-You can also change the request method:
+On other fields:
 
 ```go
-type user struct {
-	kuu string `rest:"C:POST;U:PUT;R:GET;D:DELETE"`
+type User struct {
 	gorm.Model
-	User string
-	Pass string
+	Code string `rest:"*"`
+	Name string
+}
+```
+
+You can also change the default request method:
+
+```go
+type User struct {
+	gorm.Model `rest:"C:POST;U:PUT;R:GET;D:DELETE"`
+	Code string
+	Name string
 }
 
 func main() {
-	kuu.RESTful(r, &user{})
+	kuu.RESTful(r, &User{})
 }
+```
+
+Or change route path:
+
+```go
+type User struct {
+	gorm.Model `rest:"*" route:"profile"`
+	Code string
+	Name string
+}
+
+func main() {
+	kuu.RESTful(r, &User{})
+}
+```
+
+```text
+[GIN-debug] POST   /api/profile  --> github.com/kuuland/kuu.RESTful.func1 (4 handlers)
+[GIN-debug] DELETE /api/profile  --> github.com/kuuland/kuu.RESTful.func2 (4 handlers)
+[GIN-debug] GET    /api/profile  --> github.com/kuuland/kuu.RESTful.func3 (4 handlers)
+[GIN-debug] PUT    /api/profile  --> github.com/kuuland/kuu.RESTful.func4 (4 handlers)
 ```
 
 Or unmount:
 
 ```go
-type user struct {
-	kuu string `rest:"C:-;U:PUT;R:GET;D:-"` // unmount all: `rest:"-"`
-	gorm.Model
-	User string
-	Pass string
+type User struct {
+	gorm.Model `rest:"C:-;U:PUT;R:GET;D:-"` // unmount all: `rest:"-"`
+	Code string
+	Name string
 }
 
 func main() {
-	kuu.RESTful(r, &user{})
+	kuu.RESTful(r, &User{})
 }
 ```
 
@@ -353,19 +380,17 @@ curl -X DELETE \
 
 ### Modular project structure
 
-Kuu will automatically mount routes, middleware and struct RESTful APIs after "kuu.Import":
+Kuu will automatically mount routes, middleware and struct RESTful APIs after `kuu.Import`:
 
 ```go
 type User struct {
-	kuu string `rest`
-	gorm.Model
+	gorm.Model `rest`
 	Username string
 	Password string
 }
 
 type Profile struct {
-	kuu string `rest`
-	gorm.Model
+	gorm.Model `rest`
 	Nickname string
 	Age int
 }

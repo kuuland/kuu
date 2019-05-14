@@ -42,7 +42,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 	// Get all fields
 	for i := 0; i < reflectType.NumField(); i++ {
 		fieldStruct := reflectType.Field(i)
-		if strings.ToUpper(fieldStruct.Name) == "KUU" {
+		if strings.Contains(string(fieldStruct.Tag), "rest") {
 			// mounted RESTful routes
 			tagSettings := parseTagSetting(fieldStruct.Tag, "rest")
 			routeAlias := strings.TrimSpace(fieldStruct.Tag.Get("route"))
@@ -68,6 +68,13 @@ func RESTful(r *gin.Engine, value interface{}) {
 				case "U", "UPDATE":
 					updateMethod = val
 				}
+			}
+
+			if _, exists := tagSettings["-"]; exists {
+				createMethod = "-"
+				deleteMethod = "-"
+				queryMethod = "-"
+				updateMethod = "-"
 			}
 
 			// Method conflict
@@ -293,6 +300,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 					})
 				}
 			}
+			break
 		}
 	}
 }

@@ -7,23 +7,10 @@ import (
 
 // Mod
 type Mod struct {
-	Routes     Routes
-	Middleware Middleware
+	Middleware gin.HandlersChain
+	Routes     gin.RoutesInfo
 	Models     []interface{}
 }
-
-// RouteInfo
-type RouteInfo struct {
-	Method  string
-	Path    string
-	Handler gin.HandlerFunc
-}
-
-// Routes
-type Routes []RouteInfo
-
-// Middleware
-type Middleware []gin.HandlerFunc
 
 // Import
 func Import(r *gin.Engine, mods ...*Mod) {
@@ -34,13 +21,18 @@ func Import(r *gin.Engine, mods ...*Mod) {
 			}
 		}
 		for _, route := range mod.Routes {
-			if route.Path == "" || route.Handler == nil {
+			if route.Path == "" || route.HandlerFunc == nil {
 				continue
 			}
 			if route.Method == "" {
 				route.Method = "GET"
 			}
-			r.Handle(route.Method, path.Join(C().GetString("prefix"), route.Path), route.Handler)
+			routePath := path.Join(C().GetString("prefix"), route.Path)
+			if route.Method == "*" {
+				r.Any(routePath, route.HandlerFunc)
+			} else {
+				r.Handle(route.Method, routePath, route.HandlerFunc)
+			}
 		}
 		for _, model := range mod.Models {
 			if model == nil {
@@ -49,4 +41,50 @@ func Import(r *gin.Engine, mods ...*Mod) {
 			RESTful(r, model)
 		}
 	}
+}
+
+// NewMod
+func NewMod() *Mod {
+	return &Mod{}
+}
+
+// AddModel
+func (m *Mod) AddModel(models ...interface{}) *Mod {
+	if !IsBlank(models) {
+		m.Models = append(m.Models, models...)
+	}
+	return m
+}
+
+// AddRoute
+func (m *Mod) AddRoute(path string, handler gin.HandlerFunc, methods ...string) *Mod {
+	if IsBlank(path) || handler == nil {
+		return m
+	}
+	if IsBlank(methods) {
+		methods = []string{"GET"}
+	}
+	for _, method := range methods {
+		if IsBlank(method) {
+			continue
+		}
+		m.Routes = append(m.Routes, gin.RouteInfo{Method: method, Path: path, HandlerFunc: handler})
+	}
+	return m
+}
+
+// AddRouteInfo
+func (m *Mod) AddRouteInfo(routes ...gin.RouteInfo) *Mod {
+	if !IsBlank(routes) {
+		m.Routes = append(m.Routes, routes...)
+	}
+	return m
+}
+
+// AddMiddleware
+func (m *Mod) AddMiddleware(middleware ...gin.HandlerFunc) *Mod {
+	if !IsBlank(middleware) {
+		m.Middleware = append(m.Middleware, middleware...)
+	}
+	return m
 }
