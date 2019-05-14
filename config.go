@@ -2,19 +2,13 @@ package kuu
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"os"
-	"sync"
-
-	"github.com/jinzhu/gorm"
 )
 
 var (
-	pairs          map[string]interface{}
-	inst           *Config
-	dataSourcesMap sync.Map
-	singleDSName   = "kuu_default_db"
+	pairs map[string]interface{}
+	inst  *Config
 )
 
 // Parse config file when init
@@ -36,8 +30,6 @@ func init() {
 			ERROR(err)
 		}
 	}
-	initDataSources()
-
 }
 
 type Config struct {
@@ -47,6 +39,7 @@ type Config struct {
 func C() *Config {
 	if inst == nil {
 		inst = &Config{Keys: pairs}
+		initDataSources()
 	}
 	return inst
 }
@@ -110,90 +103,4 @@ func (c *Config) GetFloat64(key string) (f64 float64) {
 		f64, _ = val.(float64)
 	}
 	return
-}
-
-type datasource struct {
-	Name    string
-	Dialect string
-	Args    string
-}
-
-func initDataSources() {
-	dbConfig, has := pairs["db"]
-	if !has {
-		return
-	}
-	if _, ok := dbConfig.([]interface{}); ok {
-		// Multiple data sources
-		var dsArr []datasource
-		GetSoul(dbConfig, &dsArr)
-		if len(dsArr) > 0 {
-			var first string
-			for _, ds := range dsArr {
-				if IsBlank(ds) || ds.Name == "" {
-					continue
-				}
-				if _, ok := dataSourcesMap.Load(ds.Name); ok {
-					continue
-				}
-				if first == "" {
-					first = ds.Name
-				}
-				db, err := gorm.Open(ds.Dialect, ds.Args)
-				if err != nil {
-					panic(err)
-				} else {
-					dataSourcesMap.Store(ds.Name, db)
-					if gin.IsDebugging() {
-						db.LogMode(true)
-					}
-				}
-			}
-			if first != "" {
-				singleDSName = first
-			}
-		}
-	} else {
-		// Single data source
-		var ds datasource
-		GetSoul(dbConfig, &ds)
-		if !IsBlank(ds) {
-			if ds.Name == "" {
-				ds.Name = singleDSName
-			} else {
-				singleDSName = ds.Name
-			}
-			db, err := gorm.Open(ds.Dialect, ds.Args)
-			if err != nil {
-				panic(err)
-			} else {
-				dataSourcesMap.Store(ds.Name, db)
-				if gin.IsDebugging() {
-					db.LogMode(true)
-				}
-			}
-		}
-	}
-}
-
-// DB
-func DB(name ...string) *gorm.DB {
-	key := singleDSName
-	if len(name) > 0 {
-		key = name[0]
-	}
-	if v, ok := dataSourcesMap.Load(key); ok {
-		return v.(*gorm.DB)
-	}
-	PANIC("No data source named \"%s\"", key)
-	return nil
-}
-
-// Release
-func Release() {
-	dataSourcesMap.Range(func(_, value interface{}) bool {
-		db := value.(*gorm.DB)
-		db.Close()
-		return true
-	})
 }
