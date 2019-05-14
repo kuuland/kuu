@@ -64,9 +64,9 @@ type user struct {
 }
 
 func main() {
-	defer kuu.Release()
+	defer kuu.Release() // IMPORTANT!!!
 	
-	r := gin.Default()
+	r := kuu.Default()
 	kuu.RESTful(r, &user{})
 	r.GET("/ping", func(c *gin.Context) {
 		kuu.INFO("Hello Kuu")
@@ -401,33 +401,33 @@ func All() *kuu.Mod {
 			&User{},
 			&Profile{},
 		},
-		Middleware: kuu.Middleware{
-			func (c *gin.Context) {
+		Middleware: gin.HandlersChain{
+            func(c *gin.Context) {
                 // Auth middleware
             },
-		},
-		Routes: kuu.Routes{
-			kuu.RouteInfo{
+        },
+        Routes: gin.RoutesInfo{
+            gin.RouteInfo{
                 Method: "POST",
                 Path:   "/login",
-                Handler: func(c *gin.Context) {
+                HandlerFunc: func(c *gin.Context) {
                     // POST /login
-                }
+                },
             },
-			kuu.RouteInfo{
+            gin.RouteInfo{
                 Method: "POST",
                 Path:   "/logout",
-                Handler: func(c *gin.Context) {
+                HandlerFunc: func(c *gin.Context) {
                     // POST /logout
-                }
+                },
             },
-		},
+        },
 	}
 }
 
 func main() {
 	defer kuu.Release()
-	r := gin.Default()
+	r := kuu.Default()
 	kuu.Import(r, All())                       // import custom module
 	kuu.Import(r, accounts.All(), sys.All())   // import preset modules
 }
@@ -458,7 +458,7 @@ func main() {
 
 ```go
 func main() {
-	r := gin.Default()
+	r := kuu.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		// 'kuu.STD' Can only be called once
         kuu.STD(c, "hello")                      // response: {"data":"hello","code":0,"msg":""}
@@ -474,7 +474,7 @@ func main() {
 
 ```go
 func main() {
-	r := gin.Default()
+	r := kuu.Default()
 	// Cross-domain support
 	r.Use(kuu.CORSMiddleware())
 	// Parse JSON from string
