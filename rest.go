@@ -199,7 +199,13 @@ func RESTful(r *gin.Engine, value interface{}) {
 						// 处理project
 						rawProject := c.Query("project")
 						if rawProject != "" {
-							db = db.Select(strings.Split(rawProject, ","))
+							fields := strings.Split(rawProject, ",")
+							for index, field := range fields {
+								if strings.HasPrefix(field, "-") {
+									fields[index] = field[1:]
+								}
+							}
+							db = db.Select(fields)
 							ret["project"] = rawProject
 						}
 						// 处理sort
