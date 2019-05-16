@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/jinzhu/gorm"
 	"math"
 	"reflect"
 	"strconv"
@@ -12,6 +13,17 @@ import (
 )
 
 var modelStructsMap sync.Map
+
+type PreloadHooks interface {
+	QueryPreload(*gorm.DB) *gorm.DB
+}
+
+func callPreloadHooks(db *gorm.DB, value interface{}) *gorm.DB {
+	if h, ok := value.(PreloadHooks); ok {
+		db = h.QueryPreload(db)
+	}
+	return db
+}
 
 // RESTful
 func RESTful(r *gin.Engine, value interface{}) {
@@ -91,28 +103,49 @@ func RESTful(r *gin.Engine, value interface{}) {
 						var body interface{}
 						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "parsing body failed")
+							STDErr(c, "Parsing body failed")
 							return
 						}
 						indirectScopeValue := indirect(reflect.ValueOf(body))
+						tx := DB().Begin()
+						var (
+							docs  []interface{}
+							errs  []error
+							multi bool
+						)
 						if indirectScopeValue.Kind() == reflect.Slice {
-							arr := make([]interface{}, 0)
+							multi = true
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								doc := reflect.New(reflectType).Interface()
 								GetSoul(indirectScopeValue.Index(i).Interface(), doc)
-								DB().Create(doc)
-								arr = append(arr, doc)
+								tx := tx.Create(doc)
+								if es := tx.GetErrors(); len(es) > 0 {
+									errs = append(errs, es...)
+								} else {
+									docs = append(docs, doc)
+								}
 							}
-							STD(c, arr)
 						} else {
 							doc := reflect.New(reflectType).Interface()
-							if err := c.ShouldBindBodyWith(doc, binding.JSON); err != nil {
-								ERROR(err)
-								STDErr(c, "parsing body failed")
-								return
+							GetSoul(body, doc)
+							tx = tx.Create(doc)
+							if es := tx.GetErrors(); len(es) > 0 {
+								errs = append(errs, es...)
+							} else {
+								docs = append(docs, doc)
 							}
-							DB().Create(doc)
-							STD(c, doc)
+						}
+						if errs = txerrs(tx, errs); len(errs) > 0 {
+							msg := L(c, "rest_create_failed", "Create %s failed", structName)
+							ERROR(msg)
+							ERROR(errs)
+							STDErr(c, msg)
+						} else {
+							if multi {
+								STD(c, docs)
+							} else {
+								STD(c, docs[0])
+							}
 						}
 					})
 				}
@@ -121,7 +154,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						var params map[string]interface{}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "parsing body failed")
+							STDErr(c, "Parsing body failed")
 							return
 						}
 						if params == nil || IsBlank(params) {
@@ -133,17 +166,32 @@ func RESTful(r *gin.Engine, value interface{}) {
 							STDErr(c, "'multi' is required for batch delete")
 							return
 						}
-						var value interface{}
+						tx := DB().Begin()
+						var (
+							value interface{}
+							errs  []error
+						)
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							db := DB().Where(params["cond"])
-							db.Find(value).Delete(reflect.New(reflectType).Interface())
+							tx = tx.Where(params["cond"])
+							tx = callPreloadHooks(tx, reflect.New(reflectType).Interface())
+							tx = tx.Find(value).Delete(reflect.New(reflectType).Interface())
+							errs = tx.GetErrors()
 						} else {
 							value = reflect.New(reflectType).Interface()
-							db := DB().Where(params["cond"])
-							db.First(value).Delete(value)
+							tx = tx.Where(params["cond"])
+							tx = callPreloadHooks(tx, value)
+							tx = tx.First(value).Delete(value)
+							errs = tx.GetErrors()
 						}
-						STD(c, value)
+						if errs = txerrs(tx, errs); len(errs) > 0 {
+							msg := L(c, "rest_delete_failed", "Delete %s failed", structName)
+							ERROR(msg)
+							ERROR(errs)
+							STDErr(c, msg)
+						} else {
+							STD(c, value)
+						}
 					})
 				}
 				if queryMethod != "-" {
@@ -251,6 +299,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 
 						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
+						db = callPreloadHooks(db, reflect.New(reflectType).Interface())
 						db = db.Find(list)
 						ret["list"] = list
 						// 处理totalrecords、totalpages
@@ -268,7 +317,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						var params map[string]interface{}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "parsing body failed")
+							STDErr(c, "Parsing body failed")
 							return
 						}
 						if params == nil || IsBlank(params) {
@@ -285,24 +334,59 @@ func RESTful(r *gin.Engine, value interface{}) {
 							return
 						}
 
-						var value interface{}
-						db := DB().Model(reflect.New(reflectType).Interface()).Where(params["cond"])
+						// 执行更新
+						tx := DB().Begin()
+						msg := L(c, "rest_update_failed", "Update %s failed", structName)
+						var errs []error
 						if multi {
-							db.Updates(params["doc"])
-							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							db.Find(value)
+							tx = tx.Model(reflect.New(reflectType).Interface()).Where(params["cond"]).Updates(params["doc"])
+							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
+								ERROR(msg)
+								ERROR(errs)
+								STDErr(c, msg)
+								return
+							}
 						} else {
-							value = reflect.New(reflectType).Interface()
-							db.First(value).Model(value).Updates(params["doc"])
-							db.First(value)
+							cond := reflect.New(reflectType).Interface()
+							tx = callPreloadHooks(tx, cond)
+							tx = tx.First(cond).Model(cond).Updates(params["doc"])
+							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
+								ERROR(msg)
+								ERROR(errs)
+								STDErr(c, msg)
+								return
+							}
 						}
-						STD(c, value)
+						// 查询更新后的数据
+						var data interface{}
+						value := reflect.New(reflectType).Interface()
+						query := DB().Model(value).Where(params["cond"])
+						query = callPreloadHooks(query, value)
+						if multi {
+							query = query.Find(data)
+						} else {
+							query = query.First(data)
+						}
+						STD(c, data)
 					})
 				}
 			}
 			break
 		}
 	}
+}
+
+func txerrs(tx *gorm.DB, errs []error) []error {
+	if len(errs) > 0 {
+		if err := tx.Rollback().Error; err != nil {
+			errs = append(errs, err)
+		}
+	} else {
+		if err := tx.Commit().Error; err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
 }
 
 func fieldQuery(m map[string]interface{}, key string) (query string, args []interface{}) {

@@ -36,7 +36,13 @@ type Config struct {
 	Keys map[string]interface{}
 }
 
-func C() *Config {
+func C(newConfig ...map[string]interface{}) *Config {
+	if len(newConfig) > 0 {
+		for k, v := range newConfig[0] {
+			pairs[k] = v
+		}
+		inst = nil
+	}
 	if inst == nil {
 		inst = &Config{Keys: pairs}
 		initDataSources()

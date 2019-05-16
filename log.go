@@ -49,6 +49,11 @@ func ERROR(args ...interface{}) {
 	switch args[0].(type) {
 	case error:
 		args[0] = args[0].(error).Error()
+	case []error:
+		for _, e := range args[0].([]error) {
+			ERROR(e)
+		}
+		return
 	}
 	format, a := split(args...)
 	Logger.Errorf(format, a...)

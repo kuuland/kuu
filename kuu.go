@@ -1,15 +1,22 @@
 package kuu
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 // Default
 func Default() *gin.Engine {
-	initDataSources()
+	onInit()
 	return gin.Default()
 }
 
 // New
 func New() *gin.Engine {
-	initDataSources()
+	onInit()
 	return gin.New()
+}
+
+func onInit() {
+	initDataSources()
+	initRedis()
 }

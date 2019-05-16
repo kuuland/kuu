@@ -23,18 +23,19 @@ type STDRender struct {
 }
 
 // STD
-func STD(c *gin.Context, data interface{}, msg ...string) {
-	std := &STDRender{HTTPCode: http.StatusOK, Context: c, Action: "JSON"}
+func STD(c *gin.Context, data interface{}, msg ...string) *STDRender {
+	std := &STDRender{Context: c}
 	std.Data = data
 	if len(msg) > 0 {
 		std.Message = msg[0]
 	}
 	std.Render()
+	return std
 }
 
 // STDErr
-func STDErr(c *gin.Context, msg string, code ...int32) {
-	std := &STDRender{HTTPCode: http.StatusOK, Context: c, Action: "JSON"}
+func STDErr(c *gin.Context, msg string, code ...int32) *STDRender {
+	std := &STDRender{Context: c}
 	std.Message = msg
 	if len(code) > 0 {
 		std.Code = code[0]
@@ -42,9 +43,22 @@ func STDErr(c *gin.Context, msg string, code ...int32) {
 		std.Code = -1
 	}
 	std.Render()
+	return std
 }
 
-func (r *STDRender) Render() {
+func (r *STDRender) Render(c ...*gin.Context) {
+	if len(c) > 0 {
+		r.Context = c[0]
+	}
+	if r.Context == nil {
+		return
+	}
+	if r.Action == "" {
+		r.Action = "JSON"
+	}
+	if r.HTTPCode == 0 {
+		r.HTTPCode = http.StatusOK
+	}
 	r.Action = strings.TrimSpace(strings.ToUpper(r.Action))
 	switch r.Action {
 	case "JSON":
