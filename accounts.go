@@ -101,7 +101,7 @@ func whiteListCheck(c *gin.Context) bool {
 	if len(WhiteList) == 0 {
 		return false
 	}
-	input := fmt.Sprintf("", c.Request.Method, " ", c.Request.URL.Path)
+	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
 	for _, item := range WhiteList {
 		reg := regexp.MustCompile(item)
 		if reg.MatchString(input) {

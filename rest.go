@@ -242,8 +242,10 @@ func RESTful(r *gin.Engine, value interface{}) {
 									delete(cond, key)
 								} else if m, ok := val.(map[string]interface{}); ok {
 									query, args := fieldQuery(m, key)
-									db = db.Where(query, args...)
-									delete(cond, key)
+									if query != "" && len(args) > 0 {
+										db = db.Where(query, args...)
+										delete(cond, key)
+									}
 								}
 							}
 							if !IsBlank(cond) {
