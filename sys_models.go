@@ -199,12 +199,12 @@ type LoginOrg struct {
 	UID   string `name:"用户ID"`
 }
 
-//func (o *LoginOrg) IsValid() bool {
-//	if o.Org != nil {
-//		return true
-//	}
-//	return false
-//}
+func (o *LoginOrg) IsValid() bool {
+	if o != nil && o.Org.ID > 0 {
+		return true
+	}
+	return false
+}
 
 // Message
 type Message struct {

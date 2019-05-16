@@ -202,7 +202,9 @@ func RESTful(r *gin.Engine, value interface{}) {
 						rawCond := c.Query("cond")
 						if rawCond != "" {
 							Parse(rawCond, &cond)
-							ret["cond"] = cond
+							ptr := &cond
+							cp := *ptr
+							ret["cond"] = &cp
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
