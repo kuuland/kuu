@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-var metadata map[string]*Metadata
+var metadata = make(map[string]*Metadata)
 
 // Mod
 type Mod struct {
@@ -38,41 +38,19 @@ func Import(r *gin.Engine, mods ...*Mod) {
 				r.Handle(route.Method, routePath, route.HandlerFunc)
 			}
 		}
-		var metaArr []*Metadata
 		for _, model := range mod.Models {
 			if model == nil {
 				continue
 			}
 
 			if meta := parseMetadata(model); meta != nil {
-				metaArr = append(metaArr, meta)
+				metadata[meta.Name] = meta
 			}
 
 			RESTful(r, model)
 		}
 		if mod.AfterImport != nil {
 			mod.AfterImport()
-		}
-		if len(metaArr) > 0 {
-			tx := DB().Begin()
-			tx = tx.Unscoped().Delete(&Metadata{IsBuiltIn: true})
-			for _, meta := range metaArr {
-				tx = tx.Create(meta)
-			}
-			if errs := tx.GetErrors(); len(errs) > 0 {
-				ERROR(errs)
-				if err := tx.Rollback(); err != nil {
-					ERROR(err)
-				}
-			} else {
-				if err := tx.Commit(); err != nil {
-					ERROR(err)
-				} else {
-					for _, meta := range metaArr {
-						metadata[meta.Name] = meta
-					}
-				}
-			}
 		}
 	}
 }
@@ -116,4 +94,23 @@ func Metalist() (arr []*Metadata) {
 		arr = append(arr, v)
 	}
 	return
+}
+
+// RegisterMeta
+func RegisterMeta() {
+	tx := DB().Begin()
+	tx = tx.Unscoped().Where(&Metadata{IsBuiltIn: true}).Delete(&Metadata{})
+	for _, meta := range metadata {
+		tx = tx.Create(meta)
+	}
+	if errs := tx.GetErrors(); len(errs) > 0 {
+		ERROR(errs)
+		if err := tx.Rollback(); err != nil {
+			ERROR(err)
+		}
+	} else {
+		if err := tx.Commit().Error; err != nil {
+			ERROR(err)
+		}
+	}
 }
