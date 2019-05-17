@@ -1,7 +1,9 @@
 package kuu
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"strconv"
@@ -52,10 +54,7 @@ func createRootUser(tx *gorm.DB) *User {
 
 func preflight() bool {
 	var param Param
-	if errs := DB().Where(&Param{Code: initCode, IsBuiltIn: true}).Find(&param).GetErrors(); len(errs) > 0 {
-		ERROR(errs)
-		PANIC("Query init parameter failed")
-	}
+	DB().Where(&Param{Code: initCode, IsBuiltIn: true}).Find(&param)
 	if param.ID != 0 {
 		return true
 	}
@@ -419,6 +418,46 @@ func ParseOrgID(c *gin.Context) (orgID uint) {
 	return
 }
 
+// DefaultLoginHandler
+func DefaultLoginHandler(c *gin.Context) (*jwt.MapClaims, error) {
+	body := struct {
+		Username string
+		Password string
+	}{}
+	// 解析请求参数
+	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		ERROR(err)
+		return nil, errors.New(L(c, "Parsing body failed"))
+	}
+	// 检测账号是否存在
+	var user User
+	if err := DB().Where(&User{Username: body.Username}).First(&user).Error; err != nil {
+		ERROR(err)
+		return nil, errors.New(L(c, "User does not exist"))
+	}
+	// 检测账号是否有效
+	if user.Disable {
+		return nil, errors.New(L(c, "User has been disabled"))
+	}
+	// 检测密码是否正确
+	if !CompareHashAndPassword(user.Password, body.Password) {
+		return nil, errors.New(L(c, "Inconsistent password"))
+	}
+	payload := jwt.MapClaims{
+		"UID":       user.ID,
+		"Username":  user.Username,
+		"Name":      user.Name,
+		"Avatar":    user.Avatar,
+		"Sex":       user.Sex,
+		"Mobile":    user.Mobile,
+		"Email":     user.Email,
+		"IsBuiltIn": user.IsBuiltIn,
+		"CreatedAt": user.CreatedAt,
+		"UpdatedAt": user.UpdatedAt,
+	}
+	return &payload, nil
+}
+
 // Sys
 func Sys() *Mod {
 	return &Mod{
@@ -431,14 +470,12 @@ func Sys() *Mod {
 			&DataPrivileges{},
 			&AuthObject{},
 			&Menu{},
-			&Audit{},
 			&AuthRule{},
 			&Dict{},
 			&DictValue{},
 			&File{},
 			&SignOrg{},
 			&Param{},
-			&Message{},
 		},
 		Middleware: gin.HandlersChain{
 			OrgMiddleware,

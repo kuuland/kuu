@@ -132,33 +132,22 @@ type Menu struct {
 	Type          string
 }
 
-// Audit
-type Audit struct {
-	Model      `rest:"*"`
-	Type       string
-	DataID     string
-	DataDetail interface{}
-	Desc       string
-	Content    string
-	Attachs    []File
-}
-
 // AuthRule
 type AuthRule struct {
 	Model             `rest:"*"`
 	UID               uint
 	Username          string
 	Name              string
-	OrgID             uint
-	OrgName           string
+	TargetOrgID       uint
+	TargetOrg         Org `gorm:"foreignkey:TargetOrgID"`
 	ObjectName        string
 	ObjectDisplayName string
 	ReadableScope     string
 	WritableScope     string
-	ReadableOrgIDs    []uint
-	WritableOrgIDs    []uint
-	HitAssign         interface{}
-	Permissions       []string
+	ReadableOrgIDs    string
+	WritableOrgIDs    string
+	HitAssign         string
+	Permissions       string
 }
 
 // Dict
@@ -178,9 +167,10 @@ func (d *Dict) QueryPreload(db *gorm.DB) *gorm.DB {
 // DictValue
 type DictValue struct {
 	Model
-	Label string
-	Value string
-	Sort  int
+	DictID uint
+	Label  string
+	Value  string
+	Sort   int
 }
 
 // File
@@ -208,25 +198,6 @@ func (o *SignOrg) IsValid() bool {
 		return true
 	}
 	return false
-}
-
-// Message
-type Message struct {
-	Model         `rest:"*"`
-	Type          string
-	Title         string
-	Content       string
-	Attachs       []File
-	BusType       string
-	BusID         string
-	BusDetail     string
-	TryTimes      int32
-	Pusher        interface{}
-	PushTime      int64
-	PushStatus    string
-	Receiver      interface{}
-	ReadingStatus string
-	ReadingTime   int64
 }
 
 // Param

@@ -32,7 +32,9 @@ func RESTful(r *gin.Engine, value interface{}) {
 		return
 	}
 
-	DB().AutoMigrate(value)
+	if !C().GetBool("gorm:skip_migrate") {
+		DB().AutoMigrate(value)
+	}
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()

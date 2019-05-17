@@ -12,7 +12,8 @@ var LoginRoute = gin.RouteInfo{
 	Path:   "/login",
 	HandlerFunc: func(c *gin.Context) {
 		// 调用登录处理器获取登录数据
-		payload, err := LoginHandler(c)
+		data, err := LoginHandler(c)
+		payload := *data
 		if err != nil {
 			STDErr(c, err.Error())
 			return
