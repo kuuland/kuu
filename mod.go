@@ -3,7 +3,10 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	"path"
+	"reflect"
 )
+
+var metadata map[string]*Metadata
 
 // Mod
 type Mod struct {
@@ -35,60 +38,82 @@ func Import(r *gin.Engine, mods ...*Mod) {
 				r.Handle(route.Method, routePath, route.HandlerFunc)
 			}
 		}
+		var metaArr []*Metadata
 		for _, model := range mod.Models {
 			if model == nil {
 				continue
 			}
+
+			if meta := parseMetadata(model); meta != nil {
+				metaArr = append(metaArr, meta)
+			}
+
 			RESTful(r, model)
 		}
 		if mod.AfterImport != nil {
 			mod.AfterImport()
 		}
-	}
-}
-
-// NewMod
-func NewMod() *Mod {
-	return &Mod{}
-}
-
-// AddModel
-func (m *Mod) AddModel(models ...interface{}) *Mod {
-	if !IsBlank(models) {
-		m.Models = append(m.Models, models...)
-	}
-	return m
-}
-
-// AddRoute
-func (m *Mod) AddRoute(path string, handler gin.HandlerFunc, methods ...string) *Mod {
-	if IsBlank(path) || handler == nil {
-		return m
-	}
-	if IsBlank(methods) {
-		methods = []string{"GET"}
-	}
-	for _, method := range methods {
-		if IsBlank(method) {
-			continue
+		if len(metaArr) > 0 {
+			tx := DB().Begin()
+			tx = tx.Unscoped().Delete(&Metadata{IsBuiltIn: true})
+			for _, meta := range metaArr {
+				tx = tx.Create(meta)
+			}
+			if errs := tx.GetErrors(); len(errs) > 0 {
+				ERROR(errs)
+				if err := tx.Rollback(); err != nil {
+					ERROR(err)
+				}
+			} else {
+				if err := tx.Commit(); err != nil {
+					ERROR(err)
+				} else {
+					for _, meta := range metaArr {
+						metadata[meta.Name] = meta
+					}
+				}
+			}
 		}
-		m.Routes = append(m.Routes, gin.RouteInfo{Method: method, Path: path, HandlerFunc: handler})
 	}
-	return m
 }
 
-// AddRouteInfo
-func (m *Mod) AddRouteInfo(routes ...gin.RouteInfo) *Mod {
-	if !IsBlank(routes) {
-		m.Routes = append(m.Routes, routes...)
+func parseMetadata(value interface{}) (m *Metadata) {
+	if value == nil {
+		return
 	}
-	return m
+	reflectType := reflect.ValueOf(value).Type()
+	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
+		reflectType = reflectType.Elem()
+	}
+
+	// Scope value need to be a struct
+	if reflectType.Kind() != reflect.Struct {
+		return
+	}
+
+	m = new(Metadata)
+	m.IsBuiltIn = true
+	m.Name = reflectType.Name()
+	m.FullName = path.Join(reflectType.PkgPath(), m.Name)
+	for i := 0; i < reflectType.NumField(); i++ {
+		fieldStruct := reflectType.Field(i)
+		m.Fields = append(m.Fields, MetadataField{
+			Name: fieldStruct.Name,
+			Type: fieldStruct.Type.Kind().String(),
+		})
+	}
+	return
 }
 
-// AddMiddleware
-func (m *Mod) AddMiddleware(middleware ...gin.HandlerFunc) *Mod {
-	if !IsBlank(middleware) {
-		m.Middleware = append(m.Middleware, middleware...)
+// Meta
+func Meta(name string) (m *Metadata) {
+	return metadata[name]
+}
+
+// Metalist
+func Metalist() (arr []*Metadata) {
+	for _, v := range metadata {
+		arr = append(arr, v)
 	}
-	return m
+	return
 }

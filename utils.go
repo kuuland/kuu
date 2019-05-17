@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 // IsBlank
@@ -80,6 +81,16 @@ func EnsureDir(dir string) {
 			ERROR(err)
 		}
 	}
+}
+
+// ParseID
+func ParseID(id string) uint {
+	if v, err := strconv.ParseUint(id, 10, 0); err != nil {
+		ERROR(err)
+	} else {
+		return uint(v)
+	}
+	return 0
 }
 
 // Parse

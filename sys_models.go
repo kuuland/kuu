@@ -21,6 +21,35 @@ type Model struct {
 	Remark      string
 }
 
+// Metadata
+type Metadata struct {
+	Model     `rest:"*"`
+	Name      string
+	FullName  string
+	Fields    []MetadataField
+	IsBuiltIn bool
+}
+
+// QueryPreload
+func (m *Metadata) QueryPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Fields")
+}
+
+// MetadataField
+type MetadataField struct {
+	Model
+	Name       string
+	Type       string
+	MetadataID uint
+}
+
+// Routes
+type Route struct {
+	Model  `rest:"*"`
+	Method string
+	Path   string
+}
+
 // User
 type User struct {
 	Model       `rest:"*"`
@@ -75,6 +104,16 @@ type Role struct {
 	OperationPrivileges []OperationPrivileges
 	DataPrivileges      []DataPrivileges
 	IsBuiltIn           bool
+}
+
+// AfterSave
+func (r *Role) AfterSave() {
+	UpdateAuthRules(nil)
+}
+
+// AfterSave
+func (r *Role) AfterDelete(tx *gorm.DB) {
+	UpdateAuthRules(tx)
 }
 
 // QueryPreload
@@ -134,20 +173,19 @@ type Menu struct {
 
 // AuthRule
 type AuthRule struct {
-	Model             `rest:"*"`
-	UID               uint
-	Username          string
-	Name              string
-	TargetOrgID       uint
-	TargetOrg         Org `gorm:"foreignkey:TargetOrgID"`
-	ObjectName        string
-	ObjectDisplayName string
-	ReadableScope     string
-	WritableScope     string
-	ReadableOrgIDs    string
-	WritableOrgIDs    string
-	HitAssign         string
-	Permissions       string
+	Model          `rest:"*"`
+	UID            uint
+	Username       string
+	Name           string
+	TargetOrgID    uint
+	TargetOrg      Org `gorm:"foreignkey:TargetOrgID"`
+	ObjectName     string
+	ReadableScope  string
+	WritableScope  string
+	ReadableOrgIDs string
+	WritableOrgIDs string
+	HitAssign      uint
+	Permissions    string
 }
 
 // Dict

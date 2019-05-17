@@ -12,7 +12,7 @@ import (
 )
 
 // LoginHandlerFunc
-type LoginHandlerFunc func(*gin.Context) (*jwt.MapClaims, error)
+type LoginHandlerFunc func(*gin.Context) (jwt.MapClaims, error)
 
 var (
 	TokenKey       = "Token"

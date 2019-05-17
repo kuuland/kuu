@@ -1,12 +1,15 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -307,13 +310,13 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 }
 
 // GetUserRoles
-func GetUserRoles(c *gin.Context, uid uint) (*[]Role, error) {
+func GetUserRoles(c *gin.Context, uid uint) (*[]Role, *User, error) {
 	var roles []Role
 	// 查询用户档案
 	var user User
 	if errs := DB().Where("id = ?", uid).First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
 		ERROR(errs)
-		return &roles, errors.New(L(c, "Query user failed"))
+		return &roles, &user, errors.New(L(c, "Query user failed"))
 	}
 	// 过滤有效的角色分配
 	var roleIDs []uint
@@ -327,15 +330,15 @@ func GetUserRoles(c *gin.Context, uid uint) (*[]Role, error) {
 	// 查询角色档案
 	if errs := DB().Where("id in (?)", roleIDs).Find(&roles).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &roles, errors.New(L(c, "Query user roles failed"))
+		return &roles, &user, errors.New(L(c, "Query user roles failed"))
 	}
-	return &roles, nil
+	return &roles, &user, nil
 }
 
 // GetUserPermissions
 func GetUserPermissions(c *gin.Context, uid uint, roles *[]Role) []string {
 	if roles == nil {
-		roles, _ = GetUserRoles(c, uid)
+		roles, _, _ = GetUserRoles(c, uid)
 	}
 	permissions := []string{}
 	if roles != nil {
@@ -352,7 +355,7 @@ func GetUserPermissions(c *gin.Context, uid uint, roles *[]Role) []string {
 }
 
 // GetUserOrgs 查询用户组织
-func GetUserOrgs(c *gin.Context, uid uint, roles *[]Role) (*[]Org, error) {
+func GetUserOrgs(c *gin.Context, roles *[]Role) (*[]Org, error) {
 	var orgs []Org
 	if roles == nil {
 		return &orgs, errors.New(L(c, "Role list is required"))
@@ -418,8 +421,205 @@ func ParseOrgID(c *gin.Context) (orgID uint) {
 	return
 }
 
+// UpdateAuthRules
+func UpdateAuthRules(tx *gorm.DB) {
+	var (
+		list   []User
+		commit bool
+	)
+	if tx == nil {
+		commit = true
+		tx = DB().Begin()
+	}
+	tx.Find(&list)
+	var rules []AuthRule
+	if list != nil {
+		for _, user := range list {
+			if v := GenAuthRules(user.ID); v != nil && len(*v) > 0 {
+				rules = append(rules, (*v)...)
+			}
+		}
+		tx.Unscoped().Delete(&AuthRule{})
+		tx.Exec(genRulesSQL(rules))
+		if commit {
+			if errs := tx.GetErrors(); len(errs) > 0 {
+				ERROR(errs)
+				if err := tx.Rollback().Error; err != nil {
+					ERROR(err)
+				}
+			} else {
+				if err := tx.Commit().Error; err != nil {
+					ERROR(err)
+				} else {
+					INFO("Authorization rules have been updated")
+				}
+			}
+		}
+	}
+}
+
+func genRulesSQL(rules []AuthRule) string {
+	var rows []string
+	for _, r := range rules {
+		row := mustache.Render("({{UID}},'{{Username}}',{{TargetOrgID}},'{{ObjectName}}',"+
+			"'{{ReadableScope}}','{{WritableScope}}','{{ReadableOrgIDs}}','{{WritableOrgIDs}}','{{HitAssign}}','{{Permissions}}')", r)
+		rows = append(rows, row)
+	}
+	sql := `"uid", "username", "target_org_id", "object_name", "readable_scope", "writable_scope", "readable_org_ids", "writable_org_ids", "hit_assign", "permissions"`
+	sql = fmt.Sprintf(`INSERT INTO auth_rules (%s) VALUES %s`, sql, strings.Join(rows, ","))
+	return sql
+}
+
+// GenAuthRules
+func GenAuthRules(uid uint) *[]AuthRule {
+	// 查询用户角色列表
+	roles, user, _ := GetUserRoles(nil, uid)
+	// 查询用户权限列表
+	permissions := GetUserPermissions(nil, uid, roles)
+	if roles == nil || permissions == nil {
+		return nil
+	}
+	// 查询用户组织列表
+	orgs, err := GetUserOrgs(nil, roles)
+	if err != nil {
+		ERROR(err)
+		return nil
+	}
+	// 查询所有组织
+	var totalOrgs []Org
+	if err := DB().Select("id, full_path_pid").Find(&totalOrgs).Error; err != nil {
+		ERROR(err)
+		return nil
+	}
+	// 构建规则列表
+	orgPrivilegesMap := getOrgPrivilegesMap(roles)
+	var rules []AuthRule
+	for _, org := range *orgs {
+		//【直接授权】：直接针对组织的授权称为“直接授权”；
+		//【间接授权】：在授权上级组织时选择了“当前及以下组织”而获得的称为“间接授权”。
+		// 1.首先取直接授权
+		// 2.若无直接授权，沿着组织树向上查询最近的一个“current_following”授权
+		privilege := orgPrivilegesMap[org.ID]
+		privilegeGetter := func(callback func(DataPrivileges) bool) {
+			pids := strings.Split(org.FullPathPid, ",")
+			for _, item := range pids {
+				pid := ParseID(item)
+				if pid == org.ID {
+					continue
+				}
+				p := orgPrivilegesMap[pid]
+				if p.OrgID != 0 && callback(p) {
+					return
+				}
+			}
+		}
+		if privilege.OrgID == 0 {
+			privilegeGetter(func(p DataPrivileges) bool {
+				if p.AllReadableRange == "current_following" || p.AllWritableRange == "current_following" {
+					privilege = p
+					return true
+				}
+				return false
+			})
+		}
+		if privilege.AllReadableRange == "" {
+			privilegeGetter(func(p DataPrivileges) bool {
+				if p.AllReadableRange == "current_following" {
+					privilege = p
+					return true
+				}
+				return false
+			})
+		}
+		if privilege.AllWritableRange == "" {
+			privilegeGetter(func(p DataPrivileges) bool {
+				if p.AllWritableRange == "current_following" {
+					privilege = p
+					return true
+				}
+				return false
+			})
+		}
+		if privilege.OrgID == 0 {
+			continue
+		}
+		authObjectsMaps := map[string]AuthObject{}
+		if privilege.AuthObjects != nil {
+			for _, authObject := range privilege.AuthObjects {
+				authObjectsMaps[authObject.Name] = authObject
+			}
+		}
+		metaArr := Metalist()
+		for _, meta := range metaArr {
+			authObject := authObjectsMaps[meta.Name]
+			if authObject.Name == "" {
+				authObject.Name = meta.Name
+				authObject.ObjReadableRange = privilege.AllReadableRange
+				authObject.ObjWritableRange = privilege.AllWritableRange
+			}
+			if authObject.ObjReadableRange == "" {
+				authObject.ObjReadableRange = privilege.AllReadableRange
+			}
+			if authObject.ObjWritableRange == "" {
+				authObject.ObjWritableRange = privilege.AllWritableRange
+			}
+			authObjectsMaps[meta.Name] = authObject
+			rule := AuthRule{
+				UID:           uid,
+				Username:      user.Username,
+				Name:          user.Name,
+				TargetOrgID:   org.ID,
+				ObjectName:    authObject.Name,
+				ReadableScope: authObject.ObjReadableRange,
+				WritableScope: authObject.ObjWritableRange,
+				HitAssign:     authObject.ID,
+				Permissions:   strings.Join(permissions, ","),
+			}
+			var (
+				readableOrgIDs []string
+				writableOrgIDs []string
+			)
+			switch rule.ReadableScope {
+			case "current":
+				readableOrgIDs = append(readableOrgIDs, string(rule.OrgID))
+			case "current_following":
+				for _, childOrg := range totalOrgs {
+					if strings.HasPrefix(childOrg.FullPathPid, org.FullPathPid) {
+						readableOrgIDs = append(readableOrgIDs, string(childOrg.ID))
+					}
+				}
+			}
+			switch rule.WritableScope {
+			case "current":
+				writableOrgIDs = append(writableOrgIDs, string(rule.OrgID))
+			case "current_following":
+				for _, childOrg := range totalOrgs {
+					if strings.HasPrefix(childOrg.FullPathPid, org.FullPathPid) {
+						writableOrgIDs = append(writableOrgIDs, string(childOrg.ID))
+					}
+				}
+			}
+			rule.ReadableOrgIDs = strings.Join(readableOrgIDs, ",")
+			rule.WritableOrgIDs = strings.Join(writableOrgIDs, ",")
+			rules = append(rules, rule)
+		}
+	}
+	return &rules
+}
+
+func getOrgPrivilegesMap(roles *[]Role) (groups map[uint]DataPrivileges) {
+	for _, role := range *roles {
+		if role.DataPrivileges != nil {
+			for _, privilege := range role.DataPrivileges {
+				groups[privilege.OrgID] = privilege
+			}
+		}
+	}
+	return groups
+}
+
 // DefaultLoginHandler
-func DefaultLoginHandler(c *gin.Context) (*jwt.MapClaims, error) {
+func DefaultLoginHandler(c *gin.Context) (jwt.MapClaims, error) {
 	body := struct {
 		Username string
 		Password string
@@ -455,7 +655,7 @@ func DefaultLoginHandler(c *gin.Context) (*jwt.MapClaims, error) {
 		"CreatedAt": user.CreatedAt,
 		"UpdatedAt": user.UpdatedAt,
 	}
-	return &payload, nil
+	return payload, nil
 }
 
 // Sys
@@ -476,6 +676,9 @@ func Sys() *Mod {
 			&File{},
 			&SignOrg{},
 			&Param{},
+			&Metadata{},
+			&MetadataField{},
+			&Route{},
 		},
 		Middleware: gin.HandlersChain{
 			OrgMiddleware,

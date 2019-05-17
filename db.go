@@ -3,7 +3,6 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -109,7 +108,7 @@ func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 				var orgIDs []uint
 				if rule.ReadableOrgIDs != "" {
 					for _, item := range strings.Split(rule.ReadableOrgIDs, ",") {
-						if v, err := strconv.ParseUint(item, 10, 0); err == nil {
+						if v := ParseID(item); v != 0 {
 							orgIDs = append(orgIDs, uint(v))
 						}
 					}

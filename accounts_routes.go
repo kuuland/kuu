@@ -12,8 +12,7 @@ var LoginRoute = gin.RouteInfo{
 	Path:   "/login",
 	HandlerFunc: func(c *gin.Context) {
 		// 调用登录处理器获取登录数据
-		data, err := LoginHandler(c)
-		payload := *data
+		payload, err := LoginHandler(c)
 		if err != nil {
 			STDErr(c, err.Error())
 			return
@@ -42,6 +41,13 @@ var LoginRoute = gin.RouteInfo{
 		}
 		// 保存登入历史
 		saveHistory(c, &secretData)
+		// 设置到上下文中
+		c.Set(SignContextKey, &SignContext{
+			Token:   secretData.Token,
+			UID:     secretData.UID,
+			Payload: payload,
+			Secret:  &secretData,
+		})
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(UIDKey, string(secretData.UID), ExpiresSeconds, "/", "", false, true)

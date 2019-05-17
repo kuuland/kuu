@@ -82,7 +82,7 @@ var UserRolesRoute = gin.RouteInfo{
 		if sign == nil {
 			return
 		}
-		if roles, err := GetUserRoles(c, sign.UID); err != nil {
+		if roles, _, err := GetUserRoles(c, sign.UID); err != nil {
 			ERROR(err)
 			STDErr(c, err.Error())
 		} else {
