@@ -18,7 +18,7 @@ type SignHistory struct {
 // SignSecret
 type SignSecret struct {
 	gorm.Model `rest:"*"`
-	UID        string
+	UID        uint
 	Secret     string
 	Token      string
 	Iat        int64
@@ -29,14 +29,14 @@ type SignSecret struct {
 // SignContext
 type SignContext struct {
 	Token   string
-	UID     string
+	UID     uint
 	Payload jwt.MapClaims
 	Secret  *SignSecret
 }
 
 // IsValid
 func (s *SignContext) IsValid() (ret bool) {
-	if err := s.Payload.Valid(); err == nil && s.Token != "" && s.UID != "" {
+	if err := s.Payload.Valid(); err == nil && s.Token != "" && s.UID != 0 {
 		ret = true
 	}
 	return

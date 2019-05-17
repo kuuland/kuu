@@ -19,15 +19,33 @@ type Language struct {
 }
 
 // L
-func L(langOrContext interface{}, key string, defaultAndArgs ...interface{}) string {
-	lang, defaultValue, args := parse(langOrContext, defaultAndArgs)
+func L(langOrContext interface{}, defaultValue string, args ...interface{}) string {
+	if len(args) > 0 {
+		return LFull(langOrContext, "", defaultValue, args[0])
+	} else {
+		return LFull(langOrContext, "", defaultValue, nil)
+	}
+}
+
+// LFull
+func LFull(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
+	lang := parseLang(langOrContext)
 	if lang == "" {
 		lang = "en"
+	}
+	if key == "" {
+		key = strings.Replace(defaultValue, "{", "", -1)
+		key = strings.Replace(defaultValue, "}", "", -1)
+		key = strings.Replace(defaultValue, "{", "", -1)
+		key = strings.Replace(defaultValue, "}", "", -1)
+		key = strings.Replace(defaultValue, " ", "_", -1)
+		key = strings.TrimSpace(key)
+		key = strings.ToLower(key)
 	}
 	return renderMessage(lang, key, defaultValue, args)
 }
 
-func parse(langOrContext interface{}, defaultAndArgs []interface{}) (lang string, defaultValue string, args interface{}) {
+func parseLang(langOrContext interface{}) (lang string) {
 	if c, ok := langOrContext.(*gin.Context); ok {
 		lang = parseKuuLang(c)
 		if lang == "" {
@@ -35,16 +53,6 @@ func parse(langOrContext interface{}, defaultAndArgs []interface{}) (lang string
 		}
 	} else if v, ok := langOrContext.(string); ok {
 		lang = v
-	}
-	if len(defaultAndArgs) > 0 {
-		if v, ok := defaultAndArgs[0].(string); ok {
-			defaultValue = v
-		} else {
-			args = defaultAndArgs[0]
-		}
-	}
-	if len(defaultAndArgs) > 1 {
-		args = defaultAndArgs[1]
 	}
 	return
 }

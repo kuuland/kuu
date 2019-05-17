@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 	"reflect"
 )
 
@@ -72,6 +73,15 @@ func Stringify(v interface{}, format ...bool) (ret string) {
 	return
 }
 
+// EnsureDir
+func EnsureDir(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			ERROR(err)
+		}
+	}
+}
+
 // Parse
 func Parse(v string, r interface{}) {
 	err := json.Unmarshal([]byte(v), r)
@@ -83,6 +93,8 @@ func Parse(v string, r interface{}) {
 // GetSoul
 func GetSoul(src interface{}, dest interface{}) {
 	if bytes, err := json.Marshal(src); err == nil {
-		json.Unmarshal(bytes, dest)
+		if err := json.Unmarshal(bytes, dest); err != nil {
+			ERROR(err)
+		}
 	}
 }

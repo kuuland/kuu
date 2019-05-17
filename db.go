@@ -77,15 +77,32 @@ func initDataSources() {
 }
 
 // DB
-func DB(name ...string) *gorm.DB {
-	key := singleDSName
-	if len(name) > 0 {
-		key = name[0]
+func DB(c ...*gin.Context) *gorm.DB {
+	return DBWithName("", c...)
+}
+
+// DBWithName
+func DBWithName(name string, c ...*gin.Context) *gorm.DB {
+	if name == "" {
+		name = singleDSName
 	}
-	if v, ok := dataSourcesMap.Load(key); ok {
-		return v.(*gorm.DB)
+	if v, ok := dataSourcesMap.Load(name); ok {
+		db := v.(*gorm.DB)
+		if len(c) > 0 && c[0] != nil {
+			//ctx := c[0]
+			//orgID := ParseOrgID(ctx)
+			//sign := ensureLogged(ctx)
+			//if v, exists := ctx.Get(SignContextKey); exists {
+			//	sign = v.(*SignContext)
+			//}
+			//// TODO 过滤数据范围
+			//if orgID != 0 {
+			//	db.Where("org_id in (?) or createdby_id = ?", orgID)
+			//}
+		}
+		return db
 	}
-	PANIC("No data source named \"%s\"", key)
+	PANIC("No data source named \"%s\"", name)
 	return nil
 }
 

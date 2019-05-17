@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"time"
@@ -26,7 +25,7 @@ var LoginRoute = gin.RouteInfo{
 		payload["exp"] = exp // 过期时间
 		// 生成新密钥
 		secretData := SignSecret{
-			UID:    payload[UIDKey].(string),
+			UID:    payload[UIDKey].(uint),
 			Secret: uuid.NewV4().String(),
 			Iat:    iat,
 			Exp:    exp,
@@ -44,7 +43,7 @@ var LoginRoute = gin.RouteInfo{
 		saveHistory(c, &secretData)
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
-		c.SetCookie(UIDKey, secretData.UID, ExpiresSeconds, "/", "", false, true)
+		c.SetCookie(UIDKey, string(secretData.UID), ExpiresSeconds, "/", "", false, true)
 		STD(c, payload)
 	},
 }
@@ -68,7 +67,7 @@ var LogoutRoute = gin.RouteInfo{
 			if !db.NewRecord(&secretData) {
 				if errs := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).GetErrors(); len(errs) > 0 {
 					ERROR(errs)
-					STDErr(c, L(c, "logout_failed", "Logout failed"))
+					STDErr(c, L(c, "Logout failed"))
 					return
 				}
 				// 删除redis缓存
@@ -79,10 +78,10 @@ var LogoutRoute = gin.RouteInfo{
 				saveHistory(c, &secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
-				c.SetCookie(UIDKey, secretData.UID, -1, "/", "", false, true)
+				c.SetCookie(UIDKey, string(secretData.UID), -1, "/", "", false, true)
 			}
 		}
-		STD(c, L(c, "logout_success", "Logout successful"))
+		STD(c, L(c, "Logout success"))
 	},
 }
 
@@ -98,7 +97,7 @@ var ValidRoute = gin.RouteInfo{
 		if sign.IsValid() {
 			STD(c, sign.Payload)
 		} else {
-			STDErr(c, fmt.Sprintf("Token has expired: '%s'", sign.Token), 555)
+			STDErr(c, LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": sign.Token}), 555)
 		}
 	},
 }

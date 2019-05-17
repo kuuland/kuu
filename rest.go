@@ -136,7 +136,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							}
 						}
 						if errs = txerrs(tx, errs); len(errs) > 0 {
-							msg := L(c, "rest_create_failed", "Create %s failed", structName)
+							msg := L(c, "Create {{name}} failed", gin.H{"name": structName})
 							ERROR(msg)
 							ERROR(errs)
 							STDErr(c, msg)
@@ -185,7 +185,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							errs = tx.GetErrors()
 						}
 						if errs = txerrs(tx, errs); len(errs) > 0 {
-							msg := L(c, "rest_delete_failed", "Delete %s failed", structName)
+							msg := L(c, "Delete {{name}} failed", gin.H{"name": structName})
 							ERROR(msg)
 							ERROR(errs)
 							STDErr(c, msg)
@@ -340,7 +340,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 
 						// 执行更新
 						tx := DB().Begin()
-						msg := L(c, "rest_update_failed", "Update %s failed", structName)
+						msg := L(c, "Update {{name}} failed", gin.H{"name": structName})
 						var errs []error
 						if multi {
 							tx = tx.Model(reflect.New(reflectType).Interface()).Where(params["cond"]).Updates(params["doc"])

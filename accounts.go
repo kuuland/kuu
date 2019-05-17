@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -91,7 +92,7 @@ func ParseToken(c *gin.Context) string {
 }
 
 // ParseUID
-func ParseUID(c *gin.Context) string {
+func ParseUID(c *gin.Context) (uid uint) {
 	// querystring > header > cookie
 	var userID string
 	userID = c.Query(UIDKey)
@@ -101,7 +102,12 @@ func ParseUID(c *gin.Context) string {
 	if userID == "" {
 		userID, _ = c.Cookie(UIDKey)
 	}
-	return userID
+	if v, err := strconv.ParseUint(userID, 10, 0); err != nil {
+		ERROR(err)
+	} else {
+		uid = uint(v)
+	}
+	return
 }
 
 // DecodedContext
@@ -109,7 +115,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	token := ParseToken(c)
 	uid := ParseUID(c)
 	if token == "" {
-		return nil, errors.New("Missing token")
+		return nil, errors.New(L(c, "Missing token"))
 	}
 	data := SignContext{
 		Token: token,
@@ -123,10 +129,10 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 		DB().Where(&SignSecret{UID: uid, Token: token}).Find(&sign)
 	}
 	if sign.Secret == "" {
-		return nil, errors.New(fmt.Sprintf("Secret is invalid: %s %s", uid, token))
+		return nil, errors.New(LFull(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": uid, "token": token}))
 	}
 	if sign.Method == "LOGOUT" {
-		return nil, errors.New(fmt.Sprintf("Token has expired: '%s'", token))
+		return nil, errors.New(LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
 	}
 	data.Payload = DecodedToken(token, sign.Secret)
 	return &data, nil
