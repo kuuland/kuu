@@ -3,6 +3,8 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -82,23 +84,38 @@ func DB(c ...*gin.Context) *gorm.DB {
 }
 
 // DBWithName
-func DBWithName(name string, c ...*gin.Context) *gorm.DB {
+func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 	if name == "" {
 		name = singleDSName
 	}
 	if v, ok := dataSourcesMap.Load(name); ok {
 		db := v.(*gorm.DB)
-		if len(c) > 0 && c[0] != nil {
-			//ctx := c[0]
-			//orgID := ParseOrgID(ctx)
-			//sign := ensureLogged(ctx)
-			//if v, exists := ctx.Get(SignContextKey); exists {
-			//	sign = v.(*SignContext)
-			//}
-			//// TODO 过滤数据范围
-			//if orgID != 0 {
-			//	db.Where("org_id in (?) or createdby_id = ?", orgID)
-			//}
+		if len(ginContext) > 0 && ginContext[0] != nil {
+			// 解析登录信息
+			c := ginContext[0]
+			var sign *SignContext
+			if v, exists := c.Get(SignContextKey); exists {
+				sign = v.(*SignContext)
+			} else {
+				if v, err := DecodedContext(c); err == nil {
+					sign = v
+				}
+			}
+			orgID := ParseOrgID(c)
+			// 查询授权规则
+			var rule AuthRule
+			queryDB := v.(*gorm.DB)
+			if err := queryDB.Where(&AuthRule{UID: sign.UID, TargetOrgID: orgID}).First(&rule).Error; err == nil {
+				var orgIDs []uint
+				if rule.ReadableOrgIDs != "" {
+					for _, item := range strings.Split(rule.ReadableOrgIDs, ",") {
+						if v, err := strconv.ParseUint(item, 10, 0); err == nil {
+							orgIDs = append(orgIDs, uint(v))
+						}
+					}
+				}
+				db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", orgIDs, sign.UID)
+			}
 		}
 		return db
 	}
