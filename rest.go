@@ -154,18 +154,25 @@ func RESTful(r *gin.Engine, value interface{}) {
 				}
 				if deleteMethod != "-" {
 					r.Handle(deleteMethod, routePath, func(c *gin.Context) {
-						var params map[string]interface{}
+						var params struct {
+							All   bool
+							Multi bool
+							Cond  map[string]interface{}
+						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
 							STDErr(c, "Parsing body failed")
 							return
 						}
-						if params == nil || IsBlank(params) {
+						if IsBlank(params.Cond) {
 							STDErr(c, "'cond' is required")
 							return
 						}
-						_, multi := params["multi"]
-						if IsBlank(params["cond"]) && !multi {
+						var multi bool
+						if params.Multi || params.All {
+							multi = true
+						}
+						if IsBlank(params.Cond) && !multi {
 							STDErr(c, "'multi' is required for batch delete")
 							return
 						}
@@ -174,18 +181,27 @@ func RESTful(r *gin.Engine, value interface{}) {
 							value interface{}
 							errs  []error
 						)
-						cond := reflect.New(reflectType).Interface()
-						GetSoul(params["cond"], cond)
+						params.Cond = underlineMap(params.Cond)
+						for key, val := range params.Cond {
+							if m, ok := val.(map[string]interface{}); ok {
+								query, args := fieldQuery(m, key)
+								if query != "" && len(args) > 0 {
+									tx = tx.Where(query, args...)
+									delete(params.Cond, key)
+								}
+							}
+						}
+						if !IsBlank(params.Cond) {
+							query := reflect.New(reflectType).Interface()
+							GetSoul(params.Cond, query)
+							tx = tx.Where(query)
+						}
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							tx = tx.Where(cond)
-							tx = callPreloadHooks(tx, reflect.New(reflectType).Interface())
 							tx = tx.Find(value).Delete(reflect.New(reflectType).Interface())
 							errs = tx.GetErrors()
 						} else {
 							value = reflect.New(reflectType).Interface()
-							tx = tx.Where(cond)
-							tx = callPreloadHooks(tx, value)
 							tx = tx.First(value).Delete(value)
 							errs = tx.GetErrors()
 						}
@@ -327,37 +343,57 @@ func RESTful(r *gin.Engine, value interface{}) {
 				}
 				if updateMethod != "-" {
 					r.Handle(updateMethod, routePath, func(c *gin.Context) {
-						var params map[string]interface{}
+						var params struct {
+							All   bool
+							Multi bool
+							Cond  map[string]interface{}
+							Doc   map[string]interface{}
+						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
 							STDErr(c, "Parsing body failed")
 							return
 						}
-						if params == nil || IsBlank(params) {
+						if IsBlank(params.Cond) || IsBlank(params.Doc) {
 							STDErr(c, "'cond' and 'doc' are required")
 							return
 						}
-						_, multi := params["multi"]
-						if IsBlank(params["cond"]) && !multi {
+						var multi bool
+						if params.Multi || params.All {
+							multi = true
+						}
+						if IsBlank(params.Cond) && !multi {
 							STDErr(c, "'multi' is required for batch update")
 							return
 						}
-						if IsBlank(params["doc"]) {
+						if IsBlank(params.Doc) {
 							STDErr(c, "'doc' is required")
 							return
 						}
 
 						// 执行更新
-						tx := DB().Begin()
+						tx := DB().Begin().Model(reflect.New(reflectType).Interface())
 						msg := L(c, "Update {{name}} failed", gin.H{"name": structName})
-
-						cond := reflect.New(reflectType).Interface()
-						doc := reflect.New(reflectType).Interface()
-						GetSoul(params["cond"], cond)
-						GetSoul(params["doc"], doc)
+						params.Cond = underlineMap(params.Cond)
+						params.Doc = underlineMap(params.Doc)
+						for key, val := range params.Cond {
+							if m, ok := val.(map[string]interface{}); ok {
+								query, args := fieldQuery(m, key)
+								if query != "" && len(args) > 0 {
+									tx = tx.Where(query, args...)
+									delete(params.Cond, key)
+								}
+							}
+						}
+						if !IsBlank(params.Cond) {
+							query := reflect.New(reflectType).Interface()
+							GetSoul(params.Cond, query)
+							tx = tx.Where(query)
+						}
+						query := tx
 						var errs []error
 						if multi {
-							tx = tx.Model(reflect.New(reflectType).Interface()).Where(cond).Updates(doc)
+							tx = tx.Updates(params.Doc)
 							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
 								ERROR(msg)
 								ERROR(errs)
@@ -365,8 +401,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 								return
 							}
 						} else {
-							tx = callPreloadHooks(tx, cond)
-							tx = tx.First(cond).Updates(doc)
+							tx = tx.Updates(params.Doc)
 							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
 								ERROR(msg)
 								ERROR(errs)
@@ -376,9 +411,6 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						// 查询更新后的数据
 						var data interface{}
-						value := reflect.New(reflectType).Interface()
-						query := DB().Model(value).Where(cond)
-						query = callPreloadHooks(query, value)
 						if multi {
 							query = query.Find(data)
 						} else {
@@ -391,6 +423,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 			break
 		}
 	}
+}
+
+func underlineMap(m map[string]interface{}) map[string]interface{} {
+	for k, v := range m {
+		delete(m, k)
+		m[underline(k)] = v
+	}
+	return m
 }
 
 func underline(str string) string {
