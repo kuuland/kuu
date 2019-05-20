@@ -18,17 +18,6 @@ func OrgMiddleware(c *gin.Context) {
 			sign = v
 		}
 	}
-	if sign != nil {
-		var signOrg SignOrg
-		if errs := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg).GetErrors(); len(errs) > 0 {
-			ERROR(errs)
-			std := STDErr(nil, L(c, "Organization login record not found"))
-			std.Action = "ABORT"
-			std.Render(c)
-			return
-		}
-		c.Set(OrgIDKey, &signOrg)
-	}
 
 	c.Next()
 

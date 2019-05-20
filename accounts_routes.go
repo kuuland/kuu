@@ -3,6 +3,7 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"strconv"
 	"time"
 )
 
@@ -12,7 +13,10 @@ var LoginRoute = gin.RouteInfo{
 	Path:   "/login",
 	HandlerFunc: func(c *gin.Context) {
 		// 调用登录处理器获取登录数据
-		payload, err := LoginHandler(c)
+		if loginHandler == nil {
+			PANIC("login handler not configured")
+		}
+		payload, err := loginHandler(c)
 		if err != nil {
 			STDErr(c, err.Error())
 			return
@@ -50,7 +54,7 @@ var LoginRoute = gin.RouteInfo{
 		})
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
-		c.SetCookie(UIDKey, string(secretData.UID), ExpiresSeconds, "/", "", false, true)
+		c.SetCookie(UIDKey, strconv.Itoa(int(secretData.UID)), ExpiresSeconds, "/", "", false, true)
 		STD(c, payload)
 	},
 }
@@ -85,7 +89,7 @@ var LogoutRoute = gin.RouteInfo{
 				saveHistory(c, &secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
-				c.SetCookie(UIDKey, string(secretData.UID), -1, "/", "", false, true)
+				c.SetCookie(UIDKey, strconv.Itoa(int(secretData.UID)), -1, "/", "", false, true)
 			}
 		}
 		STD(c, L(c, "Logout success"))
@@ -102,6 +106,7 @@ var ValidRoute = gin.RouteInfo{
 			sign = v.(*SignContext)
 		}
 		if sign.IsValid() {
+			sign.Payload[TokenKey] = sign.Token
 			STD(c, sign.Payload)
 		} else {
 			STDErr(c, LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": sign.Token}), 555)

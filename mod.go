@@ -24,6 +24,8 @@ func Import(r *gin.Engine, mods ...*Mod) {
 				r.Use(middleware)
 			}
 		}
+	}
+	for _, mod := range mods {
 		for _, route := range mod.Routes {
 			if route.Path == "" || route.HandlerFunc == nil {
 				continue
@@ -84,8 +86,12 @@ func parseMetadata(value interface{}) (m *Metadata) {
 }
 
 // Meta
-func Meta(name string) (m *Metadata) {
-	return metadata[name]
+func Meta(value interface{}) (m *Metadata) {
+	if v, ok := value.(string); ok {
+		return metadata[v]
+	} else {
+		return parseMetadata(value)
+	}
 }
 
 // Metalist

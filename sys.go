@@ -398,7 +398,7 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 		ERROR(errs)
 		return &orgData, errors.New(L(c, "Organization login failed"))
 	}
-	c.SetCookie(OrgIDKey, string(orgData.ID), 0, "/", "", false, true)
+	c.SetCookie(OrgIDKey, strconv.Itoa(int(orgData.ID)), 0, "/", "", false, true)
 	return &orgData, nil
 }
 
@@ -581,21 +581,21 @@ func GenAuthRules(uid uint) *[]AuthRule {
 			)
 			switch rule.ReadableScope {
 			case "current":
-				readableOrgIDs = append(readableOrgIDs, string(rule.OrgID))
+				readableOrgIDs = append(readableOrgIDs, strconv.Itoa(int(rule.OrgID)))
 			case "current_following":
 				for _, childOrg := range totalOrgs {
 					if strings.HasPrefix(childOrg.FullPathPid, org.FullPathPid) {
-						readableOrgIDs = append(readableOrgIDs, string(childOrg.ID))
+						readableOrgIDs = append(readableOrgIDs, strconv.Itoa(int(childOrg.ID)))
 					}
 				}
 			}
 			switch rule.WritableScope {
 			case "current":
-				writableOrgIDs = append(writableOrgIDs, string(rule.OrgID))
+				writableOrgIDs = append(writableOrgIDs, strconv.Itoa(int(rule.OrgID)))
 			case "current_following":
 				for _, childOrg := range totalOrgs {
 					if strings.HasPrefix(childOrg.FullPathPid, org.FullPathPid) {
-						writableOrgIDs = append(writableOrgIDs, string(childOrg.ID))
+						writableOrgIDs = append(writableOrgIDs, strconv.Itoa(int(childOrg.ID)))
 					}
 				}
 			}

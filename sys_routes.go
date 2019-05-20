@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"path"
 )
@@ -64,8 +65,9 @@ var OrgCurrentRoute = gin.RouteInfo{
 			return
 		}
 		var signOrg SignOrg
-		if errs := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg).GetErrors(); len(errs) > 0 {
-			ERROR(errs)
+		db := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
+		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+			ERROR(err)
 			STDErr(c, L(c, "Query login organization failed"))
 			return
 		}

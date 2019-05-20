@@ -19,7 +19,6 @@ var (
 	UIDKey         = "UID"
 	WhiteList      = []string{"/login"}
 	ExpiresSeconds = 86400
-	LoginHandler   LoginHandlerFunc
 	SignContextKey = "SignContext"
 	loginHandler   LoginHandlerFunc
 )
@@ -48,7 +47,7 @@ func saveHistory(c *gin.Context, secretData *SignSecret) {
 			"headers": c.Request.Header,
 			"query":   c.Request.URL.Query(),
 			"body":    body,
-		}, false),
+		}),
 		SecretID:   secretData.ID,
 		SecretData: secretData.Secret,
 		Token:      secretData.Token,
@@ -58,7 +57,7 @@ func saveHistory(c *gin.Context, secretData *SignSecret) {
 }
 
 func genKey(secretData *SignSecret) string {
-	key := fmt.Sprintf("%s_%s_%s", RedisPrefix, secretData.UID, secretData.Token)
+	key := fmt.Sprintf("%s_%d_%s", RedisPrefix, secretData.UID, secretData.Token)
 	return key
 }
 
@@ -70,7 +69,7 @@ func deleteFromRedis(secretData *SignSecret) (err error) {
 
 func saveToRedis(secretData *SignSecret, expiration time.Duration) error {
 	key := genKey(secretData)
-	value := Stringify(secretData, false)
+	value := Stringify(secretData)
 	if !RedisClient.SetNX(key, value, expiration).Val() {
 		return errors.New("Token cache failed")
 	}
@@ -122,7 +121,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 		UID:   uid,
 	}
 	var sign SignSecret
-	key := fmt.Sprintf("%s_%s_%s", RedisPrefix, uid, token)
+	key := genKey(&SignSecret{UID: uid, Token: token})
 	if v, err := RedisClient.Get(key).Result(); err == nil {
 		Parse(v, &sign)
 	} else {
@@ -134,6 +133,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	if sign.Method == "LOGOUT" {
 		return nil, errors.New(LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
 	}
+	data.Secret = &sign
 	data.Payload = DecodedToken(token, sign.Secret)
 	return &data, nil
 }

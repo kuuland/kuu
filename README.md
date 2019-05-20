@@ -531,7 +531,7 @@ func main() {
 	var params map[string]string
 	kuu.Parse(`{"user":"kuu","pass":"123"}`, &params)
 	// Formatted as JSON
-	kuu.Stringify(&params, true)
+	kuu.Stringify(&params)
 }
 ```
 

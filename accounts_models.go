@@ -36,7 +36,10 @@ type SignContext struct {
 
 // IsValid
 func (s *SignContext) IsValid() (ret bool) {
-	if err := s.Payload.Valid(); err == nil && s.Token != "" && s.UID != 0 {
+	if s == nil {
+		return
+	}
+	if err := s.Payload.Valid(); err == nil && s.Token != "" && s.UID != 0 && s.Secret != nil {
 		ret = true
 	}
 	return
