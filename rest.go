@@ -417,6 +417,11 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 		keyword := raw.(string)
 		hasPrefix := strings.HasPrefix(keyword, "^")
 		hasSuffix := strings.HasSuffix(keyword, "$")
+		if !hasPrefix && !hasSuffix {
+			keyword = fmt.Sprintf("^%s$", keyword)
+			hasPrefix = true
+			hasSuffix = true
+		}
 		if hasPrefix {
 			keyword = keyword[1:]
 		}

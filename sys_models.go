@@ -92,6 +92,7 @@ type Org struct {
 
 type RoleAssign struct {
 	Model
+	UserID     uint
 	RoleID     uint
 	ExpiryUnix int64
 }

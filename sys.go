@@ -41,20 +41,6 @@ func getRootUser() *User {
 	return &root
 }
 
-func createRootUser(tx *gorm.DB) *User {
-	root := User{
-		Username:  "root",
-		Name:      "预置用户",
-		Password:  MD5("kuu"),
-		IsBuiltIn: true,
-	}
-	if errs := DB().Create(&root).GetErrors(); len(errs) > 0 {
-		ERROR(errs)
-		PANIC("create root user failed")
-	}
-	return &root
-}
-
 func preflight() bool {
 	var param Param
 	DB().Where(&Param{Code: initCode, IsBuiltIn: true}).Find(&param)
@@ -226,7 +212,6 @@ func initSys() {
 	} else {
 		tx := DB().Begin()
 		// 初始化预置用户
-		createRootUser(tx)
 		root := User{
 			Username:  "root",
 			Name:      "预置用户",
