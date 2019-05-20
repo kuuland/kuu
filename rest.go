@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"math"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -173,15 +174,17 @@ func RESTful(r *gin.Engine, value interface{}) {
 							value interface{}
 							errs  []error
 						)
+						cond := reflect.New(reflectType).Interface()
+						GetSoul(params["cond"], cond)
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							tx = tx.Where(params["cond"])
+							tx = tx.Where(cond)
 							tx = callPreloadHooks(tx, reflect.New(reflectType).Interface())
 							tx = tx.Find(value).Delete(reflect.New(reflectType).Interface())
 							errs = tx.GetErrors()
 						} else {
 							value = reflect.New(reflectType).Interface()
-							tx = tx.Where(params["cond"])
+							tx = tx.Where(cond)
 							tx = callPreloadHooks(tx, value)
 							tx = tx.First(value).Delete(value)
 							errs = tx.GetErrors()
@@ -253,7 +256,9 @@ func RESTful(r *gin.Engine, value interface{}) {
 								}
 							}
 							if !IsBlank(cond) {
-								db = db.Where(cond)
+								query := reflect.New(reflectType).Interface()
+								GetSoul(cond, query)
+								db = db.Where(query)
 							}
 						}
 						countDB := db
@@ -262,6 +267,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if rawProject != "" {
 							fields := strings.Split(rawProject, ",")
 							for index, field := range fields {
+								fields[index] = underline(field)
 								if strings.HasPrefix(field, "-") {
 									fields[index] = field[1:]
 								}
@@ -274,6 +280,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if rawSort != "" {
 							split := strings.Split(rawSort, ",")
 							for _, name := range split {
+								name = underline(name)
 								if strings.HasPrefix(name, "-") {
 									db = db.Order(fmt.Sprintf("%s desc", name[1:]))
 								} else {
@@ -343,9 +350,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 						// 执行更新
 						tx := DB().Begin()
 						msg := L(c, "Update {{name}} failed", gin.H{"name": structName})
+
+						cond := reflect.New(reflectType).Interface()
+						doc := reflect.New(reflectType).Interface()
+						GetSoul(params["cond"], cond)
+						GetSoul(params["doc"], doc)
 						var errs []error
 						if multi {
-							tx = tx.Model(reflect.New(reflectType).Interface()).Where(params["cond"]).Updates(params["doc"])
+							tx = tx.Model(reflect.New(reflectType).Interface()).Where(cond).Updates(doc)
 							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
 								ERROR(msg)
 								ERROR(errs)
@@ -353,9 +365,8 @@ func RESTful(r *gin.Engine, value interface{}) {
 								return
 							}
 						} else {
-							cond := reflect.New(reflectType).Interface()
 							tx = callPreloadHooks(tx, cond)
-							tx = tx.First(cond).Model(cond).Updates(params["doc"])
+							tx = tx.First(cond).Updates(doc)
 							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
 								ERROR(msg)
 								ERROR(errs)
@@ -366,7 +377,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						// 查询更新后的数据
 						var data interface{}
 						value := reflect.New(reflectType).Interface()
-						query := DB().Model(value).Where(params["cond"])
+						query := DB().Model(value).Where(cond)
 						query = callPreloadHooks(query, value)
 						if multi {
 							query = query.Find(data)
@@ -380,6 +391,11 @@ func RESTful(r *gin.Engine, value interface{}) {
 			break
 		}
 	}
+}
+
+func underline(str string) string {
+	reg := regexp.MustCompile(`([a-z])([A-Z])`)
+	return strings.ToLower(reg.ReplaceAllString(str, "${1}_${2}"))
 }
 
 func txerrs(tx *gorm.DB, errs []error) []error {
@@ -396,6 +412,7 @@ func txerrs(tx *gorm.DB, errs []error) []error {
 }
 
 func fieldQuery(m map[string]interface{}, key string) (query string, args []interface{}) {
+	key = underline(key)
 	if raw, has := m["$regex"]; has {
 		keyword := raw.(string)
 		hasPrefix := strings.HasPrefix(keyword, "^")
