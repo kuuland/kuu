@@ -114,7 +114,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	token := ParseToken(c)
 	uid := ParseUID(c)
 	if token == "" {
-		return nil, errors.New(L(c, "Missing token"))
+		return nil, errors.New(L(c, "未找到令牌"))
 	}
 	data := SignContext{
 		Token: token,

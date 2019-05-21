@@ -88,12 +88,14 @@ type Org struct {
 	Sort         int
 	FullPathPid  string
 	FullPathName string
+	Class        string
 }
 
 type RoleAssign struct {
 	Model
 	UserID     uint
 	RoleID     uint
+	Role       *Role
 	ExpiryUnix int64
 }
 

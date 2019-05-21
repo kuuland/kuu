@@ -24,7 +24,7 @@ var OrgLoginRoute = gin.RouteInfo{
 			OrgID uint `json:"org_id"`
 		}{}
 		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil || body.OrgID == 0 {
-			STDErr(c, L(c, "Parsing body failed"))
+			STDErr(c, L(c, "解析请求体失败"))
 			return
 		}
 		if data, err := ExecOrgLogin(c, sign, body.OrgID); err != nil {
@@ -68,7 +68,7 @@ var OrgCurrentRoute = gin.RouteInfo{
 		db := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
 		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
 			ERROR(err)
-			STDErr(c, L(c, "Query login organization failed"))
+			STDErr(c, L(c, "未找到登录组织"))
 			return
 		}
 		STD(c, signOrg.Org)
@@ -82,7 +82,7 @@ var UserRolesRoute = gin.RouteInfo{
 	HandlerFunc: func(c *gin.Context) {
 		raw := c.Query("uid")
 		if raw == "" {
-			STDErr(c, L(c, "UID is required"))
+			STDErr(c, L(c, "用户ID不能为空"))
 			return
 		}
 		uid := ParseID(raw)

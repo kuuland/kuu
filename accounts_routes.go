@@ -78,7 +78,7 @@ var LogoutRoute = gin.RouteInfo{
 			if !db.NewRecord(&secretData) {
 				if errs := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).GetErrors(); len(errs) > 0 {
 					ERROR(errs)
-					STDErr(c, L(c, "Logout failed"))
+					STDErr(c, L(c, "退出登录失败"))
 					return
 				}
 				// 删除redis缓存
@@ -92,7 +92,7 @@ var LogoutRoute = gin.RouteInfo{
 				c.SetCookie(UIDKey, strconv.Itoa(int(secretData.UID)), -1, "/", "", false, true)
 			}
 		}
-		STD(c, L(c, "Logout success"))
+		STD(c, L(c, "登录成功"))
 	},
 }
 

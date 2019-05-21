@@ -31,7 +31,7 @@ func L(langOrContext interface{}, defaultValue string, args ...interface{}) stri
 func LFull(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
 	lang := parseLang(langOrContext)
 	if lang == "" {
-		lang = "en"
+		lang = "zh"
 	}
 	if key == "" {
 		key = strings.Replace(defaultValue, "{", "", -1)

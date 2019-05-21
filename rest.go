@@ -138,7 +138,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 								docs = append(docs, doc)
 							}
 						}
-						msg := L(c, "Create {{name}} failed", gin.H{"name": structName})
+						msg := L(c, "新增失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
@@ -167,22 +167,19 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "Parsing body failed")
+							STDErr(c, L(c, "解析请求体失败"))
 							return
 						}
 						if IsBlank(params.Cond) {
-							STDErr(c, "'cond' is required")
+							STDErr(c, L(c, "删除条件不能为空"))
 							return
 						}
 						var multi bool
 						if params.Multi || params.All {
 							multi = true
 						}
-						if IsBlank(params.Cond) && !multi {
-							STDErr(c, "'multi' is required for batch delete")
-							return
-						}
 						tx := DB().Begin()
+
 						var value interface{}
 						params.Cond = underlineMap(params.Cond)
 						for key, val := range params.Cond {
@@ -207,7 +204,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							tx = tx.First(value).Delete(value)
 						}
 
-						msg := L(c, "Delete {{name}} failed", gin.H{"name": structName})
+						msg := L(c, "删除失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
@@ -359,11 +356,11 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "Parsing body failed")
+							STDErr(c, L(c, "解析请求体失败"))
 							return
 						}
 						if IsBlank(params.Cond) || IsBlank(params.Doc) {
-							STDErr(c, "'cond' and 'doc' are required")
+							STDErr(c, L(c, "更新条件和内容不能为空"))
 							return
 						}
 						var multi bool
@@ -371,20 +368,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 							multi = true
 						}
 						if IsBlank(params.Cond) && !multi {
-							STDErr(c, "'multi' is required for batch update")
-							return
-						}
-						if IsBlank(params.Doc) {
-							STDErr(c, "'doc' is required")
+							STDErr(c, L(c, "必须指定批量更新标记"))
 							return
 						}
 
 						// 执行更新
 						tx := DB().Begin().Model(reflect.New(reflectType).Interface())
-						msg := L(c, "Update {{name}} failed", gin.H{"name": structName})
-
-						doc := reflect.New(reflectType).Interface()
-						GetSoul(params.Doc, doc)
+						msg := L(c, "修改失败")
+						// 处理更新条件
 						for key, val := range params.Cond {
 							if m, ok := val.(map[string]interface{}); ok {
 								query, args := fieldQuery(m, key)
@@ -399,19 +390,50 @@ func RESTful(r *gin.Engine, value interface{}) {
 							GetSoul(params.Cond, q)
 							tx = tx.Where(q)
 						}
-						query := tx
-						var ret interface{}
+						// 先查询更新前的数据
+						var value interface{}
 						if multi {
-							tx = tx.Updates(doc)
-							// 查询更新后的数据
-							ret = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							query = query.Find(ret)
+							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
+							tx = tx.Find(value)
 						} else {
-							tx = tx.Updates(doc)
-							// 查询更新后的数据
-							ret = reflect.New(reflectType).Interface()
-							query = query.First(ret)
+							value = reflect.New(reflectType).Interface()
+							tx = tx.First(value)
 						}
+
+						setUpdateFields := func(tx *gorm.DB, value interface{}) bool {
+							doc := reflect.New(reflectType).Interface()
+							GetSoul(params.Doc, doc)
+
+							rawScope := tx.NewScope(value)
+							docScope := tx.NewScope(doc)
+							for k, _ := range params.Doc {
+								if field, ok := rawScope.FieldByName(k); ok {
+									df, _ := docScope.FieldByName(k)
+									dv := df.Field.Interface()
+									if err := field.Set(dv); err != nil {
+										ERROR(err)
+										STDErr(c, msg)
+										return false
+									}
+								}
+							}
+							return true
+						}
+						if indirectScopeValue := indirect(reflect.ValueOf(value)); indirectScopeValue.Kind() == reflect.Slice {
+							for i := 0; i < indirectScopeValue.Len(); i++ {
+								item := indirectScopeValue.Index(i).Interface()
+								if !setUpdateFields(tx, item) {
+									return
+								}
+								tx.Save(item)
+							}
+						} else {
+							if !setUpdateFields(tx, value) {
+								return
+							}
+							tx.Save(value)
+						}
+
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
@@ -422,7 +444,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 								STDErr(c, msg)
 								return
 							} else {
-								STD(c, ret)
+								STD(c, value)
 							}
 						}
 					})

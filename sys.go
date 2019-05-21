@@ -315,7 +315,7 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 		var rules []AuthRule
 		if errs := DB().Where(&AuthRule{UID: uid}).Find(&rules).GetErrors(); len(errs) > 0 {
 			ERROR(errs)
-			return &data, errors.New(L(c, "Query authorization organization failed"))
+			return &data, errors.New(L(c, "未找到组织授权记录"))
 		}
 		// 去重
 		existMap := make(map[uint]bool, 0)
@@ -332,7 +332,7 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 		db = DB().Where("id in (?)", orgIDs).Find(&data)
 	}
 	if errs := db.GetErrors(); len(errs) > 0 {
-		return &data, errors.New(L(c, "Query organizations failed"))
+		return &data, errors.New(L(c, "查询组织失败"))
 	}
 	return &data, nil
 }
@@ -344,7 +344,7 @@ func GetUserRoles(c *gin.Context, uid uint) (*[]Role, *User, error) {
 	var user User
 	if errs := DB().Where("id = ?", uid).Preload("RoleAssigns").First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
 		ERROR(errs)
-		return &roles, &user, errors.New(L(c, "Query user failed"))
+		return &roles, &user, errors.New(L(c, "查询用户失败"))
 	}
 	// 过滤有效的角色分配
 	var roleIDs []uint
@@ -358,7 +358,7 @@ func GetUserRoles(c *gin.Context, uid uint) (*[]Role, *User, error) {
 	// 查询角色档案
 	if errs := DB().Where("id in (?)", roleIDs).Find(&roles).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &roles, &user, errors.New(L(c, "Query user roles failed"))
+		return &roles, &user, errors.New(L(c, "查询角色失败"))
 	}
 	return &roles, &user, nil
 }
@@ -386,7 +386,7 @@ func GetUserPermissions(c *gin.Context, uid uint, roles *[]Role) []string {
 func GetUserOrgs(c *gin.Context, roles *[]Role) (*[]Org, error) {
 	var orgs []Org
 	if roles == nil {
-		return &orgs, errors.New(L(c, "Role list is required"))
+		return &orgs, errors.New(L(c, "角色列表不存在"))
 	}
 	// 提取组织ID
 	var orgIDs []uint
@@ -402,7 +402,7 @@ func GetUserOrgs(c *gin.Context, roles *[]Role) (*[]Org, error) {
 	// 查询组织列表
 	if errs := DB().Where("id in (?)", orgIDs).Find(&orgs).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &orgs, errors.New(L(c, "Query user roles failed"))
+		return &orgs, errors.New(L(c, "查询角色失败"))
 	}
 	return &orgs, nil
 }
@@ -412,7 +412,7 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 	var orgData Org
 	if errs := DB().Where("id = ?", orgID).First(&orgData).GetErrors(); len(errs) > 0 || orgData.ID == 0 {
 		ERROR(errs)
-		return &orgData, errors.New(L(c, "Organization does not exist"))
+		return &orgData, errors.New(L(c, "组织不存在"))
 	}
 	// 新增登入记录
 	signOrg := SignOrg{
@@ -424,7 +424,7 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 	signOrg.UpdatedByID = sign.UID
 	if errs := DB().Create(&signOrg).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &orgData, errors.New(L(c, "Organization login failed"))
+		return &orgData, errors.New(L(c, "组织登录失败"))
 	}
 	c.SetCookie(OrgIDKey, strconv.Itoa(int(orgData.ID)), 0, "/", "", false, true)
 	return &orgData, nil
@@ -655,21 +655,21 @@ func DefaultLoginHandler(c *gin.Context) (jwt.MapClaims, error) {
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		ERROR(err)
-		return nil, errors.New(L(c, "Parsing body failed"))
+		return nil, errors.New(L(c, "解析请求体失败"))
 	}
 	// 检测账号是否存在
 	var user User
 	if err := DB().Where(&User{Username: body.Username}).First(&user).Error; err != nil {
 		ERROR(err)
-		return nil, errors.New(L(c, "User does not exist"))
+		return nil, errors.New(L(c, "用户不存在"))
 	}
 	// 检测账号是否有效
 	if user.Disable {
-		return nil, errors.New(L(c, "User has been disabled"))
+		return nil, errors.New(L(c, "该用户已被禁用"))
 	}
 	// 检测密码是否正确
 	if !CompareHashAndPassword(user.Password, body.Password) {
-		return nil, errors.New(L(c, "Inconsistent password"))
+		return nil, errors.New(L(c, "账号密码不一致"))
 	}
 	payload := jwt.MapClaims{
 		"UID":       user.ID,
