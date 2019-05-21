@@ -102,8 +102,8 @@ type RoleAssign struct {
 // Role
 type Role struct {
 	Model               `rest:"*"`
-	Code                string   `gorm:"unique;not null"`
-	Name                string    `gorm:"not null"`
+	Code                string `gorm:"unique;not null"`
+	Name                string `gorm:"not null"`
 	OperationPrivileges []OperationPrivileges
 	DataPrivileges      []DataPrivileges
 	IsBuiltIn           bool
