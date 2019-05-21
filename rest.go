@@ -138,16 +138,22 @@ func RESTful(r *gin.Engine, value interface{}) {
 								docs = append(docs, doc)
 							}
 						}
-						if errs = txerrs(tx, errs); len(errs) > 0 {
-							msg := L(c, "Create {{name}} failed", gin.H{"name": structName})
-							ERROR(msg)
+						msg := L(c, "Create {{name}} failed", gin.H{"name": structName})
+						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
+							tx.Rollback()
 							STDErr(c, msg)
 						} else {
-							if multi {
-								STD(c, docs)
+							if err := tx.Commit().Error; err != nil {
+								ERROR(err)
+								STDErr(c, msg)
+								return
 							} else {
-								STD(c, docs[0])
+								if multi {
+									STD(c, docs)
+								} else {
+									STD(c, docs[0])
+								}
 							}
 						}
 					})
@@ -177,10 +183,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							return
 						}
 						tx := DB().Begin()
-						var (
-							value interface{}
-							errs  []error
-						)
+						var value interface{}
 						params.Cond = underlineMap(params.Cond)
 						for key, val := range params.Cond {
 							if m, ok := val.(map[string]interface{}); ok {
@@ -199,19 +202,24 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
 							tx = tx.Find(value).Delete(reflect.New(reflectType).Interface())
-							errs = tx.GetErrors()
 						} else {
 							value = reflect.New(reflectType).Interface()
 							tx = tx.First(value).Delete(value)
-							errs = tx.GetErrors()
 						}
-						if errs = txerrs(tx, errs); len(errs) > 0 {
-							msg := L(c, "Delete {{name}} failed", gin.H{"name": structName})
-							ERROR(msg)
+
+						msg := L(c, "Delete {{name}} failed", gin.H{"name": structName})
+						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
+							tx.Rollback()
 							STDErr(c, msg)
 						} else {
-							STD(c, value)
+							if err := tx.Commit().Error; err != nil {
+								ERROR(err)
+								STDErr(c, msg)
+								return
+							} else {
+								STD(c, value)
+							}
 						}
 					})
 				}
@@ -374,8 +382,9 @@ func RESTful(r *gin.Engine, value interface{}) {
 						// 执行更新
 						tx := DB().Begin().Model(reflect.New(reflectType).Interface())
 						msg := L(c, "Update {{name}} failed", gin.H{"name": structName})
-						params.Cond = underlineMap(params.Cond)
-						params.Doc = underlineMap(params.Doc)
+
+						doc := reflect.New(reflectType).Interface()
+						GetSoul(params.Doc, doc)
 						for key, val := range params.Cond {
 							if m, ok := val.(map[string]interface{}); ok {
 								query, args := fieldQuery(m, key)
@@ -386,37 +395,36 @@ func RESTful(r *gin.Engine, value interface{}) {
 							}
 						}
 						if !IsBlank(params.Cond) {
-							query := reflect.New(reflectType).Interface()
-							GetSoul(params.Cond, query)
-							tx = tx.Where(query)
+							q := reflect.New(reflectType).Interface()
+							GetSoul(params.Cond, q)
+							tx = tx.Where(q)
 						}
 						query := tx
-						var errs []error
+						var ret interface{}
 						if multi {
-							tx = tx.Updates(params.Doc)
-							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
-								ERROR(msg)
-								ERROR(errs)
+							tx = tx.Updates(doc)
+							// 查询更新后的数据
+							ret = reflect.New(reflect.SliceOf(reflectType)).Interface()
+							query = query.Find(ret)
+						} else {
+							tx = tx.Updates(doc)
+							// 查询更新后的数据
+							ret = reflect.New(reflectType).Interface()
+							query = query.First(ret)
+						}
+						if errs := tx.GetErrors(); len(errs) > 0 {
+							ERROR(errs)
+							tx.Rollback()
+							STDErr(c, msg)
+						} else {
+							if err := tx.Commit().Error; err != nil {
+								ERROR(err)
 								STDErr(c, msg)
 								return
-							}
-						} else {
-							tx = tx.Updates(params.Doc)
-							if errs = txerrs(tx, tx.GetErrors()); len(errs) > 0 {
-								ERROR(msg)
-								ERROR(errs)
-								STDErr(c, msg)
-								return
+							} else {
+								STD(c, ret)
 							}
 						}
-						// 查询更新后的数据
-						var data interface{}
-						if multi {
-							query = query.Find(data)
-						} else {
-							query = query.First(data)
-						}
-						STD(c, data)
 					})
 				}
 			}
@@ -436,19 +444,6 @@ func underlineMap(m map[string]interface{}) map[string]interface{} {
 func underline(str string) string {
 	reg := regexp.MustCompile(`([a-z])([A-Z])`)
 	return strings.ToLower(reg.ReplaceAllString(str, "${1}_${2}"))
-}
-
-func txerrs(tx *gorm.DB, errs []error) []error {
-	if len(errs) > 0 {
-		if err := tx.Rollback().Error; err != nil {
-			errs = append(errs, err)
-		}
-	} else {
-		if err := tx.Commit().Error; err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errs
 }
 
 func fieldQuery(m map[string]interface{}, key string) (query string, args []interface{}) {

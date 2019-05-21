@@ -125,6 +125,7 @@ func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
 // OperationPrivileges
 type OperationPrivileges struct {
 	Model
+	RoleID     uint
 	Permission string
 	Desc       string
 }
@@ -132,6 +133,7 @@ type OperationPrivileges struct {
 // DataPrivileges
 type DataPrivileges struct {
 	Model
+	RoleID           uint
 	TargetOrg        *Org `gorm:"foreignkey:TargetOrgID"`
 	TargetOrgID      uint
 	AllReadableRange string

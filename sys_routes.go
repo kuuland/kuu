@@ -80,11 +80,13 @@ var UserRolesRoute = gin.RouteInfo{
 	Method: "GET",
 	Path:   "/user/roles",
 	HandlerFunc: func(c *gin.Context) {
-		sign := ensureLogged(c)
-		if sign == nil {
+		raw := c.Query("uid")
+		if raw == "" {
+			STDErr(c, L(c, "UID is required"))
 			return
 		}
-		if roles, _, err := GetUserRoles(c, sign.UID); err != nil {
+		uid := ParseID(raw)
+		if roles, _, err := GetUserRoles(c, uid); err != nil {
 			ERROR(err)
 			STDErr(c, err.Error())
 		} else {
@@ -130,5 +132,14 @@ var UploadRoute = gin.RouteInfo{
 		} else {
 			STD(c, f)
 		}
+	},
+}
+
+// MetaRoute
+var MetaRoute = gin.RouteInfo{
+	Method: "GET",
+	Path:   "/meta",
+	HandlerFunc: func(c *gin.Context) {
+		STD(c, metadata)
 	},
 }

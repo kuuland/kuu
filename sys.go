@@ -50,6 +50,48 @@ func preflight() bool {
 	return false
 }
 
+func createPresetDicts(tx *gorm.DB) {
+	tx.Create(&Dict{
+		Code:      "sys_menu_type",
+		Name:      "菜单类型",
+		IsBuiltIn: true,
+		Values: []DictValue{
+			{
+				Label: "菜单",
+				Value: "menu",
+				Sort:  100,
+			},
+			{
+				Label: "权限",
+				Value: "permission",
+				Sort:  200,
+			},
+		},
+	})
+	tx.Create(&Dict{
+		Code:      "sys_data_range",
+		Name:      "数据范围",
+		IsBuiltIn: true,
+		Values: []DictValue{
+			{
+				Label: "个人范围",
+				Value: "personal",
+				Sort:  100,
+			},
+			{
+				Label: "当前组织范围",
+				Value: "current",
+				Sort:  200,
+			},
+			{
+				Label: "当前及以下组织范围",
+				Value: "current_following",
+				Sort:  300,
+			},
+		},
+	})
+}
+
 func createPresetMenus(tx *gorm.DB) {
 	rootMenu := Menu{
 		Name:      "主导航菜单",
@@ -220,7 +262,8 @@ func initSys() {
 		}
 		tx.Create(&root)
 		rootUser = &root
-		// 初始化菜单
+		// 初始化字典、菜单
+		createPresetDicts(tx)
 		createPresetMenus(tx)
 		// 保存初始化标记
 		param := Param{
@@ -299,7 +342,7 @@ func GetUserRoles(c *gin.Context, uid uint) (*[]Role, *User, error) {
 	var roles []Role
 	// 查询用户档案
 	var user User
-	if errs := DB().Where("id = ?", uid).First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
+	if errs := DB().Where("id = ?", uid).Preload("RoleAssigns").First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
 		ERROR(errs)
 		return &roles, &user, errors.New(L(c, "Query user failed"))
 	}
@@ -674,6 +717,7 @@ func Sys() *Mod {
 			OrgCurrentRoute,
 			UserRolesRoute,
 			UploadRoute,
+			MetaRoute,
 		},
 		AfterImport: initSys,
 	}
