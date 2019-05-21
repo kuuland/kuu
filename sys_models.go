@@ -201,7 +201,7 @@ func (AuthObject) TableName() string {
 // Menu
 type Menu struct {
 	Model         `rest:"*"`
-	Code          string `gorm:"unique;not null"`
+	Code          string 
 	Name          string `gorm:"not null"`
 	URI           string
 	Icon          string
