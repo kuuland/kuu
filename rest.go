@@ -113,7 +113,6 @@ func RESTful(r *gin.Engine, value interface{}) {
 						tx := DB().Begin()
 						var (
 							docs  []interface{}
-							errs  []error
 							multi bool
 						)
 						if indirectScopeValue.Kind() == reflect.Slice {
@@ -121,22 +120,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								doc := reflect.New(reflectType).Interface()
 								GetSoul(indirectScopeValue.Index(i).Interface(), doc)
-								tx := tx.Create(doc)
-								if es := tx.GetErrors(); len(es) > 0 {
-									errs = append(errs, es...)
-								} else {
-									docs = append(docs, doc)
-								}
+								tx = tx.Create(doc)
+								docs = append(docs, doc)
 							}
 						} else {
 							doc := reflect.New(reflectType).Interface()
 							GetSoul(body, doc)
 							tx = tx.Create(doc)
-							if es := tx.GetErrors(); len(es) > 0 {
-								errs = append(errs, es...)
-							} else {
-								docs = append(docs, doc)
-							}
+							docs = append(docs, doc)
 						}
 						msg := L(c, "新增失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {

@@ -468,18 +468,20 @@ func UpdateAuthRules(tx *gorm.DB) {
 			}
 		}
 		tx.Unscoped().Delete(&AuthRule{})
-		tx.Exec(genRulesSQL(rules))
-		if commit {
-			if errs := tx.GetErrors(); len(errs) > 0 {
-				ERROR(errs)
-				if err := tx.Rollback().Error; err != nil {
-					ERROR(err)
-				}
-			} else {
-				if err := tx.Commit().Error; err != nil {
-					ERROR(err)
+		if rules != nil {
+			tx.Exec(genRulesSQL(rules))
+			if commit {
+				if errs := tx.GetErrors(); len(errs) > 0 {
+					ERROR(errs)
+					if err := tx.Rollback().Error; err != nil {
+						ERROR(err)
+					}
 				} else {
-					INFO("Authorization rules have been updated")
+					if err := tx.Commit().Error; err != nil {
+						ERROR(err)
+					} else {
+						INFO("Authorization rules have been updated")
+					}
 				}
 			}
 		}
