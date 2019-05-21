@@ -14,6 +14,10 @@ type SignHistory struct {
 	Token      string
 	Method     string
 }
+//TableName 设置表名
+func (SignHistory) TableName() string {
+	return "sys_SignHistory"
+}
 
 // SignSecret
 type SignSecret struct {
@@ -25,6 +29,10 @@ type SignSecret struct {
 	Exp        int64
 	Method     string
 }
+//TableName 设置表名
+func (SignSecret) TableName() string {
+	return "sys_SignSecret"
+}
 
 // SignContext
 type SignContext struct {
@@ -33,6 +41,7 @@ type SignContext struct {
 	Payload jwt.MapClaims
 	Secret  *SignSecret
 }
+
 
 // IsValid
 func (s *SignContext) IsValid() (ret bool) {
