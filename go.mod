@@ -7,6 +7,7 @@ require (
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jinzhu/gorm v1.9.8
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/pkg/errors v0.8.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0
 	github.com/stretchr/testify v1.3.0

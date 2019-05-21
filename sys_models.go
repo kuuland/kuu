@@ -53,8 +53,8 @@ type Route struct {
 // User
 type User struct {
 	Model       `rest:"*"`
-	Username    string
-	Password    string
+	Username    string `gorm:"unique;not null"`
+	Password    string `gorm:"not null"`
 	Name        string
 	Avatar      string
 	Sex         int
@@ -82,8 +82,8 @@ func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 // Org
 type Org struct {
 	Model        `rest:"*"`
-	Code         string
-	Name         string
+	Code         string `gorm:"unique;not null"`
+	Name         string `gorm:"unique;not null"`
 	Pid          uint
 	Sort         int
 	FullPathPid  string
@@ -100,8 +100,8 @@ type RoleAssign struct {
 // Role
 type Role struct {
 	Model               `rest:"*"`
-	Code                string
-	Name                string
+	Code                string   `gorm:"unique;not null"`
+	Name                string    `gorm:"not null"`
 	OperationPrivileges []OperationPrivileges
 	DataPrivileges      []DataPrivileges
 	IsBuiltIn           bool
@@ -158,8 +158,8 @@ type AuthObject struct {
 // Menu
 type Menu struct {
 	Model         `rest:"*"`
-	Code          string
-	Name          string
+	Code          string `gorm:"unique;not null"`
+	Name          string `gorm:"not null"`
 	URI           string
 	Icon          string
 	Pid           uint
@@ -194,8 +194,8 @@ type AuthRule struct {
 // Dict
 type Dict struct {
 	Model     `rest:"*"`
-	Code      string
-	Name      string
+	Code      string `gorm:"unique;not null"`
+	Name      string `gorm:"not null"`
 	Values    []DictValue
 	IsBuiltIn bool
 }
@@ -244,8 +244,8 @@ func (o *SignOrg) IsValid() bool {
 // Param
 type Param struct {
 	Model     `rest:"*"`
-	Code      string
-	Name      string
+	Code      string `gorm:"unique;not null"`
+	Name      string `gorm:"not null"`
 	Value     string
 	IsBuiltIn bool
 }
