@@ -45,7 +45,6 @@ func C(newConfig ...map[string]interface{}) *Config {
 	}
 	if inst == nil {
 		inst = &Config{Keys: pairs}
-		initDataSources()
 	}
 	return inst
 }

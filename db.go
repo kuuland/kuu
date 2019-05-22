@@ -122,9 +122,38 @@ func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 	return nil
 }
 
-// Init
-func Init() {
-	initDataSources()
+// WithTransaction
+func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
+	var (
+		tx  *gorm.DB
+		out bool
+	)
+	if len(with) > 0 {
+		tx = with[0]
+		out = true
+	} else {
+		tx = DB().Begin()
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	if err := tx.Error; err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		return err
+	}
+	if out {
+		return nil
+	}
+	if errs := tx.GetErrors(); len(errs) > 0 {
+		if err := tx.Rollback().Error; err != nil {
+			return err
+		}
+	}
+	return tx.Commit().Error
 }
 
 // Release
