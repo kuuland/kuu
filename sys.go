@@ -350,7 +350,7 @@ func GetUserRoles(c *gin.Context, uid uint) (*[]Role, *User, error) {
 	var roleIDs []uint
 	if user.RoleAssigns != nil {
 		for _, assign := range user.RoleAssigns {
-			if assign.ExpiryUnix <= 0 || time.Now().Before(time.Unix(assign.ExpiryUnix, 0)) {
+			if assign.ExpireUnix <= 0 || time.Now().Before(time.Unix(assign.ExpireUnix, 0)) {
 				roleIDs = append(roleIDs, assign.RoleID)
 			}
 		}

@@ -29,6 +29,7 @@ type Metadata struct {
 	Fields    []MetadataField
 	IsBuiltIn bool
 }
+
 //TableName 设置表名
 func (Metadata) TableName() string {
 	return "sys_Metadata"
@@ -46,6 +47,7 @@ type MetadataField struct {
 	Type       string
 	MetadataID uint
 }
+
 //TableName 设置表名
 func (MetadataField) TableName() string {
 	return "sys_MetadataField"
@@ -57,11 +59,11 @@ type Route struct {
 	Method string
 	Path   string
 }
+
 //TableName 设置表名
 func (Route) TableName() string {
 	return "sys_Route"
 }
-
 
 // User
 type User struct {
@@ -78,6 +80,7 @@ type User struct {
 	RoleAssigns []RoleAssign
 	IsBuiltIn   bool
 }
+
 //TableName 设置表名
 func (User) TableName() string {
 	return "sys_User"
@@ -107,18 +110,19 @@ type Org struct {
 	FullPathName string
 	Class        string
 }
+
 //TableName 设置表名
 func (Org) TableName() string {
 	return "sys_Org"
 }
 
 type RoleAssign struct {
-	Model
+	Model      `rest:"*"`
 	UserID     uint
 	RoleID     uint
-	Role       *Role
-	ExpiryUnix int64
+	ExpireUnix int64
 }
+
 //TableName 设置表名
 func (RoleAssign) TableName() string {
 	return "sys_RoleAssign"
@@ -133,6 +137,7 @@ type Role struct {
 	DataPrivileges      []DataPrivileges
 	IsBuiltIn           bool
 }
+
 //TableName 设置表名
 func (Role) TableName() string {
 	return "sys_Role"
@@ -155,11 +160,12 @@ func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	Model
+	Model      `rest:"*"`
 	RoleID     uint
 	Permission string
 	Desc       string
 }
+
 //TableName 设置表名
 func (OperationPrivileges) TableName() string {
 	return "sys_OperationPrivileges"
@@ -167,41 +173,22 @@ func (OperationPrivileges) TableName() string {
 
 // DataPrivileges
 type DataPrivileges struct {
-	Model
+	Model            `rest:"*"`
 	RoleID           uint
-	TargetOrg        *Org `gorm:"foreignkey:TargetOrgID"`
 	TargetOrgID      uint
 	AllReadableRange string
 	AllWritableRange string
-	AuthObjects      []AuthObject
 }
+
 //TableName 设置表名
 func (DataPrivileges) TableName() string {
 	return "sys_DataPrivileges"
 }
 
-// QueryPreload
-func (d *DataPrivileges) QueryPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("TargetOrg").Preload("AuthObjects")
-}
-
-// AuthObject
-type AuthObject struct {
-	Model
-	Name             string
-	DisplayName      string
-	ObjReadableRange string
-	ObjWritableRange string
-}
-//TableName 设置表名
-func (AuthObject) TableName() string {
-	return "sys_AuthObject"
-}
-
 // Menu
 type Menu struct {
 	Model         `rest:"*"`
-	Code          string 
+	Code          string
 	Name          string `gorm:"not null"`
 	URI           string
 	Icon          string
@@ -216,6 +203,7 @@ type Menu struct {
 	Closeable     bool
 	Type          string
 }
+
 //TableName 设置表名
 func (Menu) TableName() string {
 	return "sys_Menu"
@@ -237,6 +225,7 @@ type AuthRule struct {
 	HitAssign      uint
 	Permissions    string
 }
+
 //TableName 设置表名
 func (AuthRule) TableName() string {
 	return "sys_AuthRule"
@@ -250,6 +239,7 @@ type Dict struct {
 	Values    []DictValue
 	IsBuiltIn bool
 }
+
 //TableName 设置表名
 func (Dict) TableName() string {
 	return "sys_Dict"
@@ -268,6 +258,7 @@ type DictValue struct {
 	Value  string
 	Sort   int
 }
+
 //TableName 设置表名
 func (DictValue) TableName() string {
 	return "sys_DictValue"
@@ -284,6 +275,7 @@ type File struct {
 	URL    string `json:"url"`
 	Path   string `json:"path"`
 }
+
 //TableName 设置表名
 func (File) TableName() string {
 	return "sys_File"
@@ -295,6 +287,7 @@ type SignOrg struct {
 	Token string
 	UID   uint
 }
+
 //TableName 设置表名
 func (SignOrg) TableName() string {
 	return "sys_SignOrg"
@@ -316,6 +309,7 @@ type Param struct {
 	Value     string
 	IsBuiltIn bool
 }
+
 //TableName 设置表名
 func (Param) TableName() string {
 	return "sys_Param"
