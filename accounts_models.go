@@ -14,6 +14,7 @@ type SignHistory struct {
 	Token      string
 	Method     string
 }
+
 //TableName 设置表名
 func (SignHistory) TableName() string {
 	return "sys_SignHistory"
@@ -29,6 +30,7 @@ type SignSecret struct {
 	Exp        int64
 	Method     string
 }
+
 //TableName 设置表名
 func (SignSecret) TableName() string {
 	return "sys_SignSecret"
@@ -38,10 +40,10 @@ func (SignSecret) TableName() string {
 type SignContext struct {
 	Token   string
 	UID     uint
+	OrgID   uint
 	Payload jwt.MapClaims
 	Secret  *SignSecret
 }
-
 
 // IsValid
 func (s *SignContext) IsValid() (ret bool) {

@@ -100,11 +100,10 @@ func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 					sign = v
 				}
 			}
-			orgID := ParseOrgID(c)
 			// 查询授权规则
 			var rule AuthRule
 			queryDB := v.(*gorm.DB)
-			if err := queryDB.Where(&AuthRule{UID: sign.UID, TargetOrgID: orgID}).First(&rule).Error; err == nil {
+			if err := queryDB.Where(&AuthRule{UID: sign.UID, TargetOrgID: sign.OrgID}).First(&rule).Error; err == nil {
 				var orgIDs []uint
 				if rule.ReadableOrgIDs != "" {
 					for _, item := range strings.Split(rule.ReadableOrgIDs, ",") {
@@ -154,6 +153,10 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 		}
 	}
 	return tx.Commit().Error
+}
+
+func DeleteReference(db *gorm.DB, name string) {
+	db.NewScope(db.Value).Fields()
 }
 
 // Release

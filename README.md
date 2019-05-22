@@ -36,9 +36,13 @@ $ cat kuu.json
 ```json
 {
   "prefix": "/api",
+  "gorm:migrate": false,
   "db": {
     "dialect": "postgres",
     "args": "host=127.0.0.1 port=5432 user=root dbname=kuu password=hello sslmode=disable"
+  },
+  "redis": {
+    "addr": "127.0.0.1:6379"
   }
 }
 ```
@@ -52,30 +56,14 @@ $ cat main.go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/kuuland/kuu"
 )
 
-type user struct {
-	gorm.Model `rest:"*"`
-	User string
-	Pass string
-}
-
 func main() {
-	defer kuu.Release() // IMPORTANT!!!
-	
 	r := kuu.Default()
-	kuu.RESTful(r, &user{})
-	r.GET("/ping", func(c *gin.Context) {
-		kuu.INFO("Hello Kuu")
-		var users []user
-		kuu.DB().Find(&users)
-		kuu.STD(c, users)
-	})
-	r.Run(":8080")
+	r.Import(kuu.Accounts(), kuu.Sys())
+	r.Run()
 }
 ```
 

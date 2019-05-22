@@ -101,14 +101,14 @@ func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // Org
 type Org struct {
-	Model        `rest:"*"`
-	Code         string `gorm:"unique;not null"`
-	Name         string `gorm:"unique;not null"`
-	Pid          uint
-	Sort         int
-	FullPathPid  string
-	FullPathName string
-	Class        string
+	Model    `rest:"*"`
+	Code     string `gorm:"unique;not null"`
+	Name     string `gorm:"unique;not null"`
+	Pid      uint
+	Sort     int
+	FullPid  string
+	FullName string
+	Class    string
 }
 
 //TableName 设置表名
@@ -120,6 +120,7 @@ type RoleAssign struct {
 	Model      `rest:"*"`
 	UserID     uint
 	RoleID     uint
+	Role       *Role
 	ExpireUnix int64
 }
 
@@ -145,12 +146,10 @@ func (Role) TableName() string {
 
 // AfterSave
 func (r *Role) AfterSave() {
-	UpdateAuthRules(nil)
 }
 
 // AfterSave
 func (r *Role) AfterDelete(tx *gorm.DB) {
-	UpdateAuthRules(tx)
 }
 
 // QueryPreload
@@ -160,10 +159,9 @@ func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	Model      `rest:"*"`
-	RoleID     uint
-	Permission string
-	Desc       string
+	Model    `rest:"*"`
+	RoleID   uint
+	MenuCode string
 }
 
 //TableName 设置表名
@@ -173,11 +171,11 @@ func (OperationPrivileges) TableName() string {
 
 // DataPrivileges
 type DataPrivileges struct {
-	Model            `rest:"*"`
-	RoleID           uint
-	TargetOrgID      uint
-	AllReadableRange string
-	AllWritableRange string
+	Model         `rest:"*"`
+	RoleID        uint
+	TargetOrgID   uint
+	ReadableRange string
+	WritableRange string
 }
 
 //TableName 设置表名

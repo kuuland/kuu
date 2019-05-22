@@ -14,11 +14,7 @@ var OrgLoginRoute = gin.RouteInfo{
 	Method: "POST",
 	Path:   "/org/login",
 	HandlerFunc: func(c *gin.Context) {
-		// 解析登录信息
-		sign := ensureLogged(c)
-		if sign == nil {
-			return
-		}
+		sign := GetSignContext(c)
 		// 查询组织信息
 		body := struct {
 			OrgID uint `json:"org_id"`
@@ -41,11 +37,7 @@ var OrgListRoute = gin.RouteInfo{
 	Method: "GET",
 	Path:   "/org/list",
 	HandlerFunc: func(c *gin.Context) {
-		// 解析登录信息
-		sign := ensureLogged(c)
-		if sign == nil {
-			return
-		}
+		sign := GetSignContext(c)
 		if data, err := GetOrgList(c, sign.UID); err != nil {
 			ERROR(err)
 			STDErr(c, err.Error())
@@ -60,10 +52,7 @@ var OrgCurrentRoute = gin.RouteInfo{
 	Method: "GET",
 	Path:   "/org/current",
 	HandlerFunc: func(c *gin.Context) {
-		sign := ensureLogged(c)
-		if sign == nil {
-			return
-		}
+		sign := GetSignContext(c)
 		var signOrg SignOrg
 		db := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
 		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
@@ -86,10 +75,14 @@ var UserRolesRoute = gin.RouteInfo{
 			return
 		}
 		uid := ParseID(raw)
-		if roles, _, err := GetUserRoles(c, uid); err != nil {
+		if user, err := GetUserRoles(c, uid); err != nil {
 			ERROR(err)
 			STDErr(c, err.Error())
 		} else {
+			roles := make([]*Role, 0)
+			for _, assign := range user.RoleAssigns {
+				roles = append(roles, assign.Role)
+			}
 			STD(c, roles)
 		}
 	},
@@ -132,6 +125,16 @@ var UploadRoute = gin.RouteInfo{
 		} else {
 			STD(c, f)
 		}
+	},
+}
+
+// AuthRoute
+var AuthRoute = gin.RouteInfo{
+	Method: "GET",
+	Path:   "/auth",
+	HandlerFunc: func(c *gin.Context) {
+		//permission := c.Query("p")
+		//STD(c, metadata)
 	},
 }
 

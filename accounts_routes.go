@@ -3,11 +3,10 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"strconv"
 	"time"
 )
 
-// LoginHandler
+// LoginRoute
 var LoginRoute = gin.RouteInfo{
 	Method: "POST",
 	Path:   "/login",
@@ -16,7 +15,7 @@ var LoginRoute = gin.RouteInfo{
 		if loginHandler == nil {
 			PANIC("login handler not configured")
 		}
-		payload, err := loginHandler(c)
+		payload, uid, err := loginHandler(c)
 		if err != nil {
 			STDErr(c, err.Error())
 			return
@@ -29,7 +28,7 @@ var LoginRoute = gin.RouteInfo{
 		payload["exp"] = exp // 过期时间
 		// 生成新密钥
 		secretData := SignSecret{
-			UID:    payload[UIDKey].(uint),
+			UID:    uid,
 			Secret: uuid.NewV4().String(),
 			Iat:    iat,
 			Exp:    exp,
@@ -40,8 +39,10 @@ var LoginRoute = gin.RouteInfo{
 		payload[TokenKey] = secretData.Token
 		DB().Create(&secretData)
 		// 缓存secret至redis
-		if err := saveToRedis(&secretData, expiration); err != nil {
-			ERROR(err)
+		key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
+		value := Stringify(&secretData)
+		if !RedisClient.SetNX(key, value, expiration).Val() {
+			ERROR("Token cache failed")
 		}
 		// 保存登入历史
 		saveHistory(c, &secretData)
@@ -54,7 +55,6 @@ var LoginRoute = gin.RouteInfo{
 		})
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
-		c.SetCookie(UIDKey, strconv.Itoa(int(secretData.UID)), ExpiresSeconds, "/", "", false, true)
 		STD(c, payload)
 	},
 }
@@ -82,14 +82,16 @@ var LogoutRoute = gin.RouteInfo{
 					return
 				}
 				// 删除redis缓存
-				if err := deleteFromRedis(&secretData); err != nil {
+				if _, err := RedisClient.Del(RedisKeyBuilder(RedisSecretKey, secretData.Token)).Result(); err != nil {
+					ERROR(err)
+				}
+				if _, err := RedisClient.Del(RedisKeyBuilder(RedisOrgKey, secretData.Token)).Result(); err != nil {
 					ERROR(err)
 				}
 				// 保存登出历史
 				saveHistory(c, &secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
-				c.SetCookie(UIDKey, strconv.Itoa(int(secretData.UID)), -1, "/", "", false, true)
 			}
 		}
 		STD(c, L(c, "登录成功"))

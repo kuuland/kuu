@@ -391,7 +391,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							tx = tx.First(value)
 						}
 
-						setUpdateFields := func(tx *gorm.DB, value interface{}) bool {
+						setUpdateFields := func(value interface{}) bool {
 							doc := reflect.New(reflectType).Interface()
 							GetSoul(params.Doc, doc)
 
@@ -413,13 +413,13 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if indirectScopeValue := indirect(reflect.ValueOf(value)); indirectScopeValue.Kind() == reflect.Slice {
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								item := indirectScopeValue.Index(i).Interface()
-								if !setUpdateFields(tx, item) {
+								if !setUpdateFields(item) {
 									return
 								}
 								tx.Save(item)
 							}
 						} else {
-							if !setUpdateFields(tx, value) {
+							if !setUpdateFields(value) {
 								return
 							}
 							tx.Save(value)

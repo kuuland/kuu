@@ -7,20 +7,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"regexp"
-	"strconv"
-	"time"
+	"strings"
 )
 
 // LoginHandlerFunc
-type LoginHandlerFunc func(*gin.Context) (jwt.MapClaims, error)
+type LoginHandlerFunc func(*gin.Context) (jwt.MapClaims, uint, error)
 
 var (
 	TokenKey       = "Token"
-	UIDKey         = "UID"
 	WhiteList      = []string{"/login"}
 	ExpiresSeconds = 86400
 	SignContextKey = "SignContext"
-	loginHandler   LoginHandlerFunc
+	loginHandler   = defaultLoginHandler
+)
+
+const (
+	RedisSecretKey = "secret"
+	RedisOrgKey    = "org"
 )
 
 func whiteListCheck(c *gin.Context) bool {
@@ -56,24 +59,13 @@ func saveHistory(c *gin.Context, secretData *SignSecret) {
 	DB().Create(&history)
 }
 
-func genKey(secretData *SignSecret) string {
-	key := fmt.Sprintf("%s_%d_%s", RedisPrefix, secretData.UID, secretData.Token)
-	return key
-}
-
-func deleteFromRedis(secretData *SignSecret) (err error) {
-	key := genKey(secretData)
-	_, err = RedisClient.Del(key).Result()
-	return
-}
-
-func saveToRedis(secretData *SignSecret, expiration time.Duration) error {
-	key := genKey(secretData)
-	value := Stringify(secretData)
-	if !RedisClient.SetNX(key, value, expiration).Val() {
-		return errors.New("Token cache failed")
+// GenRedisKey
+func RedisKeyBuilder(keys ...string) string {
+	args := []string{RedisPrefix}
+	for _, k := range keys {
+		args = append(args, k)
 	}
-	return nil
+	return strings.Join(args, "_")
 }
 
 // ParseToken
@@ -90,51 +82,41 @@ func ParseToken(c *gin.Context) string {
 	return token
 }
 
-// ParseUID
-func ParseUID(c *gin.Context) (uid uint) {
-	// querystring > header > cookie
-	var userID string
-	userID = c.Query(UIDKey)
-	if userID == "" {
-		userID = c.GetHeader(UIDKey)
-	}
-	if userID == "" {
-		userID, _ = c.Cookie(UIDKey)
-	}
-	if v, err := strconv.ParseUint(userID, 10, 0); err != nil {
-		ERROR(err)
-	} else {
-		uid = uint(v)
-	}
-	return
-}
-
 // DecodedContext
 func DecodedContext(c *gin.Context) (*SignContext, error) {
 	token := ParseToken(c)
-	uid := ParseUID(c)
 	if token == "" {
 		return nil, errors.New(L(c, "未找到令牌"))
 	}
-	data := SignContext{
-		Token: token,
-		UID:   uid,
-	}
-	var sign SignSecret
-	key := genKey(&SignSecret{UID: uid, Token: token})
-	if v, err := RedisClient.Get(key).Result(); err == nil {
-		Parse(v, &sign)
+	data := SignContext{Token: token}
+	// 解析UID
+	var secret SignSecret
+	if v, err := RedisClient.Get(RedisKeyBuilder(RedisSecretKey, token)).Result(); err == nil {
+		Parse(v, &secret)
 	} else {
-		DB().Where(&SignSecret{UID: uid, Token: token}).Find(&sign)
+		DB().Where(&SignSecret{Token: token}).Find(&secret)
 	}
-	if sign.Secret == "" {
-		return nil, errors.New(LFull(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": uid, "token": token}))
+	data.UID = secret.UID
+	// 解析OrgID
+	var org SignOrg
+	if v, err := RedisClient.Get(RedisKeyBuilder(RedisOrgKey, token)).Result(); err == nil {
+		Parse(v, &org)
+	} else {
+		DB().Where(&SignOrg{Token: token}).Find(&org)
 	}
-	if sign.Method == "LOGOUT" {
+	data.OrgID = org.OrgID
+	// 验证令牌
+	if secret.Secret == "" {
+		return nil, errors.New(LFull(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": data.UID, "token": token}))
+	}
+	if secret.Method == "LOGOUT" {
 		return nil, errors.New(LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
 	}
-	data.Secret = &sign
-	data.Payload = DecodedToken(token, sign.Secret)
+	data.Secret = &secret
+	data.Payload = DecodedToken(token, secret.Secret)
+	if data.IsValid() {
+		c.Set(SignContextKey, &data)
+	}
 	return &data, nil
 }
 
@@ -168,13 +150,9 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 }
 
 // Accounts
-func Accounts(handler LoginHandlerFunc, whiteList ...[]string) *Mod {
-	if handler == nil {
-		PANIC("Login handler is required")
-	}
-	loginHandler = handler
-	if len(whiteList) > 0 {
-		WhiteList = append(WhiteList, whiteList[0]...)
+func Accounts(handler ...LoginHandlerFunc) *Mod {
+	if len(handler) > 0 {
+		loginHandler = handler[0]
 	}
 	return &Mod{
 		Models: []interface{}{

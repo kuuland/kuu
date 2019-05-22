@@ -25,8 +25,7 @@ func AuthMiddleware(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusOK, &std)
 			return
 		}
-		if err := sign.Payload.Valid(); err == nil {
-			c.Set(SignContextKey, sign)
+		if sign.IsValid() {
 			c.Next()
 		} else {
 			ERROR(err)
