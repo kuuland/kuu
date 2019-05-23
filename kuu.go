@@ -3,7 +3,6 @@ package kuu
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -71,8 +70,9 @@ func (e *Engine) Run(addr ...string) {
 		Handler: e.Engine,
 	}
 	go func() {
+		INFO("Listening and serving HTTP on %s", address)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			FATAL("listen: %s", err)
 		}
 	}()
 	shutdown(srv)
@@ -85,8 +85,9 @@ func (e *Engine) RunTLS(addr, certFile, keyFile string) {
 		Handler: e.Engine,
 	}
 	go func() {
+		INFO("Listening and serving HTTP on %s", addr)
 		if err := srv.ListenAndServeTLS(certFile, keyFile); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			FATAL("listen: %s", err)
 		}
 	}()
 	shutdown(srv)
