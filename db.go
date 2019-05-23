@@ -95,7 +95,7 @@ func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 			c := ginContext[0]
 			desc := GetPrivilegesDesc(c)
 			if desc != nil && desc.UID != RootUID() {
-				db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+				db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 			}
 		}
 		return db

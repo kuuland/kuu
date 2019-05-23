@@ -17,19 +17,23 @@ func RedisUserRolesKey(sign *SignContext) string {
 	return RedisKeyBuilder("privileges_roles", strconv.Itoa(int(sign.UID)))
 }
 
-func setPrisCache(sign *SignContext, desc *PrivilegesDesc, roleIDs []string) {
+// SetPrisCache
+func SetPrisCache(sign *SignContext, desc *PrivilegesDesc, roleIDs []string) {
 	roleIDsStr := strings.Join(roleIDs, ",")
 	value := Stringify(desc)
 	// 添加缓存
-	if !RedisClient.SetNX(RedisUserRolesKey(sign), roleIDsStr, time.Second*time.Duration(ExpiresSeconds)*7).Val() {
-		ERROR("用户角色缓存失败")
-	}
-	if !RedisClient.SetNX(RedisUserPrisKey(sign, roleIDsStr), value, time.Second*time.Duration(ExpiresSeconds)*7).Val() {
-		ERROR("用户权限缓存失败")
+	if err := RedisClient.SetNX(RedisUserRolesKey(sign), roleIDsStr, time.Second*time.Duration(ExpiresSeconds)*7).Err(); err != nil {
+		ERROR("用户角色缓存失败：%s", err.Error())
+	} else {
+		if err := RedisClient.SetNX(RedisUserPrisKey(sign, roleIDsStr), value, time.Second*time.Duration(ExpiresSeconds)*7).Err(); err != nil {
+			ERROR("用户权限缓存失败：%s", err.Error())
+			RedisClient.Del(RedisUserRolesKey(sign))
+		}
 	}
 }
 
-func getPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
+// GetPrisCache
+func GetPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
 	if v := RedisClient.Get(RedisUserRolesKey(sign)).Val(); v != "" {
 		if v := RedisClient.Get(RedisUserPrisKey(sign, v)).Val(); v != "" {
 			Parse(v, &desc)
@@ -41,7 +45,8 @@ func getPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
 	return
 }
 
-func delPrisCache() {
+// DelPrisCache
+func DelPrisCache() {
 	if v, err := RedisClient.Keys(RedisKeyBuilder("privileges*")).Result(); err == nil {
 		if err := RedisClient.Del(v...).Err(); err != nil {
 			ERROR(err)
@@ -52,6 +57,7 @@ func delPrisCache() {
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID            uint
+	Codes          []string
 	Permissions    map[string]int64
 	ReadableOrgIDs []uint
 	WritableOrgIDs []uint
@@ -61,7 +67,7 @@ type PrivilegesDesc struct {
 func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	sign := GetSignContext(c)
 	// 从缓存取
-	if desc = getPrisCache(sign); desc != nil {
+	if desc = GetPrisCache(sign); desc != nil {
 		return
 	}
 	// 重新计算
@@ -159,10 +165,14 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		}
 		return
 	}
+
+	for code, _ := range desc.Permissions {
+		desc.Codes = append(desc.Codes, code)
+	}
 	desc.ReadableOrgIDs = keys(readableOrgIDs)
 	desc.WritableOrgIDs = keys(writableOrgIDs)
 
 	// 添加缓存
-	setPrisCache(sign, desc, roleIDs)
+	SetPrisCache(sign, desc, roleIDs)
 	return
 }

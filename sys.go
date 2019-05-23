@@ -588,6 +588,7 @@ func Sys() *Mod {
 			OrgListRoute,
 			OrgCurrentRoute,
 			UserRolesRoute,
+			UserMenusRoute,
 			UploadRoute,
 			MetaRoute,
 			AuthRoute,

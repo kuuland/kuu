@@ -169,7 +169,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if params.Multi || params.All {
 							multi = true
 						}
-						tx := DB().Begin()
+						tx := DB(c).Begin()
 
 						var value interface{}
 						params.Cond = underlineMap(params.Cond)
@@ -223,7 +223,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							Parse(rawCond, &retCond)
 							ret["cond"] = retCond
 						}
-						db := DB().Model(reflect.New(reflectType).Interface())
+						db := DB(c).Model(reflect.New(reflectType).Interface())
 						if cond != nil {
 							for key, val := range cond {
 								if key == "$and" || key == "$or" {

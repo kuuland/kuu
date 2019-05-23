@@ -168,12 +168,12 @@ func FillOrgFullInfo(list []Org) []Org {
 
 // AfterSave
 func (o *Org) AfterSave() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 // AfterDelete
 func (o *Org) AfterDelete() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 //TableName 设置表名
@@ -191,12 +191,12 @@ type RoleAssign struct {
 
 // AfterSave
 func (u *User) AfterSave() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 // AfterDelete
 func (u *User) AfterDelete() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 //TableName 设置表名
@@ -221,12 +221,12 @@ func (Role) TableName() string {
 
 // AfterSave
 func (r *Role) AfterSave() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 // AfterDelete
 func (r *Role) AfterDelete() {
-	delPrisCache()
+	DelPrisCache()
 }
 
 // QueryPreload

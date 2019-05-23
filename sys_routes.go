@@ -54,13 +54,15 @@ var OrgCurrentRoute = gin.RouteInfo{
 	HandlerFunc: func(c *gin.Context) {
 		sign := GetSignContext(c)
 		var signOrg SignOrg
-		db := DB().Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
+		db := DB().Select("org_id").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
 		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
 			ERROR(err)
 			STDErr(c, L(c, "未找到登录组织"))
 			return
 		}
-		STD(c, signOrg.Org)
+		var org Org
+		DB().Where("id = ?", signOrg.OrgID).First(&org)
+		STD(c, org)
 	},
 }
 
@@ -85,6 +87,28 @@ var UserRolesRoute = gin.RouteInfo{
 			}
 			STD(c, roles)
 		}
+	},
+}
+
+// UserMenusRoute
+var UserMenusRoute = gin.RouteInfo{
+	Method: "GET",
+	Path:   "/user/menus",
+	HandlerFunc: func(c *gin.Context) {
+		desc := GetPrivilegesDesc(c)
+		var (
+			menus []Menu
+			db    = DB()
+		)
+		if desc.UID != RootUID() {
+			db = db.Where("code in (?)", desc.Codes)
+		}
+		if err := db.Find(&menus).Error; err != nil {
+			ERROR(err)
+			STDErr(c, L(c, "菜单查询失败"))
+			return
+		}
+		STD(c, menus)
 	},
 }
 
