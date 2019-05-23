@@ -102,6 +102,18 @@ func (e *Engine) Import(mods ...*Mod) {
 	Import(e.Engine, mods...)
 }
 
+// RESTful
+func (e *Engine) RESTful(values ...interface{}) {
+	if len(values) == 0 {
+		return
+	}
+	for _, v := range values {
+		if v != nil {
+			RESTful(e.Engine, v)
+		}
+	}
+}
+
 func connectedPrint(name, args string) {
 	INFO("%-8s is connected: %s", name, args)
 }
