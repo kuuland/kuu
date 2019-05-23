@@ -71,7 +71,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		return
 	}
 	desc = &PrivilegesDesc{
-		UID: sign.UID,
+		UID:         sign.UID,
+		Permissions: make(map[string]int64),
 	}
 	type orange struct {
 		readable string
@@ -102,8 +103,10 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 			dp.ReadableRange = strings.ToUpper(dp.ReadableRange)
 			dp.WritableRange = strings.ToUpper(dp.WritableRange)
 			if or == nil {
-				or.readable = dp.ReadableRange
-				or.writable = dp.WritableRange
+				or = &orange{
+					readable: dp.ReadableRange,
+					writable: dp.WritableRange,
+				}
 			} else {
 				if vmap[dp.ReadableRange] > vmap[or.readable] {
 					or.readable = dp.ReadableRange
@@ -115,17 +118,13 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 			orm[dp.TargetOrgID] = or
 		}
 	}
-	var (
-		orgList []Org
-		orgMap  = make(map[uint]Org)
-	)
+	var orgList []Org
 	if err := DB().Find(&orgList).Error; err != nil {
 		ERROR("组织列表查询失败")
 		return
 	}
-	for _, org := range orgList {
-		orgMap[org.ID] = org
-	}
+	orgList = FillOrgFullInfo(orgList)
+	orgMap := OrgIDMap(orgList)
 
 	var (
 		readableOrgIDs = make(map[uint]bool)

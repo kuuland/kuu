@@ -1,7 +1,9 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
+	"strings"
 	"time"
 )
 
@@ -109,6 +111,59 @@ type Org struct {
 	FullPid  string
 	FullName string
 	Class    string
+}
+
+// OrgIDMap
+func OrgIDMap(list []Org) map[uint]Org {
+	orgMap := make(map[uint]Org)
+	for _, org := range list {
+		orgMap[org.ID] = org
+	}
+	return orgMap
+}
+
+// FillOrgFullInfo
+func FillOrgFullInfo(list []Org) []Org {
+
+	type info struct {
+		fullPid  string
+		fullName string
+	}
+	var (
+		infoMap     = make(map[uint]info)
+		childrenMap = make(map[uint][]Org)
+		fall        func([]Org, string, string)
+	)
+	for _, org := range list {
+		childrenMap[org.Pid] = append(childrenMap[org.Pid], org)
+	}
+	fall = func(values []Org, pid, pname string) {
+		for _, item := range values {
+			if pid != "" {
+				item.FullPid = fmt.Sprintf("%s,%d", pid, item.ID)
+				item.FullName = fmt.Sprintf("%s,%s", pname, item.Name)
+			} else {
+				item.FullPid = fmt.Sprintf("%d", item.ID)
+				item.FullName = fmt.Sprintf("%s", item.Name)
+			}
+			if _, has := infoMap[item.ID]; !has {
+				infoMap[item.ID] = info{
+					fullPid:  item.FullPid,
+					fullName: item.FullName,
+				}
+			}
+			children := childrenMap[item.ID]
+			if len(children) > 0 {
+				fall(children, item.FullPid, item.FullName)
+			}
+		}
+	}
+	fall(list, "", "")
+	for index, item := range list {
+		list[index].FullPid = infoMap[item.ID].fullPid
+		list[index].FullName = infoMap[item.ID].fullName
+	}
+	return list
 }
 
 // AfterSave
@@ -222,6 +277,20 @@ type Menu struct {
 	IsDefaultOpen bool
 	Closeable     bool
 	Type          string
+}
+
+// AfterSave
+func (m *Menu) BeforeSave() {
+	if m.Code == "" {
+		if m.URI != "" && !m.IsLink {
+			code := m.URI
+			if strings.HasPrefix(m.URI, "/") {
+				code = m.URI[1:]
+			}
+			code = strings.ReplaceAll(code, "/", ":")
+			m.Code = code
+		}
+	}
 }
 
 //TableName 设置表名

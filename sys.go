@@ -87,6 +87,7 @@ func createPresetDicts(tx *gorm.DB) {
 
 func createPresetMenus(tx *gorm.DB) {
 	rootMenu := Menu{
+		Code:      "main",
 		Name:      "主导航菜单",
 		Sort:      100,
 		Type:      "menu",
@@ -94,6 +95,7 @@ func createPresetMenus(tx *gorm.DB) {
 	}
 	tx.Create(&rootMenu)
 	sysMenu := Menu{
+		Code:      "sys",
 		Pid:       rootMenu.ID,
 		Name:      "系统管理",
 		Icon:      "setting",
@@ -103,6 +105,7 @@ func createPresetMenus(tx *gorm.DB) {
 	}
 	tx.Create(&sysMenu)
 	orgMenu := Menu{
+		Code:      "sys:omg",
 		Pid:       sysMenu.ID,
 		Name:      "组织管理",
 		Icon:      "appstore",
@@ -134,6 +137,7 @@ func createPresetMenus(tx *gorm.DB) {
 	}
 	tx.Create(&sysOrgMenu)
 	permissionMenu := Menu{
+		Code:      "sys:auth",
 		Pid:       sysMenu.ID,
 		Name:      "权限管理",
 		Icon:      "dropbox",
@@ -154,6 +158,7 @@ func createPresetMenus(tx *gorm.DB) {
 	}
 	tx.Create(&roleMenu)
 	settingMenu := Menu{
+		Code:      "sys:settings",
 		Pid:       sysMenu.ID,
 		Name:      "系统设置",
 		Icon:      "tool",
@@ -241,6 +246,120 @@ func createPresetMenus(tx *gorm.DB) {
 	tx.Create(&messageMenu)
 }
 
+func createMockData(tx *gorm.DB) {
+	// 新增组织
+	gzo := &Org{
+		Code: "GZ",
+		Name: "广州",
+	}
+	tx.Create(gzo)
+	tho := &Org{
+		Code: "TH",
+		Name: "天河",
+		Pid:  gzo.ID,
+	}
+	tx.Create(tho)
+	yxo := &Org{
+		Code: "YX",
+		Name: "越秀",
+		Pid:  gzo.ID,
+	}
+	tx.Create(yxo)
+	lwo := &Org{
+		Code: "LW",
+		Name: "荔湾",
+		Pid:  gzo.ID,
+	}
+	tx.Create(lwo)
+	sho := &Org{
+		Code: "SH",
+		Name: "上海",
+	}
+	tx.Create(sho)
+	// 新建角色
+	gzr := &Role{
+		Code: "gz_admin",
+		Name: "广州管理员",
+	}
+	tx.Create(gzr)
+	gzrOP := []OperationPrivileges{
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "main",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:omg",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:auth",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:settings",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:user",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:org",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:param",
+		},
+		{
+			RoleID:   gzr.ID,
+			MenuCode: "sys:role",
+		},
+	}
+	for _, item := range gzrOP {
+		tx.Create(&item)
+	}
+	gzrDP := []DataPrivileges{
+		{
+			RoleID:        gzr.ID,
+			TargetOrgID:   gzo.ID,
+			ReadableRange: "CURRENT_FOLLOWING",
+			WritableRange: "CURRENT_FOLLOWING",
+		},
+		{
+			RoleID:        gzr.ID,
+			TargetOrgID:   tho.ID,
+			ReadableRange: "CURRENT",
+			WritableRange: "CURRENT",
+		},
+		{
+			RoleID:        gzr.ID,
+			TargetOrgID:   yxo.ID,
+			ReadableRange: "CURRENT",
+			WritableRange: "CURRENT",
+		},
+	}
+	for _, item := range gzrDP {
+		tx.Create(&item)
+	}
+	// 新增用户
+	gz01 := &User{
+		Username: "gz01",
+		Password: MD5("12345"),
+		Name:     "广州用户01",
+		RoleAssigns: []RoleAssign{
+			{
+				RoleID: gzr.ID,
+			},
+		},
+	}
+	tx.Create(gz01)
+}
+
 func initSys() {
 	if preflight() {
 		rootUser = getRootUser()
@@ -258,6 +377,7 @@ func initSys() {
 		// 初始化字典、菜单
 		createPresetDicts(tx)
 		createPresetMenus(tx)
+		createMockData(tx)
 		// 保存初始化标记
 		param := Param{
 			Code:      initCode,
