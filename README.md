@@ -56,12 +56,16 @@ $ cat main.go
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/kuuland/kuu"
 )
 
 func main() {
 	r := kuu.Default()
+	r.GET("/", func(c *gin.Context) {
+		kuu.STD(c, "Hello Kuu.")
+	})
 	r.Import(kuu.Accounts(), kuu.Sys())
 	r.Run()
 }
