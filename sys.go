@@ -308,24 +308,8 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 	if uid == RootUID() {
 		db = DB().Find(&data)
 	} else {
-		var rules []AuthRule
-		if errs := DB().Where(&AuthRule{UID: uid}).Find(&rules).GetErrors(); len(errs) > 0 {
-			ERROR(errs)
-			return &data, errors.New(L(c, "未找到组织授权记录"))
-		}
-		// 去重
-		existMap := make(map[uint]bool, 0)
-		orgIDs := make([]uint, 0)
-		if rules != nil {
-			for _, rule := range rules {
-				if existMap[rule.OrgID] {
-					continue
-				}
-				existMap[rule.OrgID] = true
-				orgIDs = append(orgIDs, rule.OrgID)
-			}
-		}
-		db = DB().Where("id in (?)", orgIDs).Find(&data)
+		desc := GetPrivilegesDesc(c)
+		db = DB().Where("id in (?)", desc.ReadableOrgIDs).Find(&data)
 	}
 	if errs := db.GetErrors(); len(errs) > 0 {
 		return &data, errors.New(L(c, "查询组织失败"))
@@ -472,7 +456,6 @@ func Sys() *Mod {
 			&OperationPrivileges{},
 			&DataPrivileges{},
 			&Menu{},
-			&AuthRule{},
 			&Dict{},
 			&DictValue{},
 			&File{},

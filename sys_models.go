@@ -229,28 +229,6 @@ func (Menu) TableName() string {
 	return "sys_Menu"
 }
 
-// AuthRule
-type AuthRule struct {
-	Model          `rest:"*"`
-	UID            uint
-	Username       string
-	Name           string
-	TargetOrgID    uint
-	TargetOrg      Org `gorm:"foreignkey:TargetOrgID"`
-	ObjectName     string
-	ReadableScope  string
-	WritableScope  string
-	ReadableOrgIDs string
-	WritableOrgIDs string
-	HitAssign      uint
-	Permissions    string
-}
-
-//TableName 设置表名
-func (AuthRule) TableName() string {
-	return "sys_AuthRule"
-}
-
 // Dict
 type Dict struct {
 	Model     `rest:"*"`
