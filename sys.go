@@ -6,16 +6,12 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"strconv"
 	"time"
 )
 
 const initCode = "sys:init"
 
-var (
-	rootUser *User
-	OrgIDKey = "OrgID"
-)
+var rootUser *User
 
 // RootUID
 func RootUID() uint {
@@ -402,7 +398,6 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 	if _, err := RedisClient.Set(key, value, time.Second*time.Duration(ExpiresSeconds)).Result(); err != nil {
 		ERROR(err)
 	}
-	c.SetCookie(OrgIDKey, strconv.Itoa(int(orgData.ID)), 0, "/", "", false, true)
 	return &orgData, nil
 }
 

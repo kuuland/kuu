@@ -54,6 +54,14 @@ func (c *Config) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
+// GetInterface returns the value associated with the key.
+func (c *Config) GetInterface(key string) interface{} {
+	if val, ok := c.Get(key); ok && val != nil {
+		return val
+	}
+	return nil
+}
+
 // GetString returns the value associated with the key as a string.
 func (c *Config) GetString(key string) (s string) {
 	if val, ok := c.Get(key); ok && val != nil {

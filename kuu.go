@@ -2,6 +2,8 @@ package kuu
 
 import (
 	"context"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -15,15 +17,17 @@ type Engine struct {
 }
 
 // Default
-func Default() *Engine {
-	onInit()
-	return &Engine{Engine: gin.Default()}
+func Default() (e *Engine) {
+	e = &Engine{Engine: gin.Default()}
+	onInit(e)
+	return
 }
 
 // New
-func New() *Engine {
-	onInit()
-	return &Engine{Engine: gin.New()}
+func New() (e *Engine) {
+	e = &Engine{Engine: gin.New()}
+	onInit(e)
+	return
 }
 
 func resolveAddress(addr []string) string {
@@ -98,7 +102,29 @@ func (e *Engine) Import(mods ...*Mod) {
 	Import(e.Engine, mods...)
 }
 
-func onInit() {
+func connectedPrint(name, args string) {
+	INFO("%-8s is connected: %s", name, args)
+}
+
+func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
+
+	if C().GetBool("cors") {
+		e.Use(cors.Default())
+	} else {
+		v := C().GetInterface("cors")
+		var config cors.Config
+		GetSoul(v, &config)
+		e.Use(cors.New(config))
+	}
+
+	if C().GetBool("gzip") {
+		e.Use(gzip.Gzip(gzip.BestSpeed))
+	} else {
+		v := C().GetInt("gzip")
+		if v != 0 {
+			e.Use(gzip.Gzip(v))
+		}
+	}
 }

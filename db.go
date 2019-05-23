@@ -43,6 +43,7 @@ func initDataSources() {
 				if err != nil {
 					panic(err)
 				} else {
+					connectedPrint(Capitalize(db.Dialect().GetName()), db.Dialect().CurrentDatabase())
 					dataSourcesMap.Store(ds.Name, db)
 					if gin.IsDebugging() {
 						db.LogMode(true)
@@ -67,6 +68,7 @@ func initDataSources() {
 			if err != nil {
 				panic(err)
 			} else {
+				connectedPrint(Capitalize(db.Dialect().GetName()), db.Dialect().CurrentDatabase())
 				dataSourcesMap.Store(ds.Name, db)
 				if gin.IsDebugging() {
 					db.LogMode(true)

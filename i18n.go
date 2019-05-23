@@ -17,6 +17,7 @@ type Language struct {
 	Key        string
 	Value      string
 }
+
 //TableName 设置表名
 func (Language) TableName() string {
 	return "sys_Language"

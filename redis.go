@@ -48,7 +48,7 @@ NOTE: "pass" and "db" are optional.
 
 	if addr != "" {
 		if _, err := client.Ping().Result(); err == nil {
-			INFO("Redis is connected: %s", addr)
+			connectedPrint("Redis", addr)
 			RedisClient = client
 		} else {
 			ERROR(err)
