@@ -110,21 +110,25 @@ func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
 
-	if C().GetBool("cors") {
-		e.Use(cors.Default())
-	} else {
-		v := C().GetInterface("cors")
-		var config cors.Config
-		GetSoul(v, &config)
-		e.Use(cors.New(config))
+	if _, exists := C().Get("cors"); exists {
+		if C().GetBool("cors") {
+			e.Use(cors.Default())
+		} else {
+			v := C().GetInterface("cors")
+			var config cors.Config
+			GetSoul(v, &config)
+			e.Use(cors.New(config))
+		}
 	}
 
-	if C().GetBool("gzip") {
-		e.Use(gzip.Gzip(gzip.BestSpeed))
-	} else {
-		v := C().GetInt("gzip")
-		if v != 0 {
-			e.Use(gzip.Gzip(v))
+	if _, exists := C().Get("gzip"); exists {
+		if C().GetBool("gzip") {
+			e.Use(gzip.Gzip(gzip.DefaultCompression))
+		} else {
+			v := C().GetInt("gzip")
+			if v != 0 {
+				e.Use(gzip.Gzip(v))
+			}
 		}
 	}
 }
