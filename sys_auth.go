@@ -4,10 +4,49 @@ import (
 	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func RedisPrisKey(sign *SignContext) string {
-	return RedisKeyBuilder("privileges", strconv.Itoa(int(sign.UID)), strconv.Itoa(int(sign.OrgID)))
+// RedisUserPrisKey
+func RedisUserPrisKey(sign *SignContext, roleIDs string) string {
+	return RedisKeyBuilder("privileges", strconv.Itoa(int(sign.UID)), roleIDs, strconv.Itoa(int(sign.OrgID)))
+}
+
+// RedisUserRolesKey
+func RedisUserRolesKey(sign *SignContext) string {
+	return RedisKeyBuilder("privileges_roles", strconv.Itoa(int(sign.UID)))
+}
+
+func setPrisCache(sign *SignContext, desc *PrivilegesDesc, roleIDs []string) {
+	roleIDsStr := strings.Join(roleIDs, ",")
+	value := Stringify(desc)
+	// 添加缓存
+	if !RedisClient.SetNX(RedisUserRolesKey(sign), roleIDsStr, time.Second*time.Duration(ExpiresSeconds)*7).Val() {
+		ERROR("用户角色缓存失败")
+	}
+	if !RedisClient.SetNX(RedisUserPrisKey(sign, roleIDsStr), value, time.Second*time.Duration(ExpiresSeconds)*7).Val() {
+		ERROR("用户权限缓存失败")
+	}
+}
+
+func getPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
+	if v := RedisClient.Get(RedisUserRolesKey(sign)).Val(); v != "" {
+		if v := RedisClient.Get(RedisUserPrisKey(sign, v)).Val(); v != "" {
+			Parse(v, &desc)
+			if desc.UID != 0 {
+				return
+			}
+		}
+	}
+	return
+}
+
+func delPrisCache() {
+	if v, err := RedisClient.Keys(RedisKeyBuilder("privileges*")).Result(); err == nil {
+		if err := RedisClient.Del(v...).Err(); err != nil {
+			ERROR(err)
+		}
+	}
 }
 
 // PrivilegesDesc
@@ -21,11 +60,11 @@ type PrivilegesDesc struct {
 // GetPrivilegesDesc
 func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	sign := GetSignContext(c)
-	//key := RedisPrisKey(sign)
-	//if v, err := RedisClient.Get(key).Result(); err == nil {
-	//	Parse(v, &secret)
-	//}
-
+	// 从缓存取
+	if desc = getPrisCache(sign); desc != nil {
+		return
+	}
+	// 重新计算
 	user, err := GetUserRoles(c, sign.UID)
 	if err != nil {
 		ERROR(err)
@@ -38,6 +77,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		readable string
 		writable string
 	}
+	roleIDs := make([]string, 0)
 	orm := make(map[uint]*orange)
 	vmap := map[string]int{
 		"PERSONAL":          1,
@@ -48,6 +88,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		if assign.Role == nil {
 			continue
 		}
+		roleIDs = append(roleIDs, strconv.Itoa(int(assign.Role.ID)))
 		for _, op := range assign.Role.OperationPrivileges {
 			if op.MenuCode != "" {
 				desc.Permissions[op.MenuCode] = assign.ExpireUnix
@@ -121,5 +162,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	}
 	desc.ReadableOrgIDs = keys(readableOrgIDs)
 	desc.WritableOrgIDs = keys(writableOrgIDs)
+
+	// 添加缓存
+	setPrisCache(sign, desc, roleIDs)
 	return
 }

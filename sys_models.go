@@ -111,6 +111,16 @@ type Org struct {
 	Class    string
 }
 
+// AfterSave
+func (o *Org) AfterSave() {
+	delPrisCache()
+}
+
+// AfterDelete
+func (o *Org) AfterDelete() {
+	delPrisCache()
+}
+
 //TableName 设置表名
 func (Org) TableName() string {
 	return "sys_Org"
@@ -122,6 +132,16 @@ type RoleAssign struct {
 	RoleID     uint
 	Role       *Role
 	ExpireUnix int64
+}
+
+// AfterSave
+func (u *User) AfterSave() {
+	delPrisCache()
+}
+
+// AfterDelete
+func (u *User) AfterDelete() {
+	delPrisCache()
 }
 
 //TableName 设置表名
@@ -146,10 +166,12 @@ func (Role) TableName() string {
 
 // AfterSave
 func (r *Role) AfterSave() {
+	delPrisCache()
 }
 
-// AfterSave
-func (r *Role) AfterDelete(tx *gorm.DB) {
+// AfterDelete
+func (r *Role) AfterDelete() {
+	delPrisCache()
 }
 
 // QueryPreload
