@@ -70,6 +70,10 @@ type PrivilegesDesc struct {
 
 // LoginOrgFilter
 func LoginOrgFilter(desc *PrivilegesDesc, sign *SignContext) {
+	if desc == nil || sign == nil {
+		return
+	}
+
 	if C().DefaultGetBool("login:org:filter", true) {
 		readableOrgIDs := make([]uint, 0)
 		for _, item := range desc.ReadableOrgIDs {
@@ -90,7 +94,15 @@ func LoginOrgFilter(desc *PrivilegesDesc, sign *SignContext) {
 
 // GetPrivilegesDesc
 func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
+	if c == nil {
+		return
+	}
+
 	sign := GetSignContext(c)
+	if sign == nil {
+		return
+	}
+
 	// 从缓存取
 	if desc = GetPrisCache(sign); desc != nil {
 		LoginOrgFilter(desc, sign)
