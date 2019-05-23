@@ -78,6 +78,16 @@ func (c *Config) GetBool(key string) (b bool) {
 	return
 }
 
+// DefaultGetBool returns the value associated with the key as a boolean.
+func (c *Config) DefaultGetBool(key string, defaultValue bool) bool {
+	if val, ok := c.Get(key); ok && val != nil {
+		b, _ := val.(bool)
+		return b
+	} else {
+		return defaultValue
+	}
+}
+
 // GetInt returns the value associated with the key as an integer.
 func (c *Config) GetInt(key string) (i int) {
 	if val, ok := c.Get(key); ok && val != nil {

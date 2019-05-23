@@ -68,11 +68,32 @@ type PrivilegesDesc struct {
 	WritableOrgIDs []uint
 }
 
+// LoginOrgFilter
+func LoginOrgFilter(desc *PrivilegesDesc, sign *SignContext) {
+	if C().DefaultGetBool("login:org:filter", true) {
+		readableOrgIDs := make([]uint, 0)
+		for _, item := range desc.ReadableOrgIDs {
+			if item == sign.OrgID {
+				readableOrgIDs = append(readableOrgIDs, item)
+			}
+		}
+		writableOrgIDs := make([]uint, 0)
+		for _, item := range desc.WritableOrgIDs {
+			if item == sign.OrgID {
+				writableOrgIDs = append(writableOrgIDs, item)
+			}
+		}
+		desc.ReadableOrgIDs = readableOrgIDs
+		desc.WritableOrgIDs = writableOrgIDs
+	}
+}
+
 // GetPrivilegesDesc
 func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	sign := GetSignContext(c)
 	// 从缓存取
 	if desc = GetPrisCache(sign); desc != nil {
+		LoginOrgFilter(desc, sign)
 		return
 	}
 	// 重新计算
@@ -179,5 +200,6 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 
 	// 添加缓存
 	SetPrisCache(sign, desc, roleIDs)
+	LoginOrgFilter(desc, sign)
 	return
 }
