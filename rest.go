@@ -120,14 +120,29 @@ func RESTful(r *gin.Engine, value interface{}) {
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								doc := reflect.New(reflectType).Interface()
 								GetSoul(indirectScopeValue.Index(i).Interface(), doc)
-								tx = tx.Create(doc)
 								docs = append(docs, doc)
 							}
 						} else {
 							doc := reflect.New(reflectType).Interface()
 							GetSoul(body, doc)
-							tx = tx.Create(doc)
 							docs = append(docs, doc)
+						}
+						sign := GetSignContext(c)
+						if sign != nil && sign.OrgID != 0 {
+							// 设置默认OrgID
+							for index, doc := range docs {
+								scope := tx.NewScope(doc)
+								if field, exists := scope.FieldByName("OrgID"); exists {
+									if err := field.Set(sign.OrgID); err != nil {
+										ERROR(err)
+									} else {
+										docs[index] = doc
+									}
+								}
+							}
+						}
+						for _, doc := range docs {
+							tx = tx.Create(doc)
 						}
 						msg := L(c, "新增失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {

@@ -28,6 +28,8 @@ func SetPrisCache(sign *SignContext, desc *PrivilegesDesc, roleIDs []string) {
 		if err := RedisClient.SetNX(RedisUserPrisKey(sign, roleIDsStr), value, time.Second*time.Duration(ExpiresSeconds)*7).Err(); err != nil {
 			ERROR("用户权限缓存失败：%s", err.Error())
 			RedisClient.Del(RedisUserRolesKey(sign))
+		} else {
+			INFO("设置权限缓存：UID=%s", sign.UID)
 		}
 	}
 }
@@ -38,6 +40,7 @@ func GetPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
 		if v := RedisClient.Get(RedisUserPrisKey(sign, v)).Val(); v != "" {
 			Parse(v, &desc)
 			if desc.UID != 0 {
+				INFO("获取权限缓存：UID=%s", sign.UID)
 				return
 			}
 		}
@@ -50,6 +53,8 @@ func DelPrisCache() {
 	if v, err := RedisClient.Keys(RedisKeyBuilder("privileges*")).Result(); err == nil {
 		if err := RedisClient.Del(v...).Err(); err != nil {
 			ERROR(err)
+		} else {
+			INFO("清空权限缓存")
 		}
 	}
 }
