@@ -16,6 +16,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
     - [Common functions](#common-functions)
+    - [Get login context](#get-login-context)
     - [Preset modules](#preset-modules)
 - [FAQ](#faq)
 - [License](#license)
@@ -534,6 +535,14 @@ func main() {
 	// Formatted as JSON
 	kuu.Stringify(&params)
 }
+```
+
+### Get login context
+
+```go
+r.Use(func (c *gin.Context){
+	sign := kuu.GetSignContext(c)
+})
 ```
 
 ### Preset modules
