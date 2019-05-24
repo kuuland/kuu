@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Model
 type Model struct {
 	ID          uint `gorm:"primary_key"`
 	CreatedAt   time.Time
@@ -23,9 +24,19 @@ type Model struct {
 	Remark      string
 }
 
+// ExtendField
+type ExtendField struct {
+	Def1 string
+	Def2 string
+	Def3 string
+	Def4 string
+	Def5 string
+}
+
 // Metadata
 type Metadata struct {
-	Model     `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Name      string
 	FullName  string
 	Fields    []MetadataField
@@ -45,6 +56,7 @@ func (m *Metadata) QueryPreload(db *gorm.DB) *gorm.DB {
 // MetadataField
 type MetadataField struct {
 	Model
+	ExtendField
 	Name       string
 	Type       string
 	MetadataID uint
@@ -57,7 +69,8 @@ func (MetadataField) TableName() string {
 
 // Routes
 type Route struct {
-	Model  `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Method string
 	Path   string
 }
@@ -69,7 +82,8 @@ func (Route) TableName() string {
 
 // User
 type User struct {
-	Model       `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Username    string `gorm:"unique;not null"`
 	Password    string `gorm:"not null"`
 	Name        string
@@ -103,7 +117,8 @@ func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // Org
 type Org struct {
-	Model    `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Code     string `gorm:"unique;not null"`
 	Name     string `gorm:"unique;not null"`
 	Pid      uint
@@ -182,7 +197,8 @@ func (Org) TableName() string {
 }
 
 type RoleAssign struct {
-	Model      `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	UserID     uint
 	RoleID     uint
 	Role       *Role
@@ -206,7 +222,8 @@ func (RoleAssign) TableName() string {
 
 // Role
 type Role struct {
-	Model               `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Code                string `gorm:"unique;not null"`
 	Name                string `gorm:"not null"`
 	OperationPrivileges []OperationPrivileges
@@ -236,7 +253,8 @@ func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	Model    `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	RoleID   uint
 	MenuCode string
 }
@@ -248,7 +266,8 @@ func (OperationPrivileges) TableName() string {
 
 // DataPrivileges
 type DataPrivileges struct {
-	Model         `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	RoleID        uint
 	TargetOrgID   uint
 	ReadableRange string
@@ -262,7 +281,8 @@ func (DataPrivileges) TableName() string {
 
 // Menu
 type Menu struct {
-	Model         `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Code          string
 	Name          string `gorm:"not null"`
 	URI           string
@@ -300,7 +320,8 @@ func (Menu) TableName() string {
 
 // Dict
 type Dict struct {
-	Model     `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Code      string `gorm:"unique;not null"`
 	Name      string `gorm:"not null"`
 	Values    []DictValue
@@ -320,6 +341,7 @@ func (d *Dict) QueryPreload(db *gorm.DB) *gorm.DB {
 // DictValue
 type DictValue struct {
 	Model
+	ExtendField
 	DictID uint
 	Label  string
 	Value  string
@@ -333,7 +355,8 @@ func (DictValue) TableName() string {
 
 // File
 type File struct {
-	Model  `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	UID    string `json:"uid"`
 	Type   string `json:"type"`
 	Size   int64  `json:"size"`
@@ -351,6 +374,7 @@ func (File) TableName() string {
 // SignOrg
 type SignOrg struct {
 	Model
+	ExtendField
 	Token string
 	UID   uint
 }
@@ -370,7 +394,8 @@ func (o *SignOrg) IsValid() bool {
 
 // Param
 type Param struct {
-	Model     `rest:"*"`
+	Model `rest:"*"`
+	ExtendField
 	Code      string `gorm:"unique;not null"`
 	Name      string `gorm:"not null"`
 	Value     string

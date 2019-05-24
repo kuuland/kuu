@@ -127,20 +127,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							GetSoul(body, doc)
 							docs = append(docs, doc)
 						}
-						sign := GetSignContext(c)
-						if sign != nil && sign.OrgID != 0 {
-							// 设置默认OrgID
-							for index, doc := range docs {
-								scope := tx.NewScope(doc)
-								if field, exists := scope.FieldByName("OrgID"); exists {
-									if err := field.Set(sign.OrgID); err != nil {
-										ERROR(err)
-									} else {
-										docs[index] = doc
-									}
-								}
-							}
-						}
+						PrivilegesCreateHandler(docs, tx, c)
 						for _, doc := range docs {
 							tx = tx.Create(doc)
 						}
