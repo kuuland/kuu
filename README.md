@@ -547,9 +547,8 @@ r.Use(func (c *gin.Context){
 
 ### Preset modules
 
-- [Accounts module](https://github.com/kuuland/accounts) - [JWT-based](https://jwt.io/) token issuance, login authentication, etc.
-- [System module](https://github.com/kuuland/sys) - Menu, [admin](https://github.com/kuuland/ui), roles, organization, etc.
-- [Internationalization(i18n)](https://github.com/kuuland/i18n) - Translation tools for multilingual applications.
+- [Accounts module](https://github.com/kuuland/kuu/blob/master/accounts.go#L153) - JWT-based token issuance, login authentication, etc.
+- [System module](https://github.com/kuuland/kuu/blob/master/sys.go#L564) - Menu, admin, roles, organization, etc.
 - [Admin](https://github.com/kuuland/ui) - A React boilerplate.
 
 ## FAQ
