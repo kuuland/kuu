@@ -26,7 +26,7 @@ type Model struct {
 
 // ExtendField
 type ExtendField struct {
-	Def1 string
+	Def1 uint
 	Def2 string
 	Def3 string
 	Def4 string
