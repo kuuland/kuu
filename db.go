@@ -83,17 +83,25 @@ func DB(c ...*gin.Context) *gorm.DB {
 	return DBWithName("", c...)
 }
 
-// DefaultValueHandler
-func DefaultValueHandler(docs []interface{}, tx *gorm.DB, c *gin.Context) {
+// DefaultCreateHandler
+func DefaultCreateHandler(docs []interface{}, tx *gorm.DB, c *gin.Context) {
 	sign := GetSignContext(c)
 	if sign == nil || sign.OrgID == 0 {
 		return
 	}
 	for index, doc := range docs {
 		scope := tx.NewScope(doc)
-		// 设置默认OrgID
+		// Auto set the organization ID
 		if field, exists := scope.FieldByName("OrgID"); exists {
 			if err := field.Set(sign.OrgID); err != nil {
+				ERROR(err)
+			} else {
+				docs[index] = doc
+			}
+		}
+		// Auto set the creator ID
+		if field, exists := scope.FieldByName("CreatedByID"); exists {
+			if err := field.Set(sign.UID); err != nil {
 				ERROR(err)
 			} else {
 				docs[index] = doc
