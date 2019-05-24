@@ -191,10 +191,19 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							tx = tx.Find(value).Delete(reflect.New(reflectType).Interface())
+							tx = tx.Find(value)
+							results := reflect.ValueOf(value)
+							for i := 0; i < results.Len(); i++ {
+								item := results.Index(i)
+								DefaultDeleteHandler(item.Interface(), tx, c)
+								results = reflect.Append(results, item.Addr())
+							}
+							tx = tx.Delete(reflect.New(reflectType).Interface())
 						} else {
 							value = reflect.New(reflectType).Interface()
-							tx = tx.First(value).Delete(value)
+							tx = tx.First(value)
+							DefaultDeleteHandler(value, tx, c)
+							tx = tx.Delete(value)
 						}
 
 						msg := L(c, "删除失败")
@@ -418,12 +427,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 								if !setUpdateFields(item) {
 									return
 								}
+								DefaultUpdateHandler(item, tx, c)
 								tx.Save(item)
 							}
 						} else {
 							if !setUpdateFields(value) {
 								return
 							}
+							DefaultUpdateHandler(value, tx, c)
 							tx.Save(value)
 						}
 
