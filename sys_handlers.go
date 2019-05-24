@@ -63,7 +63,7 @@ var DefaultUpdateHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
 }
 
 // DefaultWhereHandler
-func DefaultWhereHandler(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
+var DefaultWhereHandler = func(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
 	if desc != nil && desc.UID != RootUID() {
 		db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 	}
