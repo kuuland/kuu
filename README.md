@@ -12,6 +12,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global configuration](#global-configuration)
     - [Data Source Management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
+    - [Global default handlers](#global-default-handlers)
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
@@ -428,7 +429,37 @@ curl -X DELETE \
 }'
 ```
 
+### Global default handlers
 
+You can override the default handlers:
+
+```go
+kuu.DefaultValueHandler (docs []interface{}, tx *gorm.DB, c *gin.Context) {
+    sign := GetSignContext(c)
+    if sign == nil || sign.OrgID == 0 {
+        return
+    }
+    for index, doc := range docs {
+        scope := tx.NewScope(doc)
+        // Auto set the organization ID
+        if field, exists := scope.FieldByName("OrgID"); exists {
+            if err := field.Set(sign.OrgID); err != nil {
+                ERROR(err)
+            } else {
+                docs[index] = doc
+            }
+        }
+    }
+}
+
+kuu.DefaultWhereHandler (db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
+    if desc != nil && desc.UID != RootUID() {
+        // Auto filter by organization IDs
+        db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+    }
+    return db
+}
+```
 
 ### Modular project structure
 

@@ -83,8 +83,8 @@ func DB(c ...*gin.Context) *gorm.DB {
 	return DBWithName("", c...)
 }
 
-// PrivilegesCreateHandler
-func PrivilegesCreateHandler(docs []interface{}, tx *gorm.DB, c *gin.Context) {
+// DefaultValueHandler
+func DefaultValueHandler(docs []interface{}, tx *gorm.DB, c *gin.Context) {
 	sign := GetSignContext(c)
 	if sign == nil || sign.OrgID == 0 {
 		return
@@ -102,8 +102,8 @@ func PrivilegesCreateHandler(docs []interface{}, tx *gorm.DB, c *gin.Context) {
 	}
 }
 
-// PrivilegesQueryHandler
-func PrivilegesQueryHandler(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
+// DefaultWhereHandler
+func DefaultWhereHandler(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
 	if desc != nil && desc.UID != RootUID() {
 		db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 	}
@@ -121,7 +121,7 @@ func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
 			// 查询授权规则
 			c := ginContext[0]
 			desc := GetPrivilegesDesc(c)
-			db = PrivilegesQueryHandler(db, desc, c)
+			db = DefaultWhereHandler(db, desc, c)
 		}
 		return db
 	}

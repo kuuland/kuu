@@ -127,7 +127,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							GetSoul(body, doc)
 							docs = append(docs, doc)
 						}
-						PrivilegesCreateHandler(docs, tx, c)
+						DefaultValueHandler(docs, tx, c)
 						for _, doc := range docs {
 							tx = tx.Create(doc)
 						}
