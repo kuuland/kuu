@@ -14,6 +14,13 @@ import (
 	"time"
 )
 
+var (
+	// PrisDescKey
+	PrisDescKey = "PrisDesc"
+	// SignInfoKey
+	SignInfoKey = "SignInfo"
+)
+
 // KuuHandlerFunc defines the handler used by ok middleware as return value.
 type KuuHandlerFunc func(*Context)
 
@@ -38,7 +45,6 @@ type Engine struct {
 // Context
 type Context struct {
 	*gin.Context
-	DB       *gorm.DB
 	SignInfo *SignContext
 	PrisDesc *PrivilegesDesc
 }
@@ -169,18 +175,17 @@ func (e *Engine) convertGinHandlers(chain KuuHandlersChain) (handlers gin.Handle
 	handlers = make(gin.HandlersChain, len(chain))
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
-			kuuContext := &Context{
-				Context:  c,
-				DB:       DB(c),
-				SignInfo: GetSignContext(c),
-				PrisDesc: GetPrivilegesDesc(c),
+			kc := &Context{
+				Context: c,
 			}
-			SetValues(gls.Values{
-				"SignContext": kuuContext.SignInfo,
-				"PrisDesc":    kuuContext.PrisDesc,
-			}, func() {
-				handler(kuuContext)
-			})
+			if !InWhiteList(c) {
+				kc.SignInfo = GetSignContext(c)
+				kc.PrisDesc = GetPrivilegesDesc(c)
+			}
+			values := make(gls.Values)
+			values[SignInfoKey] = kc.SignInfo
+			values[PrisDescKey] = kc.PrisDesc
+			SetValues(values, func() { handler(kc) })
 		}
 	}
 	return
@@ -279,4 +284,9 @@ func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
 	e.initConfigs()
+
+	gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
+	gorm.DefaultCallback.Query().Before("gorm:update").Register("kuu:update", UpdateCallback)
+	gorm.DefaultCallback.Query().After("gorm:delete").Register("kuu:delete", DeleteCallback)
+	gorm.DefaultCallback.Query().Before("gorm:create").Register("kuu:create", CreateCallback)
 }

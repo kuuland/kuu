@@ -62,6 +62,7 @@ func DelPrisCache() {
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID            uint
+	OrgID          uint
 	Codes          []string
 	Permissions    map[string]int64
 	ReadableOrgIDs []uint
@@ -105,17 +106,19 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 
 	// 从缓存取
 	if desc = GetPrisCache(sign); desc != nil {
+		desc.OrgID = sign.OrgID
 		LoginOrgFilter(desc, sign)
 		return
 	}
 	// 重新计算
 	user, err := GetUserRoles(c, sign.UID)
 	if err != nil {
-		ERROR(err)
+		//ERROR(err)
 		return
 	}
 	desc = &PrivilegesDesc{
 		UID:         sign.UID,
+		OrgID:       sign.OrgID,
 		Permissions: make(map[string]int64),
 	}
 	type orange struct {

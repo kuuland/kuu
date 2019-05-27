@@ -119,7 +119,7 @@ func RESTful(r *Engine, value interface{}) {
 							GetSoul(body, doc)
 							docs = append(docs, doc)
 						}
-						DefaultCreateHandler(docs, tx, c)
+						CreateCallback(docs, tx, c)
 						for _, doc := range docs {
 							tx = tx.Create(doc)
 						}
@@ -163,7 +163,7 @@ func RESTful(r *Engine, value interface{}) {
 						if params.Multi || params.All {
 							multi = true
 						}
-						tx := c.DB.Begin()
+						tx := DB().Begin()
 
 						var value interface{}
 						params.Cond = underlineMap(params.Cond)
@@ -187,13 +187,13 @@ func RESTful(r *Engine, value interface{}) {
 							indirectValue := indirect(reflect.ValueOf(value))
 							if indirectValue.Len() > 0 {
 								value = indirectValue.Index(i).Addr().Interface()
-								DefaultDeleteHandler(value, tx, c)
+								DeleteCallback(value, tx, c)
 							}
 							tx = tx.Delete(value)
 						} else {
 							value = reflect.New(reflectType).Interface()
 							tx = tx.First(value)
-							DefaultDeleteHandler(value, tx, c)
+							DeleteCallback(value, tx, c)
 							tx = tx.Delete(value)
 						}
 
@@ -225,7 +225,7 @@ func RESTful(r *Engine, value interface{}) {
 							Parse(rawCond, &retCond)
 							ret["cond"] = retCond
 						}
-						db := c.DB.Model(reflect.New(reflectType).Interface())
+						db := DB().Model(reflect.New(reflectType).Interface())
 						if cond != nil {
 							for key, val := range cond {
 								if key == "$and" || key == "$or" {
@@ -418,14 +418,12 @@ func RESTful(r *Engine, value interface{}) {
 								if !setUpdateFields(item) {
 									return
 								}
-								DefaultUpdateHandler(item, tx, c)
 								tx.Save(item)
 							}
 						} else {
 							if !setUpdateFields(value) {
 								return
 							}
-							DefaultUpdateHandler(value, tx, c)
 							tx.Save(value)
 						}
 

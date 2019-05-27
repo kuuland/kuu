@@ -435,7 +435,7 @@ You can override the default handlers:
 
 ```go
 // Default create handler
-kuu.DefaultCreateHandler = func(docs []interface{}, tx *gorm.DB, c *gin.Context) {
+kuu.CreateCallback = func(docs []interface{}, tx *gorm.DB, c *gin.Context) {
     sign := GetSignContext(c)
     if sign == nil || sign.OrgID == 0 {
         return
@@ -462,7 +462,7 @@ kuu.DefaultCreateHandler = func(docs []interface{}, tx *gorm.DB, c *gin.Context)
 }
 
 // Default delete handler
-kuu.DefaultDeleteHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
+kuu.DeleteCallback = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
     sign := GetSignContext(c)
     if sign == nil || sign.OrgID == 0 {
         return
@@ -477,7 +477,7 @@ kuu.DefaultDeleteHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
 }
 
 // Default update handler
-kuu.DefaultUpdateHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
+kuu.UpdateCallback = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
 	sign := GetSignContext(c)
 	if sign == nil || sign.OrgID == 0 {
 		return
@@ -492,7 +492,7 @@ kuu.DefaultUpdateHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
 }
 
 // Default where handler
-kuu.DefaultWhereHandler(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
+kuu.QueryCallback(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
 	if desc != nil && desc.UID != RootUID() {
 		db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 	}

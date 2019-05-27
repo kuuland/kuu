@@ -81,23 +81,17 @@ func initDataSources() {
 }
 
 // DB
-func DB(c ...*gin.Context) *gorm.DB {
-	return DBWithName("", c...)
+func DB() *gorm.DB {
+	return DS("")
 }
 
-// DBWithName
-func DBWithName(name string, ginContext ...*gin.Context) *gorm.DB {
+// DS
+func DS(name string) *gorm.DB {
 	if name == "" {
 		name = singleDSName
 	}
 	if v, ok := dataSourcesMap.Load(name); ok {
 		db := v.(*gorm.DB)
-		if len(ginContext) > 0 && ginContext[0] != nil {
-			// 查询授权规则
-			c := ginContext[0]
-			desc := GetPrivilegesDesc(c)
-			db = DefaultWhereHandler(db, desc, c)
-		}
 		return db
 	}
 	PANIC("No data source named \"%s\"", name)
