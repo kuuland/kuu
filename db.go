@@ -3,11 +3,13 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/jtolds/gls"
 	"sync"
 )
 
 var (
 	dataSourcesMap sync.Map
+	mgr            = gls.NewContextManager()
 	singleDSName   = "kuu_default_db"
 )
 
@@ -134,10 +136,6 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 		}
 	}
 	return tx.Commit().Error
-}
-
-func DeleteReference(db *gorm.DB, name string) {
-	db.NewScope(db.Value).Fields()
 }
 
 // Release

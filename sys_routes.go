@@ -2,100 +2,98 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"path"
+	"strings"
 )
 
 // OrgLoginRoute
-var OrgLoginRoute = gin.RouteInfo{
+var OrgLoginRoute = KuuRouteInfo{
 	Method: "POST",
 	Path:   "/org/login",
-	HandlerFunc: func(c *gin.Context) {
-		sign := GetSignContext(c)
+	HandlerFunc: func(c *Context) {
+		sign := c.SignInfo
 		// 查询组织信息
 		body := struct {
 			OrgID uint `json:"org_id"`
 		}{}
 		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil || body.OrgID == 0 {
-			STDErr(c, L(c, "解析请求体失败"))
+			c.STDErr("解析请求体失败")
 			return
 		}
-		if data, err := ExecOrgLogin(c, sign, body.OrgID); err != nil {
-			ERROR(err)
-			STDErr(c, err.Error())
+		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
+			c.STDErrHold("组织登录失败").Data(err).Render()
 		} else {
-			STD(c, data)
+			c.STD(data)
 		}
 	},
 }
 
 // OrgListRoute
-var OrgListRoute = gin.RouteInfo{
+var OrgListRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/org/list",
-	HandlerFunc: func(c *gin.Context) {
-		sign := GetSignContext(c)
-		if data, err := GetOrgList(c, sign.UID); err != nil {
-			ERROR(err)
-			STDErr(c, err.Error())
+	HandlerFunc: func(c *Context) {
+		sign := c.SignInfo
+		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
+			c.STDErrHold(c.L("获取组织列表失败")).Data(err).Render()
 		} else {
-			STD(c, data)
+			c.STD(data)
 		}
 	},
 }
 
 // OrgCurrentRoute
-var OrgCurrentRoute = gin.RouteInfo{
+var OrgCurrentRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/org/current",
-	HandlerFunc: func(c *gin.Context) {
-		sign := GetSignContext(c)
+	HandlerFunc: func(c *Context) {
+		sign := c.SignInfo
 		var signOrg SignOrg
 		db := DB().Select("org_id").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
 		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
 			ERROR(err)
-			STDErr(c, L(c, "未找到登录组织"))
+			c.STDErr("未找到登录组织")
 			return
 		}
 		var org Org
 		DB().Where("id = ?", signOrg.OrgID).First(&org)
-		STD(c, org)
+		c.STD(org)
 	},
 }
 
 // UserRolesRoute
-var UserRolesRoute = gin.RouteInfo{
+var UserRolesRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/user/roles",
-	HandlerFunc: func(c *gin.Context) {
+	HandlerFunc: func(c *Context) {
 		raw := c.Query("uid")
 		if raw == "" {
-			STDErr(c, L(c, "用户ID不能为空"))
+			c.STDErr("用户ID不能为空")
 			return
 		}
 		uid := ParseID(raw)
-		if user, err := GetUserRoles(c, uid); err != nil {
+		if user, err := GetUserRoles(c.Context, uid); err != nil {
 			ERROR(err)
-			STDErr(c, err.Error())
+			c.STDErr(err.Error())
 		} else {
 			roles := make([]*Role, 0)
 			for _, assign := range user.RoleAssigns {
 				roles = append(roles, assign.Role)
 			}
-			STD(c, roles)
+			c.STD(roles)
 		}
 	},
 }
 
 // UserMenusRoute
-var UserMenusRoute = gin.RouteInfo{
+var UserMenusRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
-	HandlerFunc: func(c *gin.Context) {
-		desc := GetPrivilegesDesc(c)
+	HandlerFunc: func(c *Context) {
+		desc := GetPrivilegesDesc(c.Context)
 		var (
 			menus []Menu
 			db    = DB()
@@ -105,18 +103,18 @@ var UserMenusRoute = gin.RouteInfo{
 		}
 		if err := db.Find(&menus).Error; err != nil {
 			ERROR(err)
-			STDErr(c, L(c, "菜单查询失败"))
+			c.STDErr("菜单查询失败")
 			return
 		}
-		STD(c, menus)
+		c.STD(menus)
 	},
 }
 
 // UploadRoute
-var UploadRoute = gin.RouteInfo{
+var UploadRoute = KuuRouteInfo{
 	Method: "POST",
 	Path:   "/upload",
-	HandlerFunc: func(c *gin.Context) {
+	HandlerFunc: func(c *Context) {
 		// 检查上传目录
 		uploadDir := C().GetString("uploadDir")
 		if uploadDir == "" {
@@ -128,7 +126,7 @@ var UploadRoute = gin.RouteInfo{
 		dst := path.Join(uploadDir, file.Filename)
 		if err := c.SaveUploadedFile(file, dst); err != nil {
 			ERROR(err)
-			STDErr(c, "Saving uploaded file failed")
+			c.STDErr("保存上传文件失败")
 			return
 		}
 		INFO(fmt.Sprintf("'%s' uploaded!", dst))
@@ -145,28 +143,40 @@ var UploadRoute = gin.RouteInfo{
 
 		if errs := DB().Create(&f).GetErrors(); len(errs) > 0 {
 			ERROR(errs)
-			STDErr(c, "Saving uploaded file failed")
+			c.STDErr("保存上传文件失败")
 		} else {
-			STD(c, f)
+			c.STD(f)
 		}
 	},
 }
 
 // AuthRoute
-var AuthRoute = gin.RouteInfo{
+var AuthRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/auth",
-	HandlerFunc: func(c *gin.Context) {
-		//permission := c.Query("p")
-		//STD(c, metadata)
+	HandlerFunc: func(c *Context) {
+		ps := c.Query("p")
+		sp := strings.Split(ps, ",")
+
+		if len(sp) == 0 {
+			c.STDErr("权限编码不能为空")
+		}
+
+		ret := make(map[string]bool)
+		for _, s := range sp {
+			_, has := c.PrisDesc.Permissions[s]
+			ret[s] = has
+		}
+
+		c.STD(ret)
 	},
 }
 
 // MetaRoute
-var MetaRoute = gin.RouteInfo{
+var MetaRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/meta",
-	HandlerFunc: func(c *gin.Context) {
-		STD(c, metadata)
+	HandlerFunc: func(c *Context) {
+		c.STD(metadata)
 	},
 }

@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	"math"
@@ -10,10 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 )
-
-var modelStructsMap sync.Map
 
 type PreloadHooks interface {
 	QueryPreload(*gorm.DB) *gorm.DB
@@ -27,10 +23,10 @@ func callPreloadHooks(db *gorm.DB, value interface{}) *gorm.DB {
 }
 
 // RESTful
-func RESTful(r *gin.Engine, value interface{}) {
+func RESTful(r *Engine, value interface{}) {
 	// Scope value can't be nil
 	if value == nil {
-		return
+		PANIC("Model can't be nil")
 	}
 
 	if C().GetBool("gorm:migrate") {
@@ -43,13 +39,9 @@ func RESTful(r *gin.Engine, value interface{}) {
 
 	// Scope value need to be a struct
 	if reflectType.Kind() != reflect.Struct {
-		return
+		PANIC("Model need to be a struct")
 	}
 
-	// Get Cached model struct
-	if value, ok := modelStructsMap.Load(reflectType); ok && value != nil {
-		return
-	}
 	structName := reflectType.Name()
 	routePrefix := C().GetString("prefix")
 	routePath := fmt.Sprintf("%s/%s", routePrefix, strings.ToLower(structName))
@@ -102,11 +94,11 @@ func RESTful(r *gin.Engine, value interface{}) {
 				)
 			} else {
 				if createMethod != "-" {
-					r.Handle(createMethod, routePath, func(c *gin.Context) {
+					r.Handle(createMethod, routePath, func(c *Context) {
 						var body interface{}
 						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, "Parsing body failed")
+							c.STDErr("Parsing body failed")
 							return
 						}
 						indirectScopeValue := indirect(reflect.ValueOf(body))
@@ -131,28 +123,28 @@ func RESTful(r *gin.Engine, value interface{}) {
 						for _, doc := range docs {
 							tx = tx.Create(doc)
 						}
-						msg := L(c, "新增失败")
+						msg := c.L("新增失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
-							STDErr(c, msg)
+							c.STDErr(msg)
 						} else {
 							if err := tx.Commit().Error; err != nil {
 								ERROR(err)
-								STDErr(c, msg)
+								c.STDErr(msg)
 								return
 							} else {
 								if multi {
-									STD(c, docs)
+									c.STD(docs)
 								} else {
-									STD(c, docs[0])
+									c.STD(docs[0])
 								}
 							}
 						}
 					})
 				}
 				if deleteMethod != "-" {
-					r.Handle(deleteMethod, routePath, func(c *gin.Context) {
+					r.Handle(deleteMethod, routePath, func(c *Context) {
 						var params struct {
 							All   bool
 							Multi bool
@@ -160,18 +152,18 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, L(c, "解析请求体失败"))
+							c.STDErr("解析请求体失败")
 							return
 						}
 						if IsBlank(params.Cond) {
-							STDErr(c, L(c, "删除条件不能为空"))
+							c.STDErr("删除条件不能为空")
 							return
 						}
 						var multi bool
 						if params.Multi || params.All {
 							multi = true
 						}
-						tx := DB(c).Begin()
+						tx := c.DB.Begin()
 
 						var value interface{}
 						params.Cond = underlineMap(params.Cond)
@@ -192,13 +184,12 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if multi {
 							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
 							tx = tx.Find(value)
-							results := reflect.ValueOf(value)
-							for i := 0; i < results.Len(); i++ {
-								item := results.Index(i)
-								DefaultDeleteHandler(item.Interface(), tx, c)
-								results = reflect.Append(results, item.Addr())
+							indirectValue := indirect(reflect.ValueOf(value))
+							if indirectValue.Len() > 0 {
+								value = indirectValue.Index(i).Addr().Interface()
+								DefaultDeleteHandler(value, tx, c)
 							}
-							tx = tx.Delete(reflect.New(reflectType).Interface())
+							tx = tx.Delete(value)
 						} else {
 							value = reflect.New(reflectType).Interface()
 							tx = tx.First(value)
@@ -206,24 +197,24 @@ func RESTful(r *gin.Engine, value interface{}) {
 							tx = tx.Delete(value)
 						}
 
-						msg := L(c, "删除失败")
+						msg := c.L("删除失败")
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
-							STDErr(c, msg)
+							c.STDErr(msg)
 						} else {
 							if err := tx.Commit().Error; err != nil {
 								ERROR(err)
-								STDErr(c, msg)
+								c.STDErr(msg)
 								return
 							} else {
-								STD(c, value)
+								c.STD(value)
 							}
 						}
 					})
 				}
 				if queryMethod != "-" {
-					r.Handle(queryMethod, routePath, func(c *gin.Context) {
+					r.Handle(queryMethod, routePath, func(c *Context) {
 						ret := map[string]interface{}{}
 						// 处理cond
 						var cond map[string]interface{}
@@ -234,7 +225,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 							Parse(rawCond, &retCond)
 							ret["cond"] = retCond
 						}
-						db := DB(c).Model(reflect.New(reflectType).Interface())
+						db := c.DB.Model(reflect.New(reflectType).Interface())
 						if cond != nil {
 							for key, val := range cond {
 								if key == "$and" || key == "$or" {
@@ -345,11 +336,11 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if rawRange == "PAGE" {
 							ret["totalpages"] = int(math.Ceil(float64(totalRecords) / float64(size)))
 						}
-						STD(c, ret)
+						c.STD(ret)
 					})
 				}
 				if updateMethod != "-" {
-					r.Handle(updateMethod, routePath, func(c *gin.Context) {
+					r.Handle(updateMethod, routePath, func(c *Context) {
 						var params struct {
 							All   bool
 							Multi bool
@@ -358,11 +349,11 @@ func RESTful(r *gin.Engine, value interface{}) {
 						}
 						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 							ERROR(err)
-							STDErr(c, L(c, "解析请求体失败"))
+							c.STDErr("解析请求体失败")
 							return
 						}
 						if IsBlank(params.Cond) || IsBlank(params.Doc) {
-							STDErr(c, L(c, "更新条件和内容不能为空"))
+							c.STDErr("更新条件和内容不能为空")
 							return
 						}
 						var multi bool
@@ -370,13 +361,13 @@ func RESTful(r *gin.Engine, value interface{}) {
 							multi = true
 						}
 						if IsBlank(params.Cond) && !multi {
-							STDErr(c, L(c, "必须指定批量更新标记"))
+							c.STDErr("必须指定批量更新标记")
 							return
 						}
 
 						// 执行更新
 						tx := DB().Begin().Model(reflect.New(reflectType).Interface())
-						msg := L(c, "修改失败")
+						msg := c.L("修改失败")
 						// 处理更新条件
 						for key, val := range params.Cond {
 							if m, ok := val.(map[string]interface{}); ok {
@@ -414,7 +405,7 @@ func RESTful(r *gin.Engine, value interface{}) {
 									dv := df.Field.Interface()
 									if err := field.Set(dv); err != nil {
 										ERROR(err)
-										STDErr(c, msg)
+										c.STDErr(msg)
 										return false
 									}
 								}
@@ -441,14 +432,14 @@ func RESTful(r *gin.Engine, value interface{}) {
 						if errs := tx.GetErrors(); len(errs) > 0 {
 							ERROR(errs)
 							tx.Rollback()
-							STDErr(c, msg)
+							c.STDErr(msg)
 						} else {
 							if err := tx.Commit().Error; err != nil {
 								ERROR(err)
-								STDErr(c, msg)
+								c.STDErr(msg)
 								return
 							} else {
-								STD(c, value)
+								c.STD(value)
 							}
 						}
 					})

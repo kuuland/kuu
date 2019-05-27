@@ -11,7 +11,7 @@ import (
 )
 
 // LoginHandlerFunc
-type LoginHandlerFunc func(*gin.Context) (jwt.MapClaims, uint, error)
+type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
 
 var (
 	TokenKey       = "Token"
@@ -26,7 +26,8 @@ const (
 	RedisOrgKey    = "org"
 )
 
-func whiteListCheck(c *gin.Context) bool {
+// InWhiteList
+func InWhiteList(c *gin.Context) bool {
 	if len(WhiteList) == 0 {
 		return false
 	}
@@ -40,7 +41,7 @@ func whiteListCheck(c *gin.Context) bool {
 	return false
 }
 
-func saveHistory(c *gin.Context, secretData *SignSecret) {
+func saveHistory(c *Context, secretData *SignSecret) {
 	var body map[string]interface{}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		ERROR(err)
@@ -107,10 +108,10 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	data.OrgID = org.OrgID
 	// 验证令牌
 	if secret.Secret == "" {
-		return nil, errors.New(LFull(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": data.UID, "token": token}))
+		return nil, errors.New(Lang(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": data.UID, "token": token}))
 	}
 	if secret.Method == "LOGOUT" {
-		return nil, errors.New(LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
+		return nil, errors.New(Lang(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
 	}
 	data.Secret = &secret
 	data.Payload = DecodedToken(token, secret.Secret)
@@ -121,13 +122,13 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 }
 
 // EncodedToken
-func EncodedToken(claims jwt.MapClaims, secret string) string {
+func EncodedToken(claims jwt.MapClaims, secret string) (signed string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(secret))
+	signed, err = token.SignedString([]byte(secret))
 	if err != nil {
-		ERROR(err)
+		return
 	}
-	return tokenString
+	return
 }
 
 // DecodedToken
@@ -162,7 +163,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 		Middleware: gin.HandlersChain{
 			AuthMiddleware,
 		},
-		Routes: gin.RoutesInfo{
+		Routes: KuuRoutesInfo{
 			LoginRoute,
 			LogoutRoute,
 			ValidRoute,

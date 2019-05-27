@@ -8,6 +8,7 @@ require (
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jinzhu/gorm v1.9.8
+	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/pkg/errors v0.8.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0

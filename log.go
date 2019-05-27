@@ -61,12 +61,20 @@ func ERROR(args ...interface{}) {
 
 // FATAL
 func FATAL(args ...interface{}) {
+	switch args[0].(type) {
+	case error:
+		args[0] = args[0].(error).Error()
+	}
 	format, a := split(args...)
 	Logger.Fatalf(format, a...)
 }
 
 // PANIC
 func PANIC(args ...interface{}) {
+	switch args[0].(type) {
+	case error:
+		args[0] = args[0].(error).Error()
+	}
 	format, a := split(args...)
 	Logger.Panicf(format, a...)
 }

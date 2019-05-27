@@ -377,7 +377,9 @@ func initSys() {
 		// 初始化字典、菜单
 		createPresetDicts(tx)
 		createPresetMenus(tx)
-		createMockData(tx)
+		if C().GetBool("mock") {
+			createMockData(tx)
+		}
 		// 保存初始化标记
 		param := Param{
 			Code:      initCode,
@@ -410,6 +412,10 @@ func GetSignContext(c *gin.Context) (sign *SignContext) {
 	} else {
 		if v, err := DecodedContext(c); err == nil {
 			sign = v
+		} else {
+			if !InWhiteList(c) {
+				PANIC(err)
+			}
 		}
 	}
 	return
@@ -468,37 +474,12 @@ func GetUserRoles(c *gin.Context, uid uint) (*User, error) {
 	return &user, nil
 }
 
-// GetUserOrgs 查询用户组织
-func GetUserOrgs(c *gin.Context, roles *[]Role) (*[]Org, error) {
-	var orgs []Org
-	if roles == nil {
-		return &orgs, errors.New(L(c, "角色列表不存在"))
-	}
-	// 提取组织ID
-	var orgIDs []uint
-	for _, role := range *roles {
-		if role.DataPrivileges != nil {
-			for _, item := range role.DataPrivileges {
-				if item.OrgID != 0 {
-					orgIDs = append(orgIDs, item.OrgID)
-				}
-			}
-		}
-	}
-	// 查询组织列表
-	if errs := DB().Where("id in (?)", orgIDs).Find(&orgs).GetErrors(); len(errs) > 0 {
-		ERROR(errs)
-		return &orgs, errors.New(L(c, "查询角色失败"))
-	}
-	return &orgs, nil
-}
-
 // ExecOrgLogin
-func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
+func ExecOrgLogin(sign *SignContext, orgID uint) (*Org, error) {
 	var orgData Org
 	if errs := DB().Where("id = ?", orgID).First(&orgData).GetErrors(); len(errs) > 0 || orgData.ID == 0 {
 		ERROR(errs)
-		return &orgData, errors.New(L(c, "组织不存在"))
+		return &orgData, errors.New("组织不存在")
 	}
 	// 新增登入记录
 	signOrg := SignOrg{
@@ -510,7 +491,7 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 	signOrg.UpdatedByID = sign.UID
 	if errs := DB().Create(&signOrg).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &orgData, errors.New(L(c, "组织登录失败"))
+		return &orgData, errors.New("创建组织登入记录失败")
 	}
 	// 缓存secret至redis
 	key := RedisKeyBuilder(RedisOrgKey, signOrg.Token)
@@ -521,7 +502,7 @@ func ExecOrgLogin(c *gin.Context, sign *SignContext, orgID uint) (*Org, error) {
 	return &orgData, nil
 }
 
-func defaultLoginHandler(c *gin.Context) (jwt.MapClaims, uint, error) {
+func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 	body := struct {
 		Username string
 		Password string
@@ -529,21 +510,21 @@ func defaultLoginHandler(c *gin.Context) (jwt.MapClaims, uint, error) {
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		ERROR(err)
-		return nil, 0, errors.New(L(c, "解析请求体失败"))
+		return nil, 0, errors.New(c.L("解析请求体失败"))
 	}
 	// 检测账号是否存在
 	var user User
 	if err := DB().Where(&User{Username: body.Username}).First(&user).Error; err != nil {
 		ERROR(err)
-		return nil, 0, errors.New(L(c, "用户不存在"))
+		return nil, 0, errors.New(c.L("用户不存在"))
 	}
 	// 检测账号是否有效
 	if user.Disable {
-		return nil, 0, errors.New(L(c, "该用户已被禁用"))
+		return nil, 0, errors.New(c.L("该用户已被禁用"))
 	}
 	// 检测密码是否正确
 	if !CompareHashAndPassword(user.Password, body.Password) {
-		return nil, 0, errors.New(L(c, "账号密码不一致"))
+		return nil, 0, errors.New(c.L("账号密码不一致"))
 	}
 	payload := jwt.MapClaims{
 		"UID":       user.ID,
@@ -583,7 +564,7 @@ func Sys() *Mod {
 		Middleware: gin.HandlersChain{
 			OrgMiddleware,
 		},
-		Routes: gin.RoutesInfo{
+		Routes: KuuRoutesInfo{
 			OrgLoginRoute,
 			OrgListRoute,
 			OrgCurrentRoute,

@@ -5,6 +5,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	"github.com/jtolds/gls"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,8 +14,63 @@ import (
 	"time"
 )
 
+// KuuHandlerFunc defines the handler used by ok middleware as return value.
+type KuuHandlerFunc func(*Context)
+
+// KuuHandlersChain defines a KuuHandlerFunc array.
+type KuuHandlersChain []KuuHandlerFunc
+
+// RouteInfo represents a request route's specification which contains method and path and its handler.
+type KuuRouteInfo struct {
+	Method      string
+	Path        string
+	HandlerFunc KuuHandlerFunc
+}
+
+// RoutesInfo defines a RouteInfo array.
+type KuuRoutesInfo []KuuRouteInfo
+
+// Engine
 type Engine struct {
 	*gin.Engine
+}
+
+// Context
+type Context struct {
+	*gin.Context
+	DB       *gorm.DB
+	SignInfo *SignContext
+	PrisDesc *PrivilegesDesc
+}
+
+// L
+func (c *Context) L(defaultValue string, args ...interface{}) string {
+	return L(c.Context, defaultValue, args...)
+}
+
+// Lang
+func (c *Context) Lang(key string, defaultValue string, args interface{}) string {
+	return Lang(c.Context, key, defaultValue, args)
+}
+
+// STD
+func (c *Context) STD(data interface{}, msg ...string) *STDRender {
+	return STD(c.Context, data, msg...)
+}
+
+// STDErr
+func (c *Context) STDErr(msg string, code ...int32) *STDRender {
+	return STDErr(c.Context, msg, code...)
+}
+
+// STDHold
+func (c *Context) STDHold(data interface{}, msg ...string) *STDRender {
+	return STDHold(c.Context, data, msg...)
+}
+
+// STDErrHold
+func (c *Context) STDErrHold(msg string, code ...int32) *STDRender {
+	return STDErrHold(c.Context, msg, code...)
 }
 
 // Default
@@ -30,15 +87,14 @@ func New() (e *Engine) {
 	return
 }
 
-func resolveAddress(addr []string) string {
-	switch len(addr) {
-	case 0:
-		return ":8080"
-	case 1:
-		return addr[0]
-	default:
-		panic("too much parameters")
-	}
+// SetValues
+func SetValues(values gls.Values, call func()) {
+	mgr.SetValues(values, call)
+}
+
+// GetValue
+func GetValue(key interface{}) (value interface{}, ok bool) {
+	return mgr.GetValue(key)
 }
 
 func shutdown(srv *http.Server) {
@@ -97,11 +153,6 @@ func (e *Engine) RunTLS(addr, certFile, keyFile string) {
 	shutdown(srv)
 }
 
-// Import
-func (e *Engine) Import(mods ...*Mod) {
-	Import(e.Engine, mods...)
-}
-
 // RESTful
 func (e *Engine) RESTful(values ...interface{}) {
 	if len(values) == 0 {
@@ -109,19 +160,83 @@ func (e *Engine) RESTful(values ...interface{}) {
 	}
 	for _, v := range values {
 		if v != nil {
-			RESTful(e.Engine, v)
+			RESTful(e, v)
 		}
 	}
 }
 
-func connectedPrint(name, args string) {
-	INFO("%-8s is connected: %s", name, args)
+func (e *Engine) convertGinHandlers(chain KuuHandlersChain) (handlers gin.HandlersChain) {
+	handlers = make(gin.HandlersChain, len(chain))
+	for index, handler := range chain {
+		handlers[index] = func(c *gin.Context) {
+			kuuContext := &Context{
+				Context:  c,
+				DB:       DB(c),
+				SignInfo: GetSignContext(c),
+				PrisDesc: GetPrivilegesDesc(c),
+			}
+			SetValues(gls.Values{
+				"SignContext": kuuContext.SignInfo,
+				"PrisDesc":    kuuContext.PrisDesc,
+			}, func() {
+				handler(kuuContext)
+			})
+		}
+	}
+	return
 }
 
-func onInit(e *Engine) {
-	initDataSources()
-	initRedis()
+// Overrite r.Group
+func (e *Engine) Group(relativePath string, handlers ...KuuHandlerFunc) *gin.RouterGroup {
+	return e.Engine.Group(relativePath, e.convertGinHandlers(handlers)...)
+}
 
+// Overrite r.Handle
+func (e *Engine) Handle(httpMethod, relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.Handle(httpMethod, relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.POST
+func (e *Engine) POST(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.POST(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.GET
+func (e *Engine) GET(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.GET(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.DELETE
+func (e *Engine) DELETE(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.DELETE(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.PATCH
+func (e *Engine) PATCH(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.PATCH(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.PUT
+func (e *Engine) PUT(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.PUT(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.OPTIONS
+func (e *Engine) OPTIONS(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.OPTIONS(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.HEAD
+func (e *Engine) HEAD(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.HEAD(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+// Overrite r.Any
+func (e *Engine) Any(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+	return e.Engine.Any(relativePath, e.convertGinHandlers(handlers)...)
+}
+
+func (e *Engine) initConfigs() {
 	if _, exists := C().Get("cors"); exists {
 		if C().GetBool("cors") {
 			e.Use(cors.Default())
@@ -143,4 +258,25 @@ func onInit(e *Engine) {
 			}
 		}
 	}
+}
+
+func resolveAddress(addr []string) string {
+	switch len(addr) {
+	case 0:
+		return ":8080"
+	case 1:
+		return addr[0]
+	default:
+		panic("too much parameters")
+	}
+}
+
+func connectedPrint(name, args string) {
+	INFO("%-8s is connected: %s", name, args)
+}
+
+func onInit(e *Engine) {
+	initDataSources()
+	initRedis()
+	e.initConfigs()
 }

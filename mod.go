@@ -11,45 +11,40 @@ var metadata = make(map[string]*Metadata)
 // Mod
 type Mod struct {
 	Middleware  gin.HandlersChain
-	Routes      gin.RoutesInfo
+	Routes      KuuRoutesInfo
 	Models      []interface{}
 	AfterImport func()
 }
 
 // Import
-func Import(r *gin.Engine, mods ...*Mod) {
+func (e *Engine) Import(mods ...*Mod) {
 	for _, mod := range mods {
 		for _, middleware := range mod.Middleware {
 			if middleware != nil {
-				r.Use(middleware)
+				e.Engine.Use(middleware)
 			}
 		}
 	}
 	for _, mod := range mods {
 		for _, route := range mod.Routes {
 			if route.Path == "" || route.HandlerFunc == nil {
-				continue
+				PANIC("Route path and handler can't be nil")
 			}
 			if route.Method == "" {
 				route.Method = "GET"
 			}
 			routePath := path.Join(C().GetString("prefix"), route.Path)
 			if route.Method == "*" {
-				r.Any(routePath, route.HandlerFunc)
+				e.Any(routePath, route.HandlerFunc)
 			} else {
-				r.Handle(route.Method, routePath, route.HandlerFunc)
+				e.Handle(route.Method, routePath, route.HandlerFunc)
 			}
 		}
 		for _, model := range mod.Models {
-			if model == nil {
-				continue
-			}
-
+			RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
 				metadata[meta.Name] = meta
 			}
-
-			RESTful(r, model)
 		}
 		if mod.AfterImport != nil {
 			mod.AfterImport()
@@ -58,9 +53,6 @@ func Import(r *gin.Engine, mods ...*Mod) {
 }
 
 func parseMetadata(value interface{}) (m *Metadata) {
-	if value == nil {
-		return
-	}
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()

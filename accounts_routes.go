@@ -1,23 +1,23 @@
 package kuu
 
 import (
-	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"time"
 )
 
 // LoginRoute
-var LoginRoute = gin.RouteInfo{
+var LoginRoute = KuuRouteInfo{
 	Method: "POST",
 	Path:   "/login",
-	HandlerFunc: func(c *gin.Context) {
+	HandlerFunc: func(c *Context) {
 		// 调用登录处理器获取登录数据
 		if loginHandler == nil {
 			PANIC("login handler not configured")
 		}
 		payload, uid, err := loginHandler(c)
 		if err != nil {
-			STDErr(c, err.Error())
+			// Note: 登录处理器错误直接返回错误信息
+			c.STDErr(err.Error())
 			return
 		}
 		// 设置JWT令牌信息
@@ -35,14 +35,19 @@ var LoginRoute = gin.RouteInfo{
 			Method: "LOGIN",
 		}
 		// 签发令牌
-		secretData.Token = EncodedToken(payload, secretData.Secret)
+		if signed, err := EncodedToken(payload, secretData.Secret); err != nil {
+			c.STDErrHold("令牌签发失败").Data(err).Render()
+			return
+		} else {
+			secretData.Token = signed
+		}
 		payload[TokenKey] = secretData.Token
 		DB().Create(&secretData)
 		// 缓存secret至redis
 		key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
 		value := Stringify(&secretData)
-		if !RedisClient.SetNX(key, value, expiration).Val() {
-			ERROR("Token cache failed")
+		if err := RedisClient.SetNX(key, value, expiration).Err(); err != nil {
+			ERROR("令牌缓存到Redis失败：%s", err.Error())
 		}
 		// 保存登入历史
 		saveHistory(c, &secretData)
@@ -55,30 +60,24 @@ var LoginRoute = gin.RouteInfo{
 		})
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
-		STD(c, payload)
+		c.STD(payload)
 	},
 }
 
 // LogoutRoute
-var LogoutRoute = gin.RouteInfo{
+var LogoutRoute = KuuRouteInfo{
 	Method: "POST",
 	Path:   "/logout",
-	HandlerFunc: func(c *gin.Context) {
-		// 从上下文缓存中读取认证信息
-		var sign *SignContext
-		if v, exists := c.Get(SignContextKey); exists {
-			sign = v.(*SignContext)
-		}
-		if sign.IsValid() {
+	HandlerFunc: func(c *Context) {
+		if c.SignInfo != nil && c.SignInfo.IsValid() {
 			var (
 				secretData SignSecret
 				db         = DB()
 			)
-			db.Where(&SignSecret{UID: sign.UID, Token: sign.Token}).First(&secretData)
+			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
 				if errs := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).GetErrors(); len(errs) > 0 {
-					ERROR(errs)
-					STDErr(c, L(c, "退出登录失败"))
+					c.STDErrHold("退出登录失败").Data(errs).Render()
 					return
 				}
 				// 删除redis缓存
@@ -94,24 +93,20 @@ var LogoutRoute = gin.RouteInfo{
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
 			}
 		}
-		STD(c, L(c, "登录成功"))
+		c.STD("退出成功")
 	},
 }
 
 // ValidRoute
-var ValidRoute = gin.RouteInfo{
+var ValidRoute = KuuRouteInfo{
 	Method: "POST",
 	Path:   "/valid",
-	HandlerFunc: func(c *gin.Context) {
-		var sign *SignContext
-		if v, exists := c.Get(SignContextKey); exists {
-			sign = v.(*SignContext)
-		}
-		if sign.IsValid() {
-			sign.Payload[TokenKey] = sign.Token
-			STD(c, sign.Payload)
+	HandlerFunc: func(c *Context) {
+		if c.SignInfo != nil && c.SignInfo.IsValid() {
+			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
+			c.STD(c.SignInfo.Payload)
 		} else {
-			STDErr(c, LFull(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": sign.Token}), 555)
+			c.STDErr("令牌已过期", 555)
 		}
 	},
 }

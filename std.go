@@ -7,65 +7,159 @@
 package kuu
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 )
 
+var (
+	JSONAction  = "JSON"
+	AbortAction = "ABORT"
+)
+
 type STDRender struct {
-	Context  *gin.Context `json:"-"`
-	HTTPCode int          `json:"-"`
-	Action   string       `json:"-"`
-	Data     interface{}  `json:"data"`
-	Code     int32        `json:"code"`
-	Message  string       `json:"msg"`
+	c        *gin.Context
+	httpCode int
+	action   string
+	data     interface{}
+	code     int32
+	message  string
+}
+
+func std(renderNow bool, c *gin.Context, data interface{}, msg ...string) *STDRender {
+	std := &STDRender{c: c}
+	std.data = data
+	if len(msg) > 0 {
+		std.message = msg[0]
+	}
+	if renderNow {
+		std.Render()
+	}
+	return std
+}
+
+func stdErr(renderNow bool, c *gin.Context, msg string, code ...int32) *STDRender {
+	std := &STDRender{c: c}
+	std.message = msg
+	if len(code) > 0 {
+		std.code = code[0]
+	} else {
+		std.code = -1
+	}
+	if renderNow {
+		std.Render()
+	}
+	return std
 }
 
 // STD
 func STD(c *gin.Context, data interface{}, msg ...string) *STDRender {
-	std := &STDRender{Context: c}
-	std.Data = data
-	if len(msg) > 0 {
-		std.Message = msg[0]
-	}
-	std.Render()
-	return std
+	return std(true, c, data, msg...)
 }
 
 // STDErr
 func STDErr(c *gin.Context, msg string, code ...int32) *STDRender {
-	std := &STDRender{Context: c}
-	std.Message = msg
-	if len(code) > 0 {
-		std.Code = code[0]
-	} else {
-		std.Code = -1
-	}
-	std.Render()
-	return std
+	return stdErr(true, c, msg, code...)
 }
 
-func (r *STDRender) Render(c ...*gin.Context) {
-	if len(c) > 0 {
-		r.Context = c[0]
-	}
-	if r.Context == nil {
+// STDHold
+func STDHold(c *gin.Context, data interface{}, msg ...string) *STDRender {
+	return std(false, c, data, msg...)
+}
+
+// STDErrHold
+func STDErrHold(c *gin.Context, msg string, code ...int32) *STDRender {
+	return stdErr(false, c, msg, code...)
+}
+
+// Context
+func (r *STDRender) Context(c *gin.Context) *STDRender {
+	r.c = c
+	return r
+}
+
+// GetContext
+func (r *STDRender) GetContext() *gin.Context {
+	return r.c
+}
+
+// Data
+func (r *STDRender) Data(data interface{}) *STDRender {
+	r.data = data
+	return r
+}
+
+// Code
+func (r *STDRender) Code(code int32) *STDRender {
+	r.code = code
+	return r
+}
+
+// Message
+func (r *STDRender) Message(message string) *STDRender {
+	r.message = message
+	return r
+}
+
+// Action
+func (r *STDRender) Action(action string) *STDRender {
+	r.action = action
+	return r
+}
+
+// JSON
+func (r *STDRender) JSON() *STDRender {
+	r.action = JSONAction
+	return r
+}
+
+// Abort
+func (r *STDRender) Abort() *STDRender {
+	r.action = AbortAction
+	return r
+}
+
+// HTTPCode
+func (r *STDRender) HTTPCode(httpCode int) *STDRender {
+	r.httpCode = httpCode
+	return r
+}
+
+// Render
+func (r *STDRender) Render() {
+	if r.c == nil {
 		return
 	}
-	if r.Action == "" {
-		r.Action = "JSON"
+	if r.action == "" {
+		r.action = "JSON"
 	}
-	if r.HTTPCode == 0 {
-		r.HTTPCode = http.StatusOK
+	if r.httpCode == 0 {
+		r.httpCode = http.StatusOK
 	}
-	r.Action = strings.TrimSpace(strings.ToUpper(r.Action))
-	switch r.Action {
-	case "JSON":
-		r.Context.JSON(r.HTTPCode, r)
-	case "ABORT":
-		r.Context.AbortWithStatusJSON(r.HTTPCode, r)
+	if r.code != 0 {
+		if v, ok := r.data.(error); ok {
+			ERROR(v)
+		} else if v, ok := r.data.([]error); ok {
+			ERROR(v)
+		}
+	}
+	r.action = strings.TrimSpace(strings.ToUpper(r.action))
+	r.message = L(r.Context, r.message)
+
+	ret := make(map[string]interface{})
+	ret["code"] = r.code
+	if !IsBlank(r.data) {
+		ret["data"] = r.data
+	}
+	if r.message != "" {
+		ret["msg"] = r.message
+	}
+	switch r.action {
+	case JSONAction:
+		r.c.JSON(r.httpCode, ret)
+	case AbortAction:
+		r.c.AbortWithStatusJSON(r.httpCode, ret)
 	default:
-		fmt.Errorf(`invalid action: %s, please use "c.%s" instead`, r.Action, r.Action)
+		PANIC(`invalid action, try "c.%s"`, r.action)
 	}
 }

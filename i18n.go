@@ -26,14 +26,14 @@ func (Language) TableName() string {
 // L
 func L(langOrContext interface{}, defaultValue string, args ...interface{}) string {
 	if len(args) > 0 {
-		return LFull(langOrContext, "", defaultValue, args[0])
+		return Lang(langOrContext, "", defaultValue, args[0])
 	} else {
-		return LFull(langOrContext, "", defaultValue, nil)
+		return Lang(langOrContext, "", defaultValue, nil)
 	}
 }
 
-// LFull
-func LFull(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
+// Lang
+func Lang(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
 	lang := parseLang(langOrContext)
 	if lang == "" {
 		lang = "zh"

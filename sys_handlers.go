@@ -6,8 +6,8 @@ import (
 )
 
 // DefaultCreateHandler
-var DefaultCreateHandler = func(docs []interface{}, tx *gorm.DB, c *gin.Context) {
-	sign := GetSignContext(c)
+var DefaultCreateHandler = func(docs []interface{}, tx *gorm.DB, c *Context) {
+	sign := c.SignInfo
 	if sign == nil || sign.OrgID == 0 {
 		return
 	}
@@ -33,8 +33,8 @@ var DefaultCreateHandler = func(docs []interface{}, tx *gorm.DB, c *gin.Context)
 }
 
 // DefaultDeleteHandler
-var DefaultDeleteHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
-	sign := GetSignContext(c)
+var DefaultDeleteHandler = func(doc interface{}, tx *gorm.DB, c *Context) {
+	sign := c.SignInfo
 	if sign == nil || sign.OrgID == 0 {
 		return
 	}
@@ -48,8 +48,8 @@ var DefaultDeleteHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
 }
 
 // DefaultUpdateHandler
-var DefaultUpdateHandler = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
-	sign := GetSignContext(c)
+var DefaultUpdateHandler = func(doc interface{}, tx *gorm.DB, c *Context) {
+	sign := c.SignInfo
 	if sign == nil || sign.OrgID == 0 {
 		return
 	}
