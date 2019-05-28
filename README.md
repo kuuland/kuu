@@ -539,26 +539,26 @@ func MyMod() *kuu.Mod {
 			&Profile{},
 		},
 		Middleware: gin.HandlersChain{
-            func(c *gin.Context) {
-                // Auth middleware
-            },
-        },
-        Routes: kuu.RoutesInfo{
-            gin.RouteInfo{
-                Method: "POST",
-                Path:   "/login",
-                HandlerFunc: func(c *kuu.Context) {
-                    // POST /login
-                },
-            },
-            gin.RouteInfo{
-                Method: "POST",
-                Path:   "/logout",
-                HandlerFunc: func(c *kuu.Context) {
-                    // POST /logout
-                },
-            },
-        },
+			func(c *gin.Context) {
+				// Auth middleware
+			},
+		},
+		Routes: kuu.RoutesInfo{
+			kuu.RouteInfo{
+				Method: "POST",
+				Path:   "/login",
+				HandlerFunc: func(c *kuu.Context) {
+					// POST /login
+				},
+			},
+			kuu.RouteInfo{
+				Method: "POST",
+				Path:   "/logout",
+				HandlerFunc: func(c *kuu.Context) {
+					// POST /logout
+				},
+			},
+		},
 	}
 }
 
