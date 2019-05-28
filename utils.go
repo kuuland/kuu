@@ -33,7 +33,10 @@ func IsBlank(value interface{}) bool {
 	case reflect.Interface, reflect.Ptr:
 		return indirectValue.IsNil()
 	}
-
+	vi := reflect.ValueOf(value)
+	if vi.Kind() == reflect.Ptr {
+		return vi.IsNil()
+	}
 	return reflect.DeepEqual(indirectValue.Interface(), reflect.Zero(indirectValue.Type()).Interface())
 }
 

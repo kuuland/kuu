@@ -62,11 +62,23 @@ func DelPrisCache() {
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID            uint
-	OrgID          uint
 	Codes          []string
 	Permissions    map[string]int64
 	ReadableOrgIDs []uint
 	WritableOrgIDs []uint
+	Valid          bool
+	SignOrgID      uint
+	SignInfo       *SignContext
+}
+
+// IsValid
+func (desc *PrivilegesDesc) IsValid() bool {
+	return desc != nil && desc.Valid && desc.SignInfo != nil && desc.SignInfo.IsValid()
+}
+
+// NotRootUser
+func (desc *PrivilegesDesc) NotRootUser() bool {
+	return desc.IsValid() && desc.UID != RootUID()
 }
 
 // LoginOrgFilter
@@ -106,8 +118,9 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 
 	// 从缓存取
 	if desc = GetPrisCache(sign); desc != nil {
-		desc.OrgID = sign.OrgID
 		LoginOrgFilter(desc, sign)
+		desc.SignOrgID = sign.OrgID
+		desc.SignInfo = sign
 		return
 	}
 	// 重新计算
@@ -118,8 +131,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	}
 	desc = &PrivilegesDesc{
 		UID:         sign.UID,
-		OrgID:       sign.OrgID,
 		Permissions: make(map[string]int64),
+		Valid:       true,
 	}
 	type orange struct {
 		readable string
@@ -216,5 +229,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	// 添加缓存
 	SetPrisCache(sign, desc, roleIDs)
 	LoginOrgFilter(desc, sign)
+	desc.SignOrgID = sign.OrgID
+	desc.SignInfo = sign
 	return
 }

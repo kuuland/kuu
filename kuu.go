@@ -19,6 +19,10 @@ var (
 	PrisDescKey = "PrisDesc"
 	// SignInfoKey
 	SignInfoKey = "SignInfo"
+	// IgnoreAuthKey
+	IgnoreAuthKey = "IgnoreAuth"
+	// ValuesKey
+	ValuesKey = "Values"
 )
 
 // KuuHandlerFunc defines the handler used by ok middleware as return value.
@@ -42,11 +46,15 @@ type Engine struct {
 	*gin.Engine
 }
 
+// Values
+type Values map[string]interface{}
+
 // Context
 type Context struct {
 	*gin.Context
 	SignInfo *SignContext
 	PrisDesc *PrivilegesDesc
+	Values   *Values
 }
 
 // L
@@ -77,6 +85,30 @@ func (c *Context) STDHold(data interface{}, msg ...string) *STDRender {
 // STDErrHold
 func (c *Context) STDErrHold(msg string, code ...int32) *STDRender {
 	return STDErrHold(c.Context, msg, code...)
+}
+
+// SetValue
+func (c *Context) SetValue(key string, value interface{}) {
+	(*c.Values)[key] = value
+}
+
+// DelValue
+func (c *Context) DelValue(key string) {
+	delete((*c.Values), key)
+}
+
+// GetValue
+func (c *Context) GetValue(key string) interface{} {
+	return (*c.Values)[key]
+}
+
+// IgnoreAuth
+func (c *Context) IgnoreAuth(cancel ...bool) {
+	if len(cancel) > 0 && cancel[0] == true {
+		c.DelValue(IgnoreAuthKey)
+	} else {
+		c.SetValue(IgnoreAuthKey, true)
+	}
 }
 
 // Default
@@ -179,13 +211,18 @@ func (e *Engine) convertGinHandlers(chain KuuHandlersChain) (handlers gin.Handle
 				Context: c,
 			}
 			if !InWhiteList(c) {
-				kc.SignInfo = GetSignContext(c)
-				kc.PrisDesc = GetPrivilegesDesc(c)
+				sign := GetSignContext(c)
+				desc := GetPrivilegesDesc(c)
+				vals := make(Values)
+				kc.SignInfo = sign
+				kc.PrisDesc = desc
+				kc.Values = &vals
 			}
-			values := make(gls.Values)
-			values[SignInfoKey] = kc.SignInfo
-			values[PrisDescKey] = kc.PrisDesc
-			SetValues(values, func() { handler(kc) })
+			glsVals := make(gls.Values)
+			glsVals[SignInfoKey] = kc.SignInfo
+			glsVals[PrisDescKey] = kc.PrisDesc
+			glsVals[ValuesKey] = kc.Values
+			SetValues(glsVals, func() { handler(kc) })
 		}
 	}
 	return
@@ -286,7 +323,7 @@ func onInit(e *Engine) {
 	e.initConfigs()
 
 	gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
-	gorm.DefaultCallback.Query().Before("gorm:update").Register("kuu:update", UpdateCallback)
-	gorm.DefaultCallback.Query().After("gorm:delete").Register("kuu:delete", DeleteCallback)
-	gorm.DefaultCallback.Query().Before("gorm:create").Register("kuu:create", CreateCallback)
+	gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
+	gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
+	gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 }

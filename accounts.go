@@ -15,7 +15,7 @@ type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
 
 var (
 	TokenKey       = "Token"
-	WhiteList      = []string{"/login"}
+	WhiteList      = []string{"POST /api/login", "POST /login"}
 	ExpiresSeconds = 86400
 	SignContextKey = "SignContext"
 	loginHandler   = defaultLoginHandler
@@ -43,9 +43,7 @@ func InWhiteList(c *gin.Context) bool {
 
 func saveHistory(c *Context, secretData *SignSecret) {
 	var body map[string]interface{}
-	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		ERROR(err)
-	}
+	c.ShouldBindBodyWith(&body, binding.JSON)
 	history := SignHistory{
 		Request: Stringify(map[string]interface{}{
 			"headers": c.Request.Header,

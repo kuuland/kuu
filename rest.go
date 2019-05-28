@@ -119,7 +119,6 @@ func RESTful(r *Engine, value interface{}) {
 							GetSoul(body, doc)
 							docs = append(docs, doc)
 						}
-						CreateCallback(docs, tx, c)
 						for _, doc := range docs {
 							tx = tx.Create(doc)
 						}
@@ -187,13 +186,11 @@ func RESTful(r *Engine, value interface{}) {
 							indirectValue := indirect(reflect.ValueOf(value))
 							if indirectValue.Len() > 0 {
 								value = indirectValue.Index(i).Addr().Interface()
-								DeleteCallback(value, tx, c)
 							}
 							tx = tx.Delete(value)
 						} else {
 							value = reflect.New(reflectType).Interface()
 							tx = tx.First(value)
-							DeleteCallback(value, tx, c)
 							tx = tx.Delete(value)
 						}
 

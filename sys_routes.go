@@ -23,6 +23,7 @@ var OrgLoginRoute = KuuRouteInfo{
 			c.STDErr("解析请求体失败")
 			return
 		}
+		c.IgnoreAuth()
 		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
 			c.STDErrHold("组织登录失败").Data(err).Render()
 		} else {
@@ -36,6 +37,7 @@ var OrgListRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/org/list",
 	HandlerFunc: func(c *Context) {
+		c.IgnoreAuth()
 		sign := c.SignInfo
 		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
 			c.STDErrHold(c.L("获取组织列表失败")).Data(err).Render()
@@ -50,6 +52,7 @@ var OrgCurrentRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/org/current",
 	HandlerFunc: func(c *Context) {
+		c.IgnoreAuth()
 		sign := c.SignInfo
 		var signOrg SignOrg
 		db := DB().Select("org_id").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
@@ -93,6 +96,7 @@ var UserMenusRoute = KuuRouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
+		c.IgnoreAuth()
 		desc := GetPrivilegesDesc(c.Context)
 		var (
 			menus []Menu
