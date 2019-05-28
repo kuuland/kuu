@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
+	"github.com/jinzhu/gorm"
 	"strings"
 	"time"
 )
 
 // Language
 type Language struct {
-	Model `rest`
-	Code  string
-	Name  string
-	Key   string
-	Value string
+	gorm.Model `rest`
+	Code       string
+	Name       string
+	Key        string
+	Value      string
 }
 
 //TableName 设置表名
@@ -33,6 +34,9 @@ func L(langOrContext interface{}, defaultValue string, args ...interface{}) stri
 
 // Lang
 func Lang(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
+	if defaultValue == "" {
+		return defaultValue
+	}
 	lang := parseLang(langOrContext)
 	if lang == "" {
 		lang = "zh"
