@@ -601,7 +601,7 @@ func main() {
         c.STD(200)                          // response: {"data":200,"code":0}
         c.STDErr("New record failed")       // response: {"code":-1,"msg":"New record failed"}
         c.STDErr("New record failed", 555)  // response: {"code":555,"msg":"New record failed"}
-        c.STDErrHold("Token decoding failed", 555).Data(err).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"Error detail"}
+        c.STDErrHold("Token decoding failed", 555).Data(err).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"[err.Error()]"}
     })
 }
 ```
