@@ -161,7 +161,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 		Middleware: gin.HandlersChain{
 			AuthMiddleware,
 		},
-		Routes: KuuRoutesInfo{
+		Routes: RoutesInfo{
 			LoginRoute,
 			LogoutRoute,
 			ValidRoute,

@@ -11,7 +11,7 @@ var metadata = make(map[string]*Metadata)
 // Mod
 type Mod struct {
 	Middleware  gin.HandlersChain
-	Routes      KuuRoutesInfo
+	Routes      RoutesInfo
 	Models      []interface{}
 	AfterImport func()
 }

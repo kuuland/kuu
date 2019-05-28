@@ -6,7 +6,7 @@ import (
 )
 
 // LoginRoute
-var LoginRoute = KuuRouteInfo{
+var LoginRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/login",
 	HandlerFunc: func(c *Context) {
@@ -65,7 +65,7 @@ var LoginRoute = KuuRouteInfo{
 }
 
 // LogoutRoute
-var LogoutRoute = KuuRouteInfo{
+var LogoutRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/logout",
 	HandlerFunc: func(c *Context) {
@@ -98,7 +98,7 @@ var LogoutRoute = KuuRouteInfo{
 }
 
 // ValidRoute
-var ValidRoute = KuuRouteInfo{
+var ValidRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/valid",
 	HandlerFunc: func(c *Context) {

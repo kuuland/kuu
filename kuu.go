@@ -5,7 +5,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"github.com/jtolds/gls"
 	"net/http"
 	"os"
@@ -25,21 +24,21 @@ var (
 	ValuesKey = "Values"
 )
 
-// KuuHandlerFunc defines the handler used by ok middleware as return value.
-type KuuHandlerFunc func(*Context)
+// HandlerFunc defines the handler used by ok middleware as return value.
+type HandlerFunc func(*Context)
 
-// KuuHandlersChain defines a KuuHandlerFunc array.
-type KuuHandlersChain []KuuHandlerFunc
+// HandlersChain defines a HandlerFunc array.
+type HandlersChain []HandlerFunc
 
 // RouteInfo represents a request route's specification which contains method and path and its handler.
-type KuuRouteInfo struct {
+type RouteInfo struct {
 	Method      string
 	Path        string
-	HandlerFunc KuuHandlerFunc
+	HandlerFunc HandlerFunc
 }
 
 // RoutesInfo defines a RouteInfo array.
-type KuuRoutesInfo []KuuRouteInfo
+type RoutesInfo []RouteInfo
 
 // Engine
 type Engine struct {
@@ -48,68 +47,6 @@ type Engine struct {
 
 // Values
 type Values map[string]interface{}
-
-// Context
-type Context struct {
-	*gin.Context
-	SignInfo *SignContext
-	PrisDesc *PrivilegesDesc
-	Values   *Values
-}
-
-// L
-func (c *Context) L(defaultValue string, args ...interface{}) string {
-	return L(c.Context, defaultValue, args...)
-}
-
-// Lang
-func (c *Context) Lang(key string, defaultValue string, args interface{}) string {
-	return Lang(c.Context, key, defaultValue, args)
-}
-
-// STD
-func (c *Context) STD(data interface{}, msg ...string) *STDRender {
-	return STD(c.Context, data, msg...)
-}
-
-// STDErr
-func (c *Context) STDErr(msg string, code ...int32) *STDRender {
-	return STDErr(c.Context, msg, code...)
-}
-
-// STDHold
-func (c *Context) STDHold(data interface{}, msg ...string) *STDRender {
-	return STDHold(c.Context, data, msg...)
-}
-
-// STDErrHold
-func (c *Context) STDErrHold(msg string, code ...int32) *STDRender {
-	return STDErrHold(c.Context, msg, code...)
-}
-
-// SetValue
-func (c *Context) SetValue(key string, value interface{}) {
-	(*c.Values)[key] = value
-}
-
-// DelValue
-func (c *Context) DelValue(key string) {
-	delete((*c.Values), key)
-}
-
-// GetValue
-func (c *Context) GetValue(key string) interface{} {
-	return (*c.Values)[key]
-}
-
-// IgnoreAuth
-func (c *Context) IgnoreAuth(cancel ...bool) {
-	if len(cancel) > 0 && cancel[0] == true {
-		c.DelValue(IgnoreAuthKey)
-	} else {
-		c.SetValue(IgnoreAuthKey, true)
-	}
-}
 
 // Default
 func Default() (e *Engine) {
@@ -203,7 +140,7 @@ func (e *Engine) RESTful(values ...interface{}) {
 	}
 }
 
-func (e *Engine) convertGinHandlers(chain KuuHandlersChain) (handlers gin.HandlersChain) {
+func (e *Engine) convertGinHandlers(chain HandlersChain) (handlers gin.HandlersChain) {
 	handlers = make(gin.HandlersChain, len(chain))
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
@@ -229,52 +166,52 @@ func (e *Engine) convertGinHandlers(chain KuuHandlersChain) (handlers gin.Handle
 }
 
 // Overrite r.Group
-func (e *Engine) Group(relativePath string, handlers ...KuuHandlerFunc) *gin.RouterGroup {
+func (e *Engine) Group(relativePath string, handlers ...HandlerFunc) *gin.RouterGroup {
 	return e.Engine.Group(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.Handle
-func (e *Engine) Handle(httpMethod, relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.Handle(httpMethod, relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.POST
-func (e *Engine) POST(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) POST(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.POST(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.GET
-func (e *Engine) GET(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) GET(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.GET(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.DELETE
-func (e *Engine) DELETE(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) DELETE(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.DELETE(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.PATCH
-func (e *Engine) PATCH(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) PATCH(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.PATCH(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.PUT
-func (e *Engine) PUT(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) PUT(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.PUT(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.OPTIONS
-func (e *Engine) OPTIONS(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) OPTIONS(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.OPTIONS(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.HEAD
-func (e *Engine) HEAD(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.HEAD(relativePath, e.convertGinHandlers(handlers)...)
 }
 
 // Overrite r.Any
-func (e *Engine) Any(relativePath string, handlers ...KuuHandlerFunc) gin.IRoutes {
+func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.Any(relativePath, e.convertGinHandlers(handlers)...)
 }
 
@@ -321,9 +258,4 @@ func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
 	e.initConfigs()
-
-	gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
-	gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
-	gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
-	gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 }

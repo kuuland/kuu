@@ -5,6 +5,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// Define default callbacks
+func init() {
+	gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
+	gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
+	gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
+	gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
+}
+
 // CreateCallback
 var CreateCallback = func(scope *gorm.Scope) {
 	if v, ok := GetValue(PrisDescKey); ok && v != nil {
@@ -42,15 +50,16 @@ var DeleteCallback = func(scope *gorm.Scope) {
 					scope.QuotedTableName(),
 					scope.Quote(deletedByField.DBName),
 					scope.AddToVars(desc.UID),
-					addExtraSpaceIfExist(scope.CombinedConditionSql()),
-					addExtraSpaceIfExist(extraOption),
+					AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+					AddExtraSpaceIfExist(extraOption),
 				)).Exec()
 			}
 		}
 	}
 }
 
-func addExtraSpaceIfExist(str string) string {
+// AddExtraSpaceIfExist
+func AddExtraSpaceIfExist(str string) string {
 	if str != "" {
 		return " " + str
 	}

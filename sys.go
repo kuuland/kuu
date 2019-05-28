@@ -564,7 +564,7 @@ func Sys() *Mod {
 		Middleware: gin.HandlersChain{
 			OrgMiddleware,
 		},
-		Routes: KuuRoutesInfo{
+		Routes: RoutesInfo{
 			OrgLoginRoute,
 			OrgListRoute,
 			OrgCurrentRoute,

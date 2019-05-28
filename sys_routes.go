@@ -10,7 +10,7 @@ import (
 )
 
 // OrgLoginRoute
-var OrgLoginRoute = KuuRouteInfo{
+var OrgLoginRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/org/login",
 	HandlerFunc: func(c *Context) {
@@ -33,7 +33,7 @@ var OrgLoginRoute = KuuRouteInfo{
 }
 
 // OrgListRoute
-var OrgListRoute = KuuRouteInfo{
+var OrgListRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/org/list",
 	HandlerFunc: func(c *Context) {
@@ -48,7 +48,7 @@ var OrgListRoute = KuuRouteInfo{
 }
 
 // OrgCurrentRoute
-var OrgCurrentRoute = KuuRouteInfo{
+var OrgCurrentRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/org/current",
 	HandlerFunc: func(c *Context) {
@@ -68,7 +68,7 @@ var OrgCurrentRoute = KuuRouteInfo{
 }
 
 // UserRolesRoute
-var UserRolesRoute = KuuRouteInfo{
+var UserRolesRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/roles",
 	HandlerFunc: func(c *Context) {
@@ -92,7 +92,7 @@ var UserRolesRoute = KuuRouteInfo{
 }
 
 // UserMenusRoute
-var UserMenusRoute = KuuRouteInfo{
+var UserMenusRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
@@ -115,7 +115,7 @@ var UserMenusRoute = KuuRouteInfo{
 }
 
 // UploadRoute
-var UploadRoute = KuuRouteInfo{
+var UploadRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/upload",
 	HandlerFunc: func(c *Context) {
@@ -155,7 +155,7 @@ var UploadRoute = KuuRouteInfo{
 }
 
 // AuthRoute
-var AuthRoute = KuuRouteInfo{
+var AuthRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/auth",
 	HandlerFunc: func(c *Context) {
@@ -177,7 +177,7 @@ var AuthRoute = KuuRouteInfo{
 }
 
 // MetaRoute
-var MetaRoute = KuuRouteInfo{
+var MetaRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/meta",
 	HandlerFunc: func(c *Context) {

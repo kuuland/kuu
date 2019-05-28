@@ -12,7 +12,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global configuration](#global-configuration)
     - [Data Source Management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
-    - [Global default handlers](#global-default-handlers)
+    - [Global default callbacks](#global-default-callbacks)
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
@@ -65,8 +65,8 @@ import (
 
 func main() {
 	r := kuu.Default()
-	r.GET("/", func(c *gin.Context) {
-		kuu.STD(c, "Hello Kuu.")
+	r.GET("/", func(c *kuu.Context) {
+		c.STD("Hello Kuu.")
 	})
 	r.Import(kuu.Accounts(), kuu.Sys())
 	r.Run()
@@ -133,10 +133,10 @@ Single data source:
 ```
 
 ```go
-r.GET("/ping", func(c *gin.Context) {
+r.GET("/ping", func(c *kuu.Context) {
     var users []user
     kuu.DB().Find(&users)
-    kuu.STD(c, &users)
+    c.STD(&users)
 })
 ```
 
@@ -160,10 +160,10 @@ Multiple data source:
 ```
 
 ```go
-r.GET("/ping", func(c *gin.Context) {
+r.GET("/ping", func(c *kuu.Context) {
     var users []user
     kuu.DB("ds1").Find(&users)
-    kuu.STD(c, &users)
+    c.STD(&users)
 })
 ```
 
@@ -174,7 +174,7 @@ Automatically mount RESTful APIs for struct:
 
 ```go
 type User struct {
-	gorm.Model `rest:"*"`
+	kuu.Model `rest:"*"`
 	Code string
 	Name string
 }
@@ -195,7 +195,7 @@ On other fields:
 
 ```go
 type User struct {
-	gorm.Model
+	kuu.Model
 	Code string `rest:"*"`
 	Name string
 }
@@ -205,7 +205,7 @@ You can also change the default request method:
 
 ```go
 type User struct {
-	gorm.Model `rest:"C:POST;U:PUT;R:GET;D:DELETE"`
+	kuu.Model `rest:"C:POST;U:PUT;R:GET;D:DELETE"`
 	Code string
 	Name string
 }
@@ -219,7 +219,7 @@ Or change route path:
 
 ```go
 type User struct {
-	gorm.Model `rest:"*" route:"profile"`
+	kuu.Model `rest:"*" route:"profile"`
 	Code string
 	Name string
 }
@@ -240,7 +240,7 @@ Or unmount:
 
 ```go
 type User struct {
-	gorm.Model `rest:"C:-;U:PUT;R:GET;D:-"` // unmount all: `rest:"-"`
+	kuu.Model `rest:"C:-;U:PUT;R:GET;D:-"` // unmount all: `rest:"-"`
 	Code string
 	Name string
 }
@@ -429,95 +429,110 @@ curl -X DELETE \
 }'
 ```
 
-### Global default handlers
+### Global default callbacks
 
-You can override the default handlers:
+You can override the default callbacks:
 
 ```go
-// Default create handler
-kuu.CreateCallback = func(docs []interface{}, tx *gorm.DB, c *gin.Context) {
-    sign := GetSignContext(c)
-    if sign == nil || sign.OrgID == 0 {
-        return
-    }
-    for index, doc := range docs {
-        scope := tx.NewScope(doc)
-        // Auto set the organization ID
-        if field, exists := scope.FieldByName("OrgID"); exists {
-            if err := field.Set(sign.OrgID); err != nil {
-                ERROR(err)
-            } else {
-                docs[index] = doc
-            }
-        }
-        // Auto set the creator ID
-        if field, exists := scope.FieldByName("CreatedByID"); exists {
-            if err := field.Set(sign.UID); err != nil {
-                ERROR(err)
-            } else {
-                docs[index] = doc
-            }
-        }
-    }
-}
+// Default create callback
+kuu.CreateCallback = func(scope *gorm.Scope) {
+	if v, ok := GetValue(PrisDescKey); ok && v != nil {
+		desc := v.(*PrivilegesDesc)
+		if desc.IsValid() && !scope.HasError() {
+			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
+				if orgIDField.IsBlank {
+					orgIDField.Set(desc.SignOrgID)
+				}
+			}
+			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
+				createdByField.Set(desc.UID)
+			}
 
-// Default delete handler
-kuu.DeleteCallback = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
-    sign := GetSignContext(c)
-    if sign == nil || sign.OrgID == 0 {
-        return
-    }
-    scope := tx.NewScope(doc)
-    // Auto set the deleter ID
-    if field, exists := scope.FieldByName("DeletedByID"); exists {
-        if err := field.Set(sign.UID); err != nil {
-            ERROR(err)
-        }
-    }
-}
-
-// Default update handler
-kuu.UpdateCallback = func(doc interface{}, tx *gorm.DB, c *gin.Context) {
-	sign := GetSignContext(c)
-	if sign == nil || sign.OrgID == 0 {
-		return
-	}
-	scope := tx.NewScope(doc)
-	// Auto set the modifier ID
-	if field, exists := scope.FieldByName("UpdatedByID"); exists {
-		if err := field.Set(sign.UID); err != nil {
-			ERROR(err)
+			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
+				updatedByField.Set(desc.UID)
+			}
 		}
 	}
 }
 
-// Default where handler
-kuu.QueryCallback(db *gorm.DB, desc *PrivilegesDesc, c *gin.Context) *gorm.DB {
-	if desc != nil && desc.UID != RootUID() {
-		db = db.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+
+// Default delete callback
+kuu.DeleteCallback = func(scope *gorm.Scope) {
+	if v, ok := GetValue(PrisDescKey); ok && v != nil {
+		desc := v.(*PrivilegesDesc)
+		if desc.IsValid() && !scope.HasError() {
+			var extraOption string
+			if str, ok := scope.Get("gorm:delete_option"); ok {
+				extraOption = fmt.Sprint(str)
+			}
+			deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
+			if !scope.Search.Unscoped && hasDeletedByField {
+				scope.Raw(fmt.Sprintf(
+					"UPDATE %v SET %v=%v%v%v",
+					scope.QuotedTableName(),
+					scope.Quote(deletedByField.DBName),
+					scope.AddToVars(desc.UID),
+					kuu.AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+					kuu.AddExtraSpaceIfExist(extraOption),
+				)).Exec()
+			}
+		}
 	}
-	return db
+}
+
+// Default update callback
+kuu.UpdateCallback = func(scope *gorm.Scope) {
+	if v, ok := GetValue(PrisDescKey); ok && v != nil {
+		desc := v.(*PrivilegesDesc)
+		if desc.IsValid() {
+			scope.SetColumn("UpdatedByID", desc.UID)
+		}
+	}
+}
+
+// Default query callback
+kuu.QueryCallback = func(scope *gorm.Scope) {
+	rawDesc, _ := GetValue(PrisDescKey)
+	rawValues, _ := GetValue(ValuesKey)
+
+	if !IsBlank(rawDesc) {
+		if !IsBlank(rawValues) {
+			values := make(Values)
+			values = *(rawValues.(*Values))
+			if _, ok := values[IgnoreAuthKey]; ok {
+				return
+			}
+		}
+		desc := rawDesc.(*PrivilegesDesc)
+		if desc.NotRootUser() {
+			_, hasOrgIDField := scope.FieldByName("OrgID")
+			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+			if hasOrgIDField && hasCreatedByIDField {
+				scope.Search.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+			}
+		}
+	}
 }
 ```
 
 ### Modular project structure
 
-Kuu will automatically mount routes, middleware and struct RESTful APIs after `kuu.Import`:
+Kuu will automatically mount routes, middleware and struct RESTful APIs after `Import`:
 
 ```go
 type User struct {
-	gorm.Model `rest`
+	kuu.Model `rest`
 	Username string
 	Password string
 }
 
 type Profile struct {
-	gorm.Model `rest`
+	kuu.Model `rest`
 	Nickname string
 	Age int
 }
 
-func All() *kuu.Mod {
+func MyMod() *kuu.Mod {
 	return &kuu.Mod{
 		Models: []interface{}{
 			&User{},
@@ -528,18 +543,18 @@ func All() *kuu.Mod {
                 // Auth middleware
             },
         },
-        Routes: gin.RoutesInfo{
+        Routes: kuu.RoutesInfo{
             gin.RouteInfo{
                 Method: "POST",
                 Path:   "/login",
-                HandlerFunc: func(c *gin.Context) {
+                HandlerFunc: func(c *kuu.Context) {
                     // POST /login
                 },
             },
             gin.RouteInfo{
                 Method: "POST",
                 Path:   "/logout",
-                HandlerFunc: func(c *gin.Context) {
+                HandlerFunc: func(c *kuu.Context) {
                     // POST /logout
                 },
             },
@@ -548,10 +563,9 @@ func All() *kuu.Mod {
 }
 
 func main() {
-	defer kuu.Release()
 	r := kuu.Default()
-	kuu.Import(r, All())                       // import custom module
-	kuu.Import(r, accounts.All(), sys.All())   // import preset modules
+	r.Import(kuu.Accounts(), kuu.Sys())   // import preset modules
+	r.Import(MyMod())                       // import custom module
 }
 ```
 
@@ -581,16 +595,21 @@ func main() {
 ```go
 func main() {
 	r := kuu.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		// 'kuu.STD' Can only be called once
-        kuu.STD(c, "hello")                      // response: {"data":"hello","code":0,"msg":""}
-        kuu.STD(c, "hello", "Success")           // response: {"data":"hello","code":0,"msg":"Success"}
-        kuu.STD(c, 200)                          // response: {"data":200,"code":0,"msg":""}
-        kuu.STDErr(c, "New record failed")       // response: {"data":null,"code":-1,"msg":"New record failed"}
-        kuu.STDErr(c, "New record failed", 555)  // response: {"data":null,"code":555,"msg":"New record failed"}
+	r.GET("/ping", func(c *kuu.Context) {
+        c.STD("hello")                                                     // response: {"data":"hello","code":0}
+        c.STD("hello", "Success")                                          // response: {"data":"hello","code":0,"msg":"Success"}
+        c.STD(200)                                                         // response: {"data":200,"code":0}
+        c.STDErr("New record failed")                                      // response: {"code":-1,"msg":"New record failed"}
+        c.STDErr("New record failed", 555)                                 // response: {"code":555,"msg":"New record failed"}
+        c.STDErrHold("Token decoding failed", 555).Data(err).Render()      // response: {"code":555,"msg":"Token decoding failed","data":"Error detail"}
     })
 }
 ```
+
+**Notes:**
+
+- If `data == error`, Kuu will call `ERROR(data)` to output the log.
+- All message will call `kuu.L(c, msg)` for i18n before the response.
 
 ### Common functions
 
@@ -610,8 +629,9 @@ func main() {
 ### Get login context
 
 ```go
-r.Use(func (c *gin.Context){
-	sign := kuu.GetSignContext(c)
+r.GET(func (c *kuu.Context){
+	c.SignInfo // Login user info
+	c.PrisDesc // Login user privileges
 })
 ```
 
