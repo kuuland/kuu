@@ -12,9 +12,7 @@ func OrgMiddleware(c *gin.Context) {
 	if v, exists := c.Get(SignContextKey); exists {
 		sign = v.(*SignContext)
 	} else {
-		if v, err := DecodedContext(c); err != nil {
-			ERROR(err)
-		} else {
+		if v, err := DecodedContext(c); err == nil {
 			sign = v
 		}
 	}

@@ -14,8 +14,14 @@ import (
 type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
 
 var (
-	TokenKey       = "Token"
-	WhiteList      = []interface{}{"POST /api/login", "POST /login", "GET /"}
+	TokenKey  = "Token"
+	WhiteList = []interface{}{
+		"GET /",
+		"GET /favicon.ico",
+		"POST /api/login",
+		"POST /login",
+		regexp.MustCompile("GET /assets"),
+	}
 	ExpiresSeconds = 86400
 	SignContextKey = "SignContext"
 	loginHandler   = defaultLoginHandler

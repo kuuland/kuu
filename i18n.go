@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
-	"github.com/jinzhu/gorm"
 	"strings"
 	"time"
 )
 
 // Language
 type Language struct {
-	gorm.Model `rest`
-	Code       string
-	Name       string
-	Key        string
-	Value      string
+	Model `rest`
+	Code  string
+	Name  string
+	Key   string
+	Value string
 }
 
 //TableName 设置表名

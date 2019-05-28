@@ -556,6 +556,7 @@ func Sys() *Mod {
 			&Metadata{},
 			&MetadataField{},
 			&Route{},
+			&Language{},
 		},
 		Middleware: gin.HandlersChain{
 			OrgMiddleware,
