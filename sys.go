@@ -412,10 +412,6 @@ func GetSignContext(c *gin.Context) (sign *SignContext) {
 	} else {
 		if v, err := DecodedContext(c); err == nil {
 			sign = v
-		} else {
-			if !InWhiteList(c) {
-				PANIC(err)
-			}
 		}
 	}
 	return

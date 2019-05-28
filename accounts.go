@@ -15,7 +15,7 @@ type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
 
 var (
 	TokenKey       = "Token"
-	WhiteList      = []string{"POST /api/login", "POST /login"}
+	WhiteList      = []interface{}{"POST /api/login", "POST /login", "GET /"}
 	ExpiresSeconds = 86400
 	SignContextKey = "SignContext"
 	loginHandler   = defaultLoginHandler
@@ -33,12 +33,22 @@ func InWhiteList(c *gin.Context) bool {
 	}
 	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
 	for _, item := range WhiteList {
-		reg := regexp.MustCompile(item)
-		if reg.MatchString(input) {
-			return true
+		if v, ok := item.(string); ok {
+			if strings.ToUpper(v) == strings.ToUpper(input) {
+				return true
+			}
+		} else if v, ok := item.(*regexp.Regexp); ok {
+			if v.MatchString(input) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// AppendWhiteList
+func AppendWhiteList(list ...interface{}) {
+	WhiteList = append(WhiteList, list...)
 }
 
 func saveHistory(c *Context, secretData *SignSecret) {

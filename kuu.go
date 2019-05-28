@@ -144,16 +144,16 @@ func (e *Engine) convertGinHandlers(chain HandlersChain) (handlers gin.HandlersC
 	handlers = make(gin.HandlersChain, len(chain))
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
+			vals := make(Values)
 			kc := &Context{
 				Context: c,
+				Values:  &vals,
 			}
 			if !InWhiteList(c) {
 				sign := GetSignContext(c)
 				desc := GetPrivilegesDesc(c)
-				vals := make(Values)
 				kc.SignInfo = sign
 				kc.PrisDesc = desc
-				kc.Values = &vals
 			}
 			glsVals := make(gls.Values)
 			glsVals[SignInfoKey] = kc.SignInfo

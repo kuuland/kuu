@@ -18,6 +18,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Standard response format](#standard-response-format)
     - [Common functions](#common-functions)
     - [Get login context](#get-login-context)
+    - [Whitelist](#whitelist)
     - [Preset modules](#preset-modules)
 - [FAQ](#faq)
 - [License](#license)
@@ -633,6 +634,15 @@ r.GET(func (c *kuu.Context){
 	c.SignInfo // Login user info
 	c.PrisDesc // Login user privileges
 })
+```
+
+### Whitelist
+
+All routes are blocked by the authentication middleware by default. If you want to ignore some routes, please configure the whitelist:
+
+```go
+kuu.AppendWhiteList("GET /", "GET /api/user")
+kuu.AppendWhiteList(regexp.MustCompile("/user"))
 ```
 
 ### Preset modules
