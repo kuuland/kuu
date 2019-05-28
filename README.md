@@ -564,7 +564,7 @@ func MyMod() *kuu.Mod {
 
 func main() {
 	r := kuu.Default()
-	r.Import(kuu.Accounts(), kuu.Sys())   // import preset modules
+	r.Import(kuu.Accounts(), kuu.Sys())     // import preset modules
 	r.Import(MyMod())                       // import custom module
 }
 ```
@@ -596,12 +596,12 @@ func main() {
 func main() {
 	r := kuu.Default()
 	r.GET("/ping", func(c *kuu.Context) {
-        c.STD("hello")                                                     // response: {"data":"hello","code":0}
-        c.STD("hello", "Success")                                          // response: {"data":"hello","code":0,"msg":"Success"}
-        c.STD(200)                                                         // response: {"data":200,"code":0}
-        c.STDErr("New record failed")                                      // response: {"code":-1,"msg":"New record failed"}
-        c.STDErr("New record failed", 555)                                 // response: {"code":555,"msg":"New record failed"}
-        c.STDErrHold("Token decoding failed", 555).Data(err).Render()      // response: {"code":555,"msg":"Token decoding failed","data":"Error detail"}
+        c.STD("hello")                      // response: {"data":"hello","code":0}
+        c.STD("hello", "Success")           // response: {"data":"hello","code":0,"msg":"Success"}
+        c.STD(200)                          // response: {"data":200,"code":0}
+        c.STDErr("New record failed")       // response: {"code":-1,"msg":"New record failed"}
+        c.STDErr("New record failed", 555)  // response: {"code":555,"msg":"New record failed"}
+        c.STDErrHold("Token decoding failed", 555).Data(err).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"Error detail"}
     })
 }
 ```
