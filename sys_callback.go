@@ -94,7 +94,7 @@ var QueryCallback = func(scope *gorm.Scope) {
 			_, hasOrgIDField := scope.FieldByName("OrgID")
 			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 			if hasOrgIDField && hasCreatedByIDField {
-				scope.Search.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 			}
 		}
 	}
