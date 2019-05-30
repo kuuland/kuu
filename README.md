@@ -39,6 +39,8 @@ $ cat kuu.json
 ```json
 {
   "prefix": "/api",
+  "cors": true,
+  "gzip": true,
   "gorm:migrate": false,
   "db": {
     "dialect": "postgres",
@@ -46,6 +48,10 @@ $ cat kuu.json
   },
   "redis": {
     "addr": "127.0.0.1:6379"
+  },
+  "statics": {
+    "/assets": "assets/",
+    "/drone_yml": ".drone.yml"
   }
 }
 ```
@@ -119,6 +125,9 @@ List of preset config:
 - `redis` - Redis configs.
 - `cors` - Attaches the official [CORS](https://github.com/gin-contrib/cors) gin's middleware.
 - `gzip` - Attaches the gin middleware to enable [GZIP](https://github.com/gin-contrib/gzip) support.
+- `statics` - Static serves files from the given file system root or serve a single file.
+
+> Notes: Static paths are automatically added to the [whitelist](#whitelist).
 
 ### Data Source Management
 

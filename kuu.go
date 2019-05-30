@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 )
@@ -240,6 +242,32 @@ func (e *Engine) initConfigs() {
 	}
 }
 
+func (e *Engine) initStatics() {
+	statics, exists := C().Get("statics")
+	if !exists {
+		return
+	}
+	if m, ok := statics.(map[string]interface{}); ok {
+		for key, val := range m {
+			str, ok := val.(string)
+			if !ok {
+				continue
+			}
+			stat, err := os.Lstat(str)
+			if err != nil {
+				ERROR("Static failed: %s", err.Error())
+				continue
+			}
+			if stat.IsDir() {
+				e.Static(key, str)
+			} else {
+				e.StaticFile(key, str)
+			}
+			AppendWhiteList(regexp.MustCompile(fmt.Sprintf("^GET.%s", key)))
+		}
+	}
+}
+
 func resolveAddress(addr []string) string {
 	switch len(addr) {
 	case 0:
@@ -259,6 +287,7 @@ func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
 	e.initConfigs()
+	e.initStatics()
 
 	// Register default callbacks
 	registerCallbacks()

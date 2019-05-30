@@ -1,6 +1,9 @@
 package kuu
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+)
 
 // Context
 type Context struct {
@@ -18,6 +21,16 @@ func (c *Context) L(defaultValue string, args ...interface{}) string {
 // Lang
 func (c *Context) Lang(key string, defaultValue string, args interface{}) string {
 	return Lang(c.Context, key, defaultValue, args)
+}
+
+// DB
+func (c *Context) DB() *gorm.DB {
+	return DB()
+}
+
+// WithTransaction
+func (c *Context) WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
+	return WithTransaction(fn, with...)
 }
 
 // STD
