@@ -259,4 +259,7 @@ func onInit(e *Engine) {
 	initDataSources()
 	initRedis()
 	e.initConfigs()
+
+	// Register default callbacks
+	registerCallbacks()
 }

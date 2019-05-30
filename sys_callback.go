@@ -5,12 +5,19 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Define default callbacks
-func init() {
-	gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
-	gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
-	gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
-	gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
+func registerCallbacks() {
+	if gorm.DefaultCallback.Query().Get("kuu:query") != nil {
+		gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
+	}
+	if gorm.DefaultCallback.Update().Get("kuu:update") != nil {
+		gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
+	}
+	if gorm.DefaultCallback.Delete().Get("kuu:delete") != nil {
+		gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
+	}
+	if gorm.DefaultCallback.Create().Get("kuu:create") != nil {
+		gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
+	}
 }
 
 // CreateCallback
