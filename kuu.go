@@ -140,7 +140,8 @@ func (e *Engine) RESTful(values ...interface{}) {
 	}
 }
 
-func (e *Engine) kuuHandlers(chain HandlersChain) (handlers gin.HandlersChain) {
+// ConvertKuuHandlers
+var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) {
 	handlers = make(gin.HandlersChain, len(chain))
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
@@ -167,52 +168,52 @@ func (e *Engine) kuuHandlers(chain HandlersChain) (handlers gin.HandlersChain) {
 
 // Overrite r.Group
 func (e *Engine) Group(relativePath string, handlers ...HandlerFunc) *gin.RouterGroup {
-	return e.Engine.Group(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.Group(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.Handle
 func (e *Engine) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.Handle(httpMethod, relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.Handle(httpMethod, relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.POST
 func (e *Engine) POST(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.POST(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.POST(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.GET
 func (e *Engine) GET(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.GET(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.GET(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.DELETE
 func (e *Engine) DELETE(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.DELETE(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.DELETE(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.PATCH
 func (e *Engine) PATCH(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.PATCH(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.PATCH(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.PUT
 func (e *Engine) PUT(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.PUT(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.PUT(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.OPTIONS
 func (e *Engine) OPTIONS(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.OPTIONS(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.OPTIONS(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.HEAD
 func (e *Engine) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.HEAD(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.HEAD(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 // Overrite r.Any
 func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.Any(relativePath, e.kuuHandlers(handlers)...)
+	return e.Engine.Any(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
 func (e *Engine) initConfigs() {
