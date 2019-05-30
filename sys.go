@@ -534,7 +534,13 @@ func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 		"CreatedAt": user.CreatedAt,
 		"UpdatedAt": user.UpdatedAt,
 	}
+	payload = SetPayloadAttrs(payload, &user)
 	return payload, user.ID, nil
+}
+
+// SetPayloadAttrs
+var SetPayloadAttrs = func(payload jwt.MapClaims, user *User) jwt.MapClaims {
+	return payload
 }
 
 // Sys
