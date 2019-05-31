@@ -81,7 +81,8 @@ var DeleteCallback = func(scope *gorm.Scope) {
 						AddExtraSpaceIfExist(extraOption),
 					)
 				}
-			} else {
+			}
+			if sql == "" {
 				sql = fmt.Sprintf(
 					"UPDATE %v SET %v=%v%v%v",
 					scope.QuotedTableName(),
