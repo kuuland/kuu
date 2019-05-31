@@ -435,13 +435,13 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 	return &data, nil
 }
 
-// GetUserRoles
-var GetUserRoles = func(c *gin.Context, uid uint) (*User, error) {
+// GetUserWithRoles
+var GetUserWithRoles = func(uid uint) (*User, error) {
 	// 查询用户档案
 	var user User
 	if errs := DB().Where("id = ?", uid).Preload("RoleAssigns").First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
 		ERROR(errs)
-		return &user, errors.New(L(c, "查询用户失败"))
+		return &user, errors.New("查询用户失败")
 	}
 	// 过滤有效的角色分配
 	var roleIDs []uint
@@ -457,7 +457,7 @@ var GetUserRoles = func(c *gin.Context, uid uint) (*User, error) {
 	)
 	if errs := DB().Where("id in (?)", roleIDs).Preload("OperationPrivileges").Preload("DataPrivileges").Find(&roles).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
-		return &user, errors.New(L(c, "查询角色失败"))
+		return &user, errors.New("查询角色失败")
 	}
 	for _, role := range roles {
 		roleMap[role.ID] = &role

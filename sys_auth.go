@@ -124,7 +124,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		return
 	}
 	// 重新计算
-	user, err := GetUserRoles(c, sign.UID)
+	user, err := GetUserWithRoles(sign.UID)
 	if err != nil {
 		//ERROR(err)
 		return

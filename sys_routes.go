@@ -78,7 +78,7 @@ var UserRolesRoute = RouteInfo{
 			return
 		}
 		uid := ParseID(raw)
-		if user, err := GetUserRoles(c.Context, uid); err != nil {
+		if user, err := GetUserWithRoles(uid); err != nil {
 			ERROR(err)
 			c.STDErr(err.Error())
 		} else {
