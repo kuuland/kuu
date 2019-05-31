@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"fmt"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -70,7 +69,7 @@ var DeleteCallback = func(scope *gorm.Scope) {
 			if v, ok := GetValue(PrisDescKey); ok && v != nil {
 				desc := v.(*PrivilegesDesc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
-				if !scope.Search.Unscoped && hasDeletedByField {
+				if desc.IsValid() && !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
 						"UPDATE %v SET %v=%v,%v=%v%v%v",
 						scope.QuotedTableName(),
