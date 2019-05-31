@@ -24,11 +24,13 @@ func (SignHistory) TableName() string {
 type SignSecret struct {
 	gorm.Model `rest:"*"`
 	UID        uint
+	Desc       string
 	Secret     string
 	Token      string
 	Iat        int64
 	Exp        int64
 	Method     string
+	IsAPIKey   bool
 }
 
 //TableName 设置表名

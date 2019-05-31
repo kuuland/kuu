@@ -1,9 +1,35 @@
 package kuu
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
 	"time"
 )
+
+// GenSignSecret
+func GenSignSecret(payload jwt.MapClaims, uid uint, expire time.Time) (*SignSecret, error) {
+	// 设置JWT令牌信息
+	iat := time.Now().Unix()
+	exp := expire.Unix()
+	payload["iat"] = iat // 签发时间
+	payload["exp"] = exp // 过期时间
+	// 生成新密钥
+	secretData := &SignSecret{
+		UID:    uid,
+		Secret: uuid.NewV4().String(),
+		Iat:    iat,
+		Exp:    exp,
+		Method: "LOGIN",
+	}
+	// 签发令牌
+	if signed, err := EncodedToken(payload, secretData.Secret); err != nil {
+		return secretData, err
+	} else {
+		secretData.Token = signed
+	}
+	payload[TokenKey] = secretData.Token
+	return secretData, nil
+}
 
 // LoginRoute
 var LoginRoute = RouteInfo{
@@ -20,29 +46,14 @@ var LoginRoute = RouteInfo{
 			c.STDErr(err.Error())
 			return
 		}
-		// 设置JWT令牌信息
+		// 调用令牌签发
 		expiration := time.Second * time.Duration(ExpiresSeconds)
-		iat := time.Now().Unix()
-		exp := time.Now().Add(expiration).Unix()
-		payload["iat"] = iat // 签发时间
-		payload["exp"] = exp // 过期时间
-		// 生成新密钥
-		secretData := SignSecret{
-			UID:    uid,
-			Secret: uuid.NewV4().String(),
-			Iat:    iat,
-			Exp:    exp,
-			Method: "LOGIN",
-		}
-		// 签发令牌
-		if signed, err := EncodedToken(payload, secretData.Secret); err != nil {
+		exp := time.Now().Add(expiration)
+		secretData, err := GenSignSecret(payload, uid, exp)
+		DB().Create(secretData)
+		if err != nil {
 			c.STDErrHold("令牌签发失败").Data(err).Render()
-			return
-		} else {
-			secretData.Token = signed
 		}
-		payload[TokenKey] = secretData.Token
-		DB().Create(&secretData)
 		// 缓存secret至redis
 		key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
 		value := Stringify(&secretData)
@@ -50,13 +61,13 @@ var LoginRoute = RouteInfo{
 			ERROR("令牌缓存到Redis失败：%s", err.Error())
 		}
 		// 保存登入历史
-		saveHistory(c, &secretData)
+		saveHistory(c, secretData)
 		// 设置到上下文中
 		c.Set(SignContextKey, &SignContext{
 			Token:   secretData.Token,
 			UID:     secretData.UID,
 			Payload: payload,
-			Secret:  &secretData,
+			Secret:  secretData,
 		})
 		// 设置Cookie
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
@@ -108,5 +119,30 @@ var ValidRoute = RouteInfo{
 		} else {
 			c.STDErr("令牌已过期", 555)
 		}
+	},
+}
+
+// APIKeyRoute
+var APIKeyRoute = RouteInfo{
+	Method: "POST",
+	Path:   "/apikey",
+	HandlerFunc: func(c *Context) {
+		var body = struct {
+			Exp  int64  `binding:"required"`
+			Desc string `binding:"required"`
+		}{}
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErrHold("解析请求体失败").Data(err).Render()
+			return
+		}
+		secretData, err := GenSignSecret(c.SignInfo.Payload, c.SignInfo.UID, time.Unix(body.Exp, 0))
+		if err != nil {
+			c.STDErrHold("令牌签发失败").Data(err).Render()
+			return
+		}
+		secretData.Desc = body.Desc
+		secretData.IsAPIKey = true
+		DB().Create(secretData)
+		c.STD(secretData.Token)
 	},
 }

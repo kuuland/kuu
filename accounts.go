@@ -92,12 +92,18 @@ func RedisKeyBuilder(keys ...string) string {
 }
 
 // ParseToken
-func ParseToken(c *gin.Context) string {
+var ParseToken = func(c *gin.Context) string {
 	// querystring > header > cookie
 	var token string
 	token = c.Query(TokenKey)
 	if token == "" {
 		token = c.GetHeader(TokenKey)
+		if token == "" {
+			token = c.GetHeader("Authorization")
+		}
+		if token == "" {
+			token = c.GetHeader("api_key")
+		}
 	}
 	if token == "" {
 		token, _ = c.Cookie(TokenKey)
