@@ -138,7 +138,7 @@ var QueryCallback = func(scope *gorm.Scope) {
 				}
 			}
 			desc := rawDesc.(*PrivilegesDesc)
-			if desc.NotRootUser() {
+			if desc.IsValid() && desc.NotRootUser() {
 				_, hasOrgIDField := scope.FieldByName("OrgID")
 				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 				if hasOrgIDField && hasCreatedByIDField {
