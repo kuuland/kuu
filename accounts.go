@@ -18,7 +18,6 @@ var (
 	Whitelist = []interface{}{
 		"GET /",
 		"GET /favicon.ico",
-		"POST /api/login",
 		"POST /login",
 		regexp.MustCompile("GET /assets"),
 	}
@@ -37,11 +36,20 @@ func InWhitelist(c *gin.Context) bool {
 	if len(Whitelist) == 0 {
 		return false
 	}
-	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
+	input := strings.ToUpper(fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path))
 	for _, item := range Whitelist {
 		if v, ok := item.(string); ok {
-			if strings.ToUpper(v) == strings.ToUpper(input) {
+			v = strings.ToUpper(v)
+			prefix := C().GetString("prefix")
+			if v == input {
 				return true
+			} else if C().DefaultGetBool("whitelist:prefix", true) && prefix != "" {
+				old := strings.ToUpper(fmt.Sprintf("%s ", c.Request.Method))
+				with := strings.ToUpper(fmt.Sprintf("%s %s", c.Request.Method, prefix))
+				v = strings.Replace(v, old, with, 1)
+				if v == input {
+					return true
+				}
 			}
 		} else if v, ok := item.(*regexp.Regexp); ok {
 			if v.MatchString(input) {

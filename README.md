@@ -119,13 +119,14 @@ func main() {
 
 List of preset config:
 
-- `prefix` - Global routes prefix for Mod's Routes.
+- `prefix` - Global routes prefix for `kuu.Mod`'s Routes.
 - `gorm:migrate` - Enable GORM's auto migration for Mod's Models.
 - `db` - DB configs.
 - `redis` - Redis configs.
 - `cors` - Attaches the official [CORS](https://github.com/gin-contrib/cors) gin's middleware.
 - `gzip` - Attaches the gin middleware to enable [GZIP](https://github.com/gin-contrib/gzip) support.
 - `statics` - Static serves files from the given file system root or serve a single file.
+- `whitelist:prefix` - Let whitelist also matches paths with global prefix, default is `true`.
 
 > Notes: Static paths are automatically added to the [whitelist](#whitelist).
 
@@ -650,9 +651,11 @@ r.GET(func (c *kuu.Context){
 All routes are blocked by the authentication middleware by default. If you want to ignore some routes, please configure the whitelist:
 
 ```go
-kuu.AddWhitelist("GET /", "GET /api/user")
+kuu.AddWhitelist("GET /", "GET /user")
 kuu.AddWhitelist(regexp.MustCompile("/user"))
 ```
+
+> Notes: Whitelist also matches paths with global `prefix`. If you don't want this feature, please set `"whitelist:prefix":false`.
 
 ### Preset modules
 
