@@ -96,7 +96,6 @@ var UserMenusRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
-		c.IgnoreAuth()
 		desc := GetPrivilegesDesc(c.Context)
 		var (
 			menus []Menu

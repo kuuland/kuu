@@ -436,7 +436,7 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 }
 
 // GetUserRoles
-func GetUserRoles(c *gin.Context, uid uint) (*User, error) {
+var GetUserRoles = func(c *gin.Context, uid uint) (*User, error) {
 	// 查询用户档案
 	var user User
 	if errs := DB().Where("id = ?", uid).Preload("RoleAssigns").First(&user).GetErrors(); len(errs) > 0 || user.ID == 0 {
