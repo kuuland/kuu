@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"fmt"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -65,14 +66,7 @@ var DeleteCallback = func(scope *gorm.Scope) {
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
 
 		if !scope.Search.Unscoped && hasDeletedAtField {
-			sql := fmt.Sprintf(
-				"UPDATE %v SET %v=%v%v%v",
-				scope.QuotedTableName(),
-				scope.Quote(deletedAtField.DBName),
-				scope.AddToVars(gorm.NowFunc()),
-				AddExtraSpaceIfExist(scope.CombinedConditionSql()),
-				AddExtraSpaceIfExist(extraOption),
-			)
+			sql := ""
 			if v, ok := GetValue(PrisDescKey); ok && v != nil {
 				desc := v.(*PrivilegesDesc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
@@ -80,14 +74,23 @@ var DeleteCallback = func(scope *gorm.Scope) {
 					sql = fmt.Sprintf(
 						"UPDATE %v SET %v=%v,%v=%v%v%v",
 						scope.QuotedTableName(),
-						scope.Quote(deletedAtField.DBName),
-						scope.AddToVars(gorm.NowFunc()),
 						scope.Quote(deletedByField.DBName),
 						scope.AddToVars(desc.UID),
+						scope.Quote(deletedAtField.DBName),
+						scope.AddToVars(gorm.NowFunc()),
 						AddExtraSpaceIfExist(scope.CombinedConditionSql()),
 						AddExtraSpaceIfExist(extraOption),
 					)
 				}
+			} else {
+				sql = fmt.Sprintf(
+					"UPDATE %v SET %v=%v%v%v",
+					scope.QuotedTableName(),
+					scope.Quote(deletedAtField.DBName),
+					scope.AddToVars(gorm.NowFunc()),
+					AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+					AddExtraSpaceIfExist(extraOption),
+				)
 			}
 			scope.Raw(sql).Exec()
 		} else {
