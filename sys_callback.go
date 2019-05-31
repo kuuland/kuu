@@ -16,7 +16,7 @@ func registerCallbacks() {
 		gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
 	}
 	if gorm.DefaultCallback.Delete().Get("kuu:delete") == nil {
-		gorm.DefaultCallback.Delete().After("gorm:delete").Register("kuu:delete", DeleteCallback)
+		gorm.DefaultCallback.Delete().Before("gorm:delete").Register("kuu:delete", DeleteCallback)
 	}
 	if gorm.DefaultCallback.Create().Get("kuu:create") == nil {
 		gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
