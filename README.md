@@ -650,8 +650,8 @@ r.GET(func (c *kuu.Context){
 All routes are blocked by the authentication middleware by default. If you want to ignore some routes, please configure the whitelist:
 
 ```go
-kuu.AppendWhiteList("GET /", "GET /api/user")
-kuu.AppendWhiteList(regexp.MustCompile("/user"))
+kuu.AddWhitelist("GET /", "GET /api/user")
+kuu.AddWhitelist(regexp.MustCompile("/user"))
 ```
 
 ### Preset modules

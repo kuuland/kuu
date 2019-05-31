@@ -152,7 +152,7 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 				Context: c,
 				Values:  &vals,
 			}
-			if !InWhiteList(c) {
+			if !InWhitelist(c) {
 				sign := GetSignContext(c)
 				desc := GetPrivilegesDesc(c)
 				kc.SignInfo = sign
@@ -263,7 +263,7 @@ func (e *Engine) initStatics() {
 			} else {
 				e.StaticFile(key, str)
 			}
-			AppendWhiteList(regexp.MustCompile(fmt.Sprintf("^GET.%s", key)))
+			AddWhitelist(regexp.MustCompile(fmt.Sprintf("^GET.%s", key)))
 		}
 	}
 }

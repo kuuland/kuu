@@ -11,7 +11,7 @@ func AuthMiddleware(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNoContent)
 		return
 	}
-	if InWhiteList(c) == true {
+	if InWhitelist(c) == true {
 		c.Next()
 	} else {
 		// 从请求参数中解码令牌

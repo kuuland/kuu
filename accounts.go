@@ -15,7 +15,7 @@ type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
 
 var (
 	TokenKey  = "Token"
-	WhiteList = []interface{}{
+	Whitelist = []interface{}{
 		"GET /",
 		"GET /favicon.ico",
 		"POST /api/login",
@@ -32,13 +32,13 @@ const (
 	RedisOrgKey    = "org"
 )
 
-// InWhiteList
-func InWhiteList(c *gin.Context) bool {
-	if len(WhiteList) == 0 {
+// InWhitelist
+func InWhitelist(c *gin.Context) bool {
+	if len(Whitelist) == 0 {
 		return false
 	}
 	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
-	for _, item := range WhiteList {
+	for _, item := range Whitelist {
 		if v, ok := item.(string); ok {
 			if strings.ToUpper(v) == strings.ToUpper(input) {
 				return true
@@ -52,9 +52,9 @@ func InWhiteList(c *gin.Context) bool {
 	return false
 }
 
-// AppendWhiteList
-func AppendWhiteList(list ...interface{}) {
-	WhiteList = append(WhiteList, list...)
+// AddWhitelist support string and *regexp.Regexp.
+func AddWhitelist(rules ...interface{}) {
+	Whitelist = append(Whitelist, rules...)
 }
 
 func saveHistory(c *Context, secretData *SignSecret) {
