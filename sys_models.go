@@ -95,6 +95,7 @@ type User struct {
 	Disable     bool
 	RoleAssigns []RoleAssign
 	IsBuiltIn   bool
+	SubDocID    uint
 }
 
 //TableName 设置表名
