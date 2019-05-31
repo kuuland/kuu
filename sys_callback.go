@@ -6,23 +6,21 @@ import (
 )
 
 func registerCallbacks() {
-	if gorm.DefaultCallback.Query().Get("kuu:query") == nil {
-		gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
+	callback := DB().Callback()
+	if callback.Query().Get("kuu:query") == nil {
+		callback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
 	}
-	if gorm.DefaultCallback.Query().Get("kuu:before_query") == nil {
-		gorm.DefaultCallback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
+	if callback.Query().Get("kuu:before_query") == nil {
+		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
 	}
-	if gorm.DefaultCallback.Update().Get("kuu:update") == nil {
-		gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
+	if callback.Update().Get("kuu:update") == nil {
+		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
 	}
-	if gorm.DefaultCallback.Delete().Get("kuu:delete") == nil {
-		gorm.DefaultCallback.Delete().Replace("gorm:delete", DeleteCallback)
+	if callback.Delete().Get("kuu:delete") == nil {
+		callback.Delete().Replace("gorm:delete", DeleteCallback)
 	}
-	if gorm.DefaultCallback.Create().Get("kuu:create") == nil {
-		gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
-	}
-	if gorm.DefaultCallback.Create().Get("kuu:create") == nil {
-		gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
+	if callback.Create().Get("kuu:create") == nil {
+		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
 }
 
