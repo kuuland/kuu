@@ -16,7 +16,7 @@ func registerCallbacks() {
 		gorm.DefaultCallback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
 	}
 	if gorm.DefaultCallback.Delete().Get("kuu:delete") == nil {
-		gorm.DefaultCallback.Delete().Before("gorm:delete").Register("kuu:delete", DeleteCallback)
+		gorm.DefaultCallback.Delete().Replace("gorm:delete", DeleteCallback)
 	}
 	if gorm.DefaultCallback.Create().Get("kuu:create") == nil {
 		gorm.DefaultCallback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
@@ -59,25 +59,46 @@ var CreateCallback = func(scope *gorm.Scope) {
 // DeleteCallback
 var DeleteCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if v, ok := GetValue(PrisDescKey); ok && v != nil {
-			desc := v.(*PrivilegesDesc)
-			if desc.IsValid() && !scope.HasError() {
-				var extraOption string
-				if str, ok := scope.Get("gorm:delete_option"); ok {
-					extraOption = fmt.Sprint(str)
-				}
+		var extraOption string
+		if str, ok := scope.Get("gorm:delete_option"); ok {
+			extraOption = fmt.Sprint(str)
+		}
+
+		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
+
+		if !scope.Search.Unscoped && hasDeletedAtField {
+			sql := fmt.Sprintf(
+				"UPDATE %v SET %v=%v%v%v",
+				scope.QuotedTableName(),
+				scope.Quote(deletedAtField.DBName),
+				scope.AddToVars(gorm.NowFunc()),
+				AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+				AddExtraSpaceIfExist(extraOption),
+			)
+			if v, ok := GetValue(PrisDescKey); ok && v != nil {
+				desc := v.(*PrivilegesDesc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
-					scope.Raw(fmt.Sprintf(
-						"UPDATE %v SET %v=%v%v%v",
+					sql = fmt.Sprintf(
+						"UPDATE %v SET %v=%v,%v=%v%v%v",
 						scope.QuotedTableName(),
+						scope.Quote(deletedAtField.DBName),
+						scope.AddToVars(gorm.NowFunc()),
 						scope.Quote(deletedByField.DBName),
 						scope.AddToVars(desc.UID),
 						AddExtraSpaceIfExist(scope.CombinedConditionSql()),
 						AddExtraSpaceIfExist(extraOption),
-					)).Exec()
+					)
 				}
 			}
+			scope.Raw(sql).Exec()
+		} else {
+			scope.Raw(fmt.Sprintf(
+				"DELETE FROM %v%v%v",
+				scope.QuotedTableName(),
+				AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+				AddExtraSpaceIfExist(extraOption),
+			)).Exec()
 		}
 	}
 }
