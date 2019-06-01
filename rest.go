@@ -187,11 +187,11 @@ func RESTful(r *Engine, value interface{}) {
 							if indirectValue.Len() > 0 {
 								value = indirectValue.Index(i).Addr().Interface()
 							}
-							tx = tx.Delete(value)
+							tx = tx.Delete(reflect.New(reflectType).Interface())
 						} else {
 							value = reflect.New(reflectType).Interface()
 							tx = tx.First(value)
-							tx = tx.Delete(value)
+							tx = tx.Delete(reflect.New(reflectType).Interface())
 						}
 
 						msg := c.L("删除失败")

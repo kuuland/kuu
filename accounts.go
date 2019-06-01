@@ -195,6 +195,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 			LoginRoute,
 			LogoutRoute,
 			ValidRoute,
+			APIKeyRoute,
 		},
 	}
 }
