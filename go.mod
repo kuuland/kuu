@@ -1,6 +1,7 @@
 module github.com/kuuland/kuu
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.2-0.20190510095602-aef065fb847d
