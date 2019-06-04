@@ -11,11 +11,11 @@ type Doc struct {
 	Info       DocInfo
 	Servers    []DocServer
 	Tags       []DocTag
-	Paths      map[string](DocPathItem)
+	Paths      map[string](DocPathItems)
 	Components DocComponent
 }
 
-type DocPathItem map[string]DocPathDesc
+type DocPathItems map[string]DocPathItem
 
 type DocComponent struct {
 	Schemas         map[string]DocComponentSchema
@@ -28,11 +28,14 @@ type DocComponentSchema struct {
 }
 
 type DocSchemaProperty struct {
-	Type    string
-	Ref     string `yaml:"$ref"`
-	Format  string
-	Enum    []interface{}
-	Default interface{}
+	Title      string
+	Type       string
+	Ref        string `yaml:"$ref"`
+	Properties *DocPathSchema
+	Items      *DocSchemaProperty
+	Format     string
+	Enum       []interface{}
+	Default    interface{}
 }
 
 type DocInfo struct {
@@ -47,7 +50,8 @@ type DocInfoContact struct {
 }
 
 type DocServer struct {
-	Url string
+	Url         string
+	Description string
 }
 
 type DocTag struct {
@@ -55,16 +59,19 @@ type DocTag struct {
 	Description string
 }
 
-type DocPathDesc struct {
+type DocPathItem struct {
 	Tags        []string
 	Summary     string
+	Description string
 	OperationID string             `yaml:"operationId"`
 	RequestBody DocPathRequestBody `yaml:"requestBody"`
 	Responses   map[int]DocPathResponse
 	Parameters  []DocPathParameter
 	Deprecated  bool
-	Security    map[string]interface{}
+	Security    []DocPathItemSecurity
 }
+
+type DocPathItemSecurity map[string]([]string)
 
 type DocSecurityScheme struct {
 	Type string
@@ -73,13 +80,14 @@ type DocSecurityScheme struct {
 }
 
 type DocPathParameter struct {
-	Name        string
-	In          string
-	Description string
-	Required    bool
-	Style       string
-	Explode     bool
-	Schema      DocPathSchema
+	Name            string
+	In              string
+	Description     string
+	Required        bool
+	Style           string
+	Explode         bool
+	Schema          DocPathSchema
+	AllowEmptyValue bool `yaml:"allowEmptyValue"`
 }
 
 type DocPathRequestBody struct {
@@ -93,12 +101,14 @@ type DocPathContentItem struct {
 }
 
 type DocPathSchema struct {
-	Type  string
-	Ref   string `yaml:"$ref"`
-	Items struct {
-		Ref  string `yaml:"$ref"`
-		Type string
-	}
+	Type        string
+	Description string
+	Ref         string `yaml:"$ref"`
+	Properties  map[string]DocPathSchema
+	Items       *DocPathSchema
+	Enum        []interface{}
+	Default     interface{}
+	Required    bool
 }
 
 type DocPathResponse struct {
@@ -123,8 +133,18 @@ func (d *Doc) Marshal() (result string) {
 	result = strings.ReplaceAll(result, "parameters: []", "")
 	result = strings.ReplaceAll(result, "security: {}", "")
 	result = strings.ReplaceAll(result, "required: []", "")
+	result = strings.ReplaceAll(result, "items: null", "")
 	result = strings.ReplaceAll(result, "email: \"\"", "")
+	result = strings.ReplaceAll(result, "description: \"\"", "")
+	result = strings.ReplaceAll(result, "properties: null", "")
+	result = strings.ReplaceAll(result, "properties: {}", "")
+	result = strings.ReplaceAll(result, "content: {}", "")
+	result = strings.ReplaceAll(result, "style: \"\"", "")
+	result = strings.ReplaceAll(result, "explode: false", "")
+	result = strings.ReplaceAll(result, "required: false", "")
 	result = strings.ReplaceAll(result, "deprecated: false", "")
+	result = strings.ReplaceAll(result, "allowEmptyValue: false", "")
 	result = regexp.MustCompile(`(\s*.*)\s*\n\s*\n`).ReplaceAllString(result, "$1\n")
+	result = regexp.MustCompile(`\s*requestBody.*\n(\s*responses.*)`).ReplaceAllString(result, "\n$1")
 	return
 }

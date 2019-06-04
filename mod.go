@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"path"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -43,8 +42,9 @@ func (e *Engine) Import(mods ...*Mod) {
 			}
 		}
 		for _, model := range mod.Models {
-			RESTful(e, model)
+			desc := RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
+				meta.RestDesc = desc
 				metadata[meta.Name] = meta
 			}
 		}
@@ -117,12 +117,12 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		if fieldStruct.Anonymous || indirectType.Kind() == reflect.Struct || indirectType.Kind() == reflect.Slice || indirectType.Kind() == reflect.Ptr {
 			if fieldStruct.Name == "Model" || fieldStruct.Name == "ExtendField" {
-				subMeta := parseMetadata(fieldValue)
-				if subMeta != nil && len(subMeta.Fields) > 0 {
-					if strings.HasPrefix(subMeta.FullName, "github.com/kuuland/kuu") {
-						m.Fields = append(m.Fields, subMeta.Fields...)
-					}
-				}
+				//subMeta := parseMetadata(fieldValue)
+				//if subMeta != nil && len(subMeta.Fields) > 0 {
+				//	if strings.HasPrefix(subMeta.FullName, "github.com/kuuland/kuu") {
+				//		m.Fields = append(m.Fields, subMeta.Fields...)
+				//	}
+				//}
 				continue
 			}
 		}

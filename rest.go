@@ -22,8 +22,25 @@ func callPreloadHooks(db *gorm.DB, value interface{}) *gorm.DB {
 	return db
 }
 
+// RestDesc
+type RestDesc struct {
+	Create bool
+	Delete bool
+	Query  bool
+	Update bool
+}
+
+// IsValid
+func (r *RestDesc) IsValid() bool {
+	if !r.Create && !r.Delete && !r.Query && !r.Update {
+		return false
+	}
+	return true
+}
+
 // RESTful
-func RESTful(r *Engine, value interface{}) {
+func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
+	desc = new(RestDesc)
 	// Scope value can't be nil
 	if value == nil {
 		PANIC("Model can't be nil")
@@ -94,6 +111,7 @@ func RESTful(r *Engine, value interface{}) {
 				)
 			} else {
 				if createMethod != "-" {
+					desc.Create = true
 					r.Handle(createMethod, routePath, func(c *Context) {
 						var body interface{}
 						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
@@ -143,16 +161,27 @@ func RESTful(r *Engine, value interface{}) {
 					})
 				}
 				if deleteMethod != "-" {
+					desc.Delete = true
 					r.Handle(deleteMethod, routePath, func(c *Context) {
 						var params struct {
 							All   bool
 							Multi bool
 							Cond  map[string]interface{}
 						}
-						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-							ERROR(err)
-							c.STDErr("解析请求体失败")
-							return
+						if c.Query("cond") != "" {
+							var retCond map[string]interface{}
+							Parse(c.Query("cond"), &retCond)
+							params.Cond = retCond
+
+							if c.Query("multi") != "" {
+								params.Multi = true
+							}
+						} else {
+							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+								ERROR(err)
+								c.STDErr("解析请求体失败")
+								return
+							}
 						}
 						if IsBlank(params.Cond) {
 							c.STDErr("删除条件不能为空")
@@ -211,6 +240,7 @@ func RESTful(r *Engine, value interface{}) {
 					})
 				}
 				if queryMethod != "-" {
+					desc.Query = true
 					r.Handle(queryMethod, routePath, func(c *Context) {
 						ret := map[string]interface{}{}
 						// 处理cond
@@ -337,6 +367,7 @@ func RESTful(r *Engine, value interface{}) {
 					})
 				}
 				if updateMethod != "-" {
+					desc.Update = true
 					r.Handle(updateMethod, routePath, func(c *Context) {
 						var params struct {
 							All   bool
@@ -443,6 +474,7 @@ func RESTful(r *Engine, value interface{}) {
 			break
 		}
 	}
+	return
 }
 
 func underlineMap(m map[string]interface{}) map[string]interface{} {

@@ -30,9 +30,9 @@ func TestMarshal(t *testing.T) {
 				Description: "会员地址",
 			},
 		},
-		Paths: map[string]DocPathItem{
+		Paths: map[string]DocPathItems{
 			"/member": {
-				"post": DocPathDesc{
+				"post": DocPathItem{
 					Tags:        []string{"Member"},
 					Summary:     "新增会员资讯",
 					OperationID: "createMember",

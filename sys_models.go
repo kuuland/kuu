@@ -39,6 +39,7 @@ type Metadata struct {
 	DisplayName string
 	FullName    string
 	Fields      []MetadataField
+	RestDesc    *RestDesc `json"-"`
 }
 
 //TableName 设置表名
