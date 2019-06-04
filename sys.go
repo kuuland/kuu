@@ -574,8 +574,9 @@ func Sys() *Mod {
 			UserRolesRoute,
 			UserMenusRoute,
 			UploadRoute,
-			MetaRoute,
 			AuthRoute,
+			MetaRoute,
+			ModelDocsRoute,
 		},
 		AfterImport: initSys,
 	}

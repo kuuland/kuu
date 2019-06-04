@@ -9,38 +9,36 @@ import (
 
 // Model
 type Model struct {
-	ID          uint `gorm:"primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time `sql:"index"`
-	OrgID       uint
-	CreatedByID uint
-	UpdatedByID uint
-	DeletedByID uint
-	Org         *Org  `gorm:"foreignkey:OrgID"`
-	CreatedBy   *User `gorm:"foreignkey:CreatedByID"`
-	UpdatedBy   *User `gorm:"foreignkey:UpdatedByID"`
-	DeletedBy   *User `gorm:"foreignkey:DeletedByID"`
+	ID          uint       `gorm:"primary_key"`
+	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	OrgID       uint       `name:"所属组织ID（默认字段）"`
+	CreatedByID uint       `name:"创建人ID（默认字段）"`
+	UpdatedByID uint       `name:"修改人ID（默认字段）"`
+	DeletedByID uint       `name:"删除人ID（默认字段）"`
+	Org         *Org       `gorm:"foreignkey:OrgID"`
+	CreatedBy   *User      `gorm:"foreignkey:CreatedByID"`
+	UpdatedBy   *User      `gorm:"foreignkey:UpdatedByID"`
+	DeletedBy   *User      `gorm:"foreignkey:DeletedByID"`
 	Remark      string
 }
 
 // ExtendField
 type ExtendField struct {
-	Def1 uint
-	Def2 string
-	Def3 string
-	Def4 string
-	Def5 string
+	Def1 uint   `name:"扩展字段1（默认字段）"`
+	Def2 string `name:"扩展字段2（默认字段）"`
+	Def3 string `name:"扩展字段3（默认字段）"`
+	Def4 string `name:"扩展字段4（默认字段）"`
+	Def5 string `name:"扩展字段5（默认字段）"`
 }
 
 // Metadata
 type Metadata struct {
-	Model `rest:"*"`
-	ExtendField
-	Name      string
-	FullName  string
-	Fields    []MetadataField
-	IsBuiltIn bool
+	Name        string
+	DisplayName string
+	FullName    string
+	Fields      []MetadataField
 }
 
 //TableName 设置表名
@@ -55,11 +53,13 @@ func (m *Metadata) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // MetadataField
 type MetadataField struct {
-	Model
-	ExtendField
-	Name       string
-	Type       string
-	MetadataID uint
+	Code    string
+	Name    string
+	Kind    string
+	Type    string
+	Value   interface{} `json:"-"`
+	IsRef   bool
+	IsArray bool
 }
 
 //TableName 设置表名
@@ -82,20 +82,20 @@ func (Route) TableName() string {
 
 // User
 type User struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"用户"`
 	ExtendField
-	Username    string `gorm:"unique;not null"`
-	Password    string `gorm:"not null"`
-	Name        string
-	Avatar      string
-	Sex         int
-	Mobile      string
-	Email       string
-	Language    string
-	Disable     bool
-	RoleAssigns []RoleAssign
-	IsBuiltIn   bool
-	SubDocID    uint
+	Username    string       `name:"账号" gorm:"unique;not null"`
+	Password    string       `name:"密码" gorm:"not null"`
+	Name        string       `name:"姓名"`
+	Avatar      string       `name:"头像"`
+	Sex         int          `name:"性别"`
+	Mobile      string       `name:"手机号"`
+	Email       string       `name:"邮箱地址"`
+	Language    string       `name:"语言"`
+	Disable     bool         `name:"是否禁用"`
+	RoleAssigns []RoleAssign `name:"已分配角色"`
+	IsBuiltIn   bool         `name:"是否内置"`
+	SubDocID    uint         `name:"扩展档案ID"`
 }
 
 //TableName 设置表名
@@ -118,12 +118,12 @@ func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // Org
 type Org struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"组织"`
 	ExtendField
-	Code     string `gorm:"unique;not null"`
-	Name     string `gorm:"unique;not null"`
-	Pid      uint
-	Sort     int
+	Code     string `name:"组织编码" gorm:"unique;not null"`
+	Name     string `name:"组织名称" gorm:"unique;not null"`
+	Pid      uint   `name:"父组织ID"`
+	Sort     int    `name:"排序值"`
 	FullPid  string
 	FullName string
 	Class    string
@@ -198,10 +198,10 @@ func (Org) TableName() string {
 }
 
 type RoleAssign struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"用户角色分配"`
 	ExtendField
-	UserID     uint
-	RoleID     uint
+	UserID     uint `name:"用户ID"`
+	RoleID     uint `name:"角色ID"`
 	Role       *Role
 	ExpireUnix int64
 }
@@ -223,13 +223,13 @@ func (RoleAssign) TableName() string {
 
 // Role
 type Role struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"角色"`
 	ExtendField
-	Code                string `gorm:"unique;not null"`
-	Name                string `gorm:"not null"`
-	OperationPrivileges []OperationPrivileges
-	DataPrivileges      []DataPrivileges
-	IsBuiltIn           bool
+	Code                string                `name:"角色编码" gorm:"unique;not null"`
+	Name                string                `name:"角色名称" gorm:"not null"`
+	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
+	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
+	IsBuiltIn           bool                  `name:"是否内置"`
 }
 
 //TableName 设置表名
@@ -254,10 +254,10 @@ func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"角色操作权限"`
 	ExtendField
-	RoleID   uint
-	MenuCode string
+	RoleID   uint   `name:"角色ID"`
+	MenuCode string `name:"菜单编码"`
 }
 
 //TableName 设置表名
@@ -267,12 +267,12 @@ func (OperationPrivileges) TableName() string {
 
 // DataPrivileges
 type DataPrivileges struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"角色数据权限"`
 	ExtendField
-	RoleID        uint
-	TargetOrgID   uint
-	ReadableRange string
-	WritableRange string
+	RoleID        uint   `name:"角色ID"`
+	TargetOrgID   uint   `name:"目标组织ID"`
+	ReadableRange string `name:"可读范围"`
+	WritableRange string `name:"可写范围"`
 }
 
 //TableName 设置表名
@@ -282,21 +282,21 @@ func (DataPrivileges) TableName() string {
 
 // Menu
 type Menu struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string
-	Name          string `gorm:"not null"`
-	URI           string
-	Icon          string
-	Pid           uint
-	Group         string
-	Disable       bool
-	IsLink        bool
+	Code          string `name:"菜单编码"`
+	Name          string `name:"菜单名称" gorm:"not null"`
+	URI           string `name:"菜单地址"`
+	Icon          string `name:"菜单图标"`
+	Pid           uint   `name:"父菜单ID"`
+	Group         string `name:"菜单分组名"`
+	Disable       bool   `name:"是否禁用"`
+	IsLink        bool   `name:"是否外链"`
+	Sort          int    `name:"排序值"`
+	IsBuiltIn     bool   `name:"是否内置"`
+	IsDefaultOpen bool   `name:"是否默认打开"`
+	Closeable     bool   `name:"是否可关闭"`
 	IsVirtual     bool
-	Sort          int
-	IsBuiltIn     bool
-	IsDefaultOpen bool
-	Closeable     bool
 	Type          string
 }
 
@@ -356,14 +356,14 @@ func (DictValue) TableName() string {
 
 // File
 type File struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"文件"`
 	ExtendField
-	UID    string `json:"uid"`
-	Type   string `json:"type"`
-	Size   int64  `json:"size"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	URL    string `json:"url"`
+	UID    string `name:"文件唯一ID" json:"uid"`
+	Type   string `name:"文件Mine-Type" json:"type"`
+	Size   int64  `name:"文件大小" json:"size"`
+	Name   string `name:"文件名称" json:"name"`
+	Status string `name:"文件状态" json:"status"`
+	URL    string `name:"文件URL" json:"url"`
 	Path   string `json:"path"`
 }
 
@@ -395,12 +395,12 @@ func (o *SignOrg) IsValid() bool {
 
 // Param
 type Param struct {
-	Model `rest:"*"`
+	Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string `gorm:"unique;not null"`
-	Name      string `gorm:"not null"`
-	Value     string
-	IsBuiltIn bool
+	Code      string `name:"参数编码" gorm:"unique;not null"`
+	Name      string `name:"参数名称" gorm:"not null"`
+	Value     string `name:"参数值"`
+	IsBuiltIn bool   `name:"是否预置"`
 }
 
 //TableName 设置表名

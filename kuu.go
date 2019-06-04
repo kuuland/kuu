@@ -263,7 +263,7 @@ func (e *Engine) initStatics() {
 			} else {
 				e.StaticFile(key, str)
 			}
-			AddWhitelist(regexp.MustCompile(fmt.Sprintf("^GET.%s", key)))
+			AddWhitelist(regexp.MustCompile(fmt.Sprintf(`^GET\s%s`, key)))
 		}
 	}
 }

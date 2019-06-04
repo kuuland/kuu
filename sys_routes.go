@@ -1,10 +1,12 @@
 package kuu
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
 	"path"
 	"strings"
 )
@@ -180,6 +182,129 @@ var MetaRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/meta",
 	HandlerFunc: func(c *Context) {
-		c.STD(metadata)
+		json := c.Query("json")
+		if json != "" {
+			c.STD(metadata)
+		} else {
+			var buffer bytes.Buffer
+			for _, m := range metadata {
+				if len(m.Fields) > 0 {
+					if m.DisplayName != "" {
+						buffer.WriteString(fmt.Sprintf("%s(%s) {\n", m.Name, m.DisplayName))
+					} else {
+						buffer.WriteString(fmt.Sprintf("%s {\n", m.Name))
+					}
+					for index, field := range m.Fields {
+						buffer.WriteString(fmt.Sprintf("\t%s(%s) %s", field.Code, field.Name, field.Type))
+						if index != len(m.Fields)-1 {
+							buffer.WriteString("\n")
+						}
+					}
+					buffer.WriteString(fmt.Sprintf("\n}\n\n"))
+				}
+			}
+			c.String(http.StatusOK, buffer.String())
+		}
+	},
+}
+
+// ModelDocsRoute
+var ModelDocsRoute = RouteInfo{
+	Method: "GET",
+	Path:   "/model/docs",
+	HandlerFunc: func(c *Context) {
+		for _, m := range metadata {
+			fmt.Println(m)
+		}
+		name := C().DefaultGetString("name", "Kuu")
+		doc := Doc{
+			Openapi: "3.0.1",
+			Info: DocInfo{
+				Title:       name,
+				Description: fmt.Sprintf("%s 模型RESTful接口文档", name),
+				Version:     "1.0.0",
+				Contact: DocInfoContact{
+					Email: "yinfxs@dexdev.me",
+				},
+			},
+			Servers: []DocServer{
+				{
+					Url: "https://humansa.hofo.co",
+				},
+			},
+			Tags: []DocTag{
+				{
+					Name:        "Member",
+					Description: "会员资讯",
+				},
+				{
+					Name:        "Address",
+					Description: "会员地址",
+				},
+			},
+			Paths: map[string]DocPathItem{
+				"/member": {
+					"post": DocPathDesc{
+						Tags:        []string{"Member"},
+						Summary:     "新增会员资讯",
+						OperationID: "createMember",
+						RequestBody: DocPathRequestBody{
+							Required:    true,
+							Description: "新增会员资讯信息",
+							Content: map[string]DocPathContentItem{
+								"application/json": {
+									Schema: DocPathSchema{
+										Ref: "#/components/schemas/Member",
+									},
+								},
+							},
+						},
+						Responses: map[int]DocPathResponse{
+							200: {
+								Description: "接口调用成功",
+								Content: map[string]DocPathContentItem{
+									"application/json": {
+										Schema: DocPathSchema{
+											Ref: "#/components/schemas/Member",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Components: DocComponent{
+				Schemas: func() (schemas map[string]DocComponentSchema) {
+					schemas = make(map[string]DocComponentSchema)
+					for _, m := range metadata {
+						props := make(map[string]DocSchemaProperty)
+						for _, f := range m.Fields {
+							prop := DocSchemaProperty{}
+							if f.IsRef {
+								prop.Ref = fmt.Sprintf("#/components/schemas/%s", f.Type)
+							} else {
+								prop.Type = f.Type
+							}
+							props[f.Name] = prop
+						}
+						schemas[m.Name] = DocComponentSchema{
+							Type:       "object",
+							Properties: props,
+						}
+					}
+					return
+				}(),
+				SecuritySchemes: map[string]DocSecurityScheme{
+					"api_key": {
+						Type: "apiKey",
+						Name: "api_key",
+						In:   "header",
+					},
+				},
+			},
+		}
+		yaml := doc.Marshal()
+		c.String(http.StatusOK, yaml)
 	},
 }
