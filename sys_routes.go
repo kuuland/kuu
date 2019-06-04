@@ -3,6 +3,7 @@ package kuu
 import (
 	"bytes"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -543,7 +544,16 @@ var ModelDocsRoute = RouteInfo{
 				},
 			},
 		}
-		yaml := doc.Marshal()
-		c.String(http.StatusOK, yaml)
+		yml := doc.Marshal()
+		if c.Query("yaml") != "" {
+			c.String(http.StatusOK, yml)
+		} else {
+			json, e := yaml.YAMLToJSON([]byte(yml))
+			if e != nil {
+				c.STDErr(e.Error())
+				return
+			}
+			c.String(http.StatusOK, string(json))
+		}
 	},
 }
