@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"regexp"
 	"strings"
 )
@@ -65,15 +64,8 @@ func AddWhitelist(rules ...interface{}) {
 	Whitelist = append(Whitelist, rules...)
 }
 
-func saveHistory(c *Context, secretData *SignSecret) {
-	var body map[string]interface{}
-	c.ShouldBindBodyWith(&body, binding.JSON)
+func saveHistory(secretData *SignSecret) {
 	history := SignHistory{
-		Request: Stringify(map[string]interface{}{
-			"headers": c.Request.Header,
-			"query":   c.Request.URL.Query(),
-			"body":    body,
-		}),
 		SecretID:   secretData.ID,
 		SecretData: secretData.Secret,
 		Token:      secretData.Token,
@@ -143,6 +135,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	}
 	data.Secret = &secret
 	data.Payload = DecodedToken(token, secret.Secret)
+	data.SubDocID = secret.SubDocID
 	if data.IsValid() {
 		c.Set(SignContextKey, &data)
 	}

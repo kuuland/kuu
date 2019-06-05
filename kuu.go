@@ -26,6 +26,9 @@ var (
 	ValuesKey = "Values"
 )
 
+// StartTime
+var StartTime time.Time
+
 // HandlerFunc defines the handler used by ok middleware as return value.
 type HandlerFunc func(*Context)
 
@@ -101,6 +104,7 @@ func shutdown(srv *http.Server) {
 
 // Run
 func (e *Engine) Run(addr ...string) {
+	StartTime = time.Now()
 	address := resolveAddress(addr)
 	srv := &http.Server{
 		Addr:    address,
@@ -117,6 +121,7 @@ func (e *Engine) Run(addr ...string) {
 
 // RunTLS
 func (e *Engine) RunTLS(addr, certFile, keyFile string) {
+	StartTime = time.Now()
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: e.Engine,
@@ -263,7 +268,7 @@ func (e *Engine) initStatics() {
 			} else {
 				e.StaticFile(key, str)
 			}
-			AddWhitelist(regexp.MustCompile(fmt.Sprintf("^GET.%s", key)))
+			AddWhitelist(regexp.MustCompile(fmt.Sprintf(`^GET\s%s`, key)))
 		}
 	}
 }

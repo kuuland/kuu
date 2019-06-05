@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -110,4 +111,31 @@ func (c *Context) IgnoreAuth(cancel ...bool) {
 	} else {
 		c.SetValue(IgnoreAuthKey, true)
 	}
+}
+
+// Scheme
+func (c *Context) Scheme() string {
+	// Can't use `r.Request.URL.Scheme`
+	// See: https://groups.google.com/forum/#!topic/golang-nuts/pMUkBlQBDF0
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	if scheme := c.Request.Header.Get("X-Forwarded-Proto"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.Request.Header.Get("X-Forwarded-Protocol"); scheme != "" {
+		return scheme
+	}
+	if ssl := c.Request.Header.Get("X-Forwarded-Ssl"); ssl == "on" {
+		return "https"
+	}
+	if scheme := c.Request.Header.Get("X-Url-Scheme"); scheme != "" {
+		return scheme
+	}
+	return "http"
+}
+
+// Origin
+func (c *Context) Origin() string {
+	return fmt.Sprintf("%s://%s", c.Scheme(), c.Request.Host)
 }
