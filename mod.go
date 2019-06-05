@@ -34,7 +34,12 @@ func (e *Engine) Import(mods ...*Mod) {
 			if route.Method == "" {
 				route.Method = "GET"
 			}
-			routePath := path.Join(C().GetString("prefix"), route.Path)
+			var routePath string
+			if route.IgnorePrefix {
+				routePath = path.Join(route.Path)
+			} else {
+				routePath = path.Join(C().GetString("prefix"), route.Path)
+			}
 			if route.Method == "*" {
 				e.Any(routePath, route.HandlerFunc)
 			} else {

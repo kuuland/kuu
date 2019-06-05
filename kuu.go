@@ -37,9 +37,10 @@ type HandlersChain []HandlerFunc
 
 // RouteInfo represents a request route's specification which contains method and path and its handler.
 type RouteInfo struct {
-	Method      string
-	Path        string
-	HandlerFunc HandlerFunc
+	Method       string
+	Path         string
+	HandlerFunc  HandlerFunc
+	IgnorePrefix bool
 }
 
 // RoutesInfo defines a RouteInfo array.

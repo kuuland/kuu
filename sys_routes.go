@@ -211,8 +211,9 @@ var MetaRoute = RouteInfo{
 
 // ModelDocsRoute
 var ModelDocsRoute = RouteInfo{
-	Method: "GET",
-	Path:   "/model/docs",
+	Method:       "GET",
+	IgnorePrefix: true,
+	Path:         "/model/docs",
 	HandlerFunc: func(c *Context) {
 		var validMeta []*Metadata
 		for _, m := range metadata {
