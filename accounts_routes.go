@@ -31,6 +31,16 @@ func GenSignSecret(payload jwt.MapClaims, uid uint, expire time.Time) (*SignSecr
 	return secretData, nil
 }
 
+// GenAndSaveSignSecret
+func GenAndSaveSignSecret(payload jwt.MapClaims, uid uint, expire time.Time) (secretData *SignSecret, err error) {
+	secretData, err = GenSignSecret(payload, uid, expire)
+	if err != nil {
+		return
+	}
+	err = DB().Create(secretData).Error
+	return
+}
+
 // LoginRoute
 var LoginRoute = RouteInfo{
 	Method: "POST",
@@ -49,8 +59,7 @@ var LoginRoute = RouteInfo{
 		// 调用令牌签发
 		expiration := time.Second * time.Duration(ExpiresSeconds)
 		exp := time.Now().Add(expiration)
-		secretData, err := GenSignSecret(payload, uid, exp)
-		DB().Create(secretData)
+		secretData, err := GenAndSaveSignSecret(payload, uid, exp)
 		if err != nil {
 			c.STDErrHold("令牌签发失败").Data(err).Render()
 		}

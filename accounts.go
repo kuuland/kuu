@@ -143,6 +143,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	}
 	data.Secret = &secret
 	data.Payload = DecodedToken(token, secret.Secret)
+	data.SubDocID = secret.SubDocID
 	if data.IsValid() {
 		c.Set(SignContextKey, &data)
 	}

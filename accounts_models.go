@@ -24,6 +24,7 @@ func (SignHistory) TableName() string {
 type SignSecret struct {
 	gorm.Model `rest:"*" displayName:"令牌密钥"`
 	UID        uint   `name:"用户ID"`
+	SubDocID   uint   `name:"扩展档案ID"`
 	Desc       string `name:"令牌描述"`
 	Secret     string `name:"令牌密钥"`
 	Token      string `name:"令牌"`
@@ -40,11 +41,12 @@ func (SignSecret) TableName() string {
 
 // SignContext
 type SignContext struct {
-	Token   string
-	UID     uint
-	OrgID   uint
-	Payload jwt.MapClaims
-	Secret  *SignSecret
+	Token    string
+	UID      uint
+	SubDocID uint
+	OrgID    uint
+	Payload  jwt.MapClaims
+	Secret   *SignSecret
 }
 
 // IsValid
