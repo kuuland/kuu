@@ -17,6 +17,7 @@ var (
 	Whitelist = []interface{}{
 		"GET /",
 		"GET /favicon.ico",
+		"GET /whitelist",
 		"POST /login",
 		regexp.MustCompile("GET /assets"),
 	}
@@ -177,7 +178,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 		loginHandler = handler[0]
 	}
 	return &Mod{
-		Code: "accounts",
+		Code: "acc",
 		Models: []interface{}{
 			&SignSecret{},
 			&SignHistory{},
@@ -190,6 +191,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 			LogoutRoute,
 			ValidRoute,
 			APIKeyRoute,
+			WhitelistRoute,
 		},
 	}
 }

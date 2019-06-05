@@ -3,6 +3,7 @@ package kuu
 import (
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
+	"regexp"
 	"time"
 )
 
@@ -164,5 +165,22 @@ var APIKeyRoute = RouteInfo{
 			return
 		}
 		c.STD(secretData.Token)
+	},
+}
+
+// WhitelistRoute
+var WhitelistRoute = RouteInfo{
+	Method: "GET",
+	Path:   "/whitelist",
+	HandlerFunc: func(c *Context) {
+		var list []string
+		for _, item := range Whitelist {
+			if v, ok := item.(string); ok {
+				list = append(list, v)
+			} else if v, ok := item.(*regexp.Regexp); ok {
+				list = append(list, v.String())
+			}
+		}
+		c.STD(list)
 	},
 }
