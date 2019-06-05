@@ -1,10 +1,11 @@
 package kuu
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RedisUserPrisKey
@@ -54,8 +55,32 @@ func DelPrisCache() {
 		if err := RedisClient.Del(v...).Err(); err != nil {
 			ERROR(err)
 		} else {
-			INFO("清空权限缓存")
+			INFO("清空权限缓存 ALL")
 		}
+	}
+}
+
+// DelPrisCacheBySign 清除用户缓存
+func DelPrisCacheBySign(sign *SignContext) {
+	if v := RedisClient.Get(RedisUserRolesKey(sign)).Val(); v != "" {
+		if err := RedisClient.Del(RedisUserPrisKey(sign, v)).Err(); err != nil {
+			ERROR(err)
+		}
+	}
+	if err := RedisClient.Del(RedisUserRolesKey(sign)).Err(); err != nil {
+		ERROR(err)
+	} else {
+		if sign.UID != 0 {
+			INFO("清空权限缓存：UID=%d", sign.UID)
+			return
+		}
+	}
+}
+
+// DelCurPrisCache 清除当前用户缓存
+func DelCurPrisCache() {
+	if v, ok := GetValue(SignInfoKey); ok {
+		DelPrisCacheBySign(v.(*SignContext))
 	}
 }
 
