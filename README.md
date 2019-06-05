@@ -13,6 +13,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Data Source Management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
     - [Global default callbacks](#global-default-callbacks)
+    - [Struct validation](#struct-validation)
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
@@ -523,6 +524,58 @@ kuu.QueryCallback = func(scope *gorm.Scope) {
 			}
 		}
 	}
+}
+
+// Default validate callback
+kuu.ValidateCallback = func(scope *gorm.Scope) {
+	if _, ok := scope.Get("gorm:update_column"); !ok {
+		if result, ok := scope.DB().Get(skipValidations); !(ok && result.(bool)) {
+			if !scope.HasError() {
+				scope.CallMethod("Validate")
+				if scope.Value != nil {
+					resource := scope.IndirectValue().Interface()
+					_, validatorErrors := govalidator.ValidateStruct(resource)
+					if validatorErrors != nil {
+						if errors, ok := validatorErrors.(govalidator.Errors); ok {
+							for _, err := range FlatValidatorErrors(errors) {
+								scope.DB().AddError(formattedValidError(err, resource))
+							}
+						} else {
+							scope.DB().AddError(validatorErrors)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+```
+
+### Struct validation
+
+base on [govalidator](https://github.com/asaskevich/govalidator):
+
+```go
+// this struct definition will fail govalidator.ValidateStruct() (and the field values do not matter):
+type exampleStruct struct {
+  Name  string ``
+  Email string `valid:"email"`
+}
+
+// this, however, will only fail when Email is empty or an invalid email address:
+type exampleStruct2 struct {
+  Name  string `valid:"-"`
+  Email string `valid:"email"`
+}
+
+// lastly, this will only fail when Email is an invalid email address but not when it's empty:
+type exampleStruct2 struct {
+  Name  string `valid:"-"`
+  Email string `valid:"email,optional"`
+}
+
+// Validate
+func (e *exampleStruct2) Validate () error {
 }
 ```
 

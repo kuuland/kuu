@@ -172,7 +172,7 @@ var ValidateCallback = func(scope *gorm.Scope) {
 					_, validatorErrors := govalidator.ValidateStruct(resource)
 					if validatorErrors != nil {
 						if errors, ok := validatorErrors.(govalidator.Errors); ok {
-							for _, err := range flatValidatorErrors(errors) {
+							for _, err := range FlatValidatorErrors(errors) {
 								scope.DB().AddError(formattedValidError(err, resource))
 							}
 						} else {
@@ -185,7 +185,7 @@ var ValidateCallback = func(scope *gorm.Scope) {
 	}
 }
 
-func flatValidatorErrors(validatorErrors govalidator.Errors) []govalidator.Error {
+func FlatValidatorErrors(validatorErrors govalidator.Errors) []govalidator.Error {
 	resultErrors := []govalidator.Error{}
 	for _, validatorError := range validatorErrors.Errors() {
 		if errors, ok := validatorError.(govalidator.Errors); ok {
