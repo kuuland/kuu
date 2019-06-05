@@ -227,7 +227,7 @@ var ModelDocsRoute = RouteInfo{
 		doc := Doc{
 			Openapi: "3.0.1",
 			Info: DocInfo{
-				Title: fmt.Sprintf("%s 数据模型默认接口文档", name),
+				Title: fmt.Sprintf("%s 模型默认接口文档", name),
 				Description: "调用说明：\n" +
 					"1. 本文档仅包含数据模型默认开放的增删改查RESTful接口\n" +
 					"1. 接口请求/响应的Content-Type默认为application/json，UTF-8编码\n" +
@@ -235,7 +235,7 @@ var ModelDocsRoute = RouteInfo{
 					"\t- `code` - **业务状态码**，0表成功，非0表失败（错误码默认为-1，令牌失效为555），该值一定存在，请按照该值判断业务操作是否成功，`integer`\n" +
 					"\t- `msg` - **提示信息**，表正常或异常情况下的提示信息，有值才存在，`string`\n" +
 					"\t- `data` - **数据部分**，正常时返回请求数据，异常时返回错误详情，有值才存在，`类型视具体接口而定`\n" +
-					"1. 日期格式为\"2019-06-04T02:42:01.472Z\"，js代码：\"new Date().toISOString()\"\n" +
+					"1. 日期格式为`2019-06-04T02:42:01.472Z`，js代码：`new Date().toISOString()`\n" +
 					"1. 用户密码等信息统一为MD5加密后的32位大写字符串，npm推荐使用blueimp-md5" +
 					"",
 				Version: "1.0.0",
