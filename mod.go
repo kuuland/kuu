@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"path"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -50,6 +51,7 @@ func (e *Engine) Import(mods ...*Mod) {
 		if mod.Code == "" {
 			PANIC("模块编码不能为空")
 		}
+		mod.Code = strings.ToLower(mod.Code)
 		for _, route := range mod.Routes {
 			if route.Path == "" || route.HandlerFunc == nil {
 				PANIC("Route path and handler can't be nil")
@@ -73,7 +75,6 @@ func (e *Engine) Import(mods ...*Mod) {
 			desc := RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
-				meta.ModCode = mod.Code
 				metadata[meta.Name] = meta
 
 				defaultTableName := gorm.ToTableName(meta.Name)

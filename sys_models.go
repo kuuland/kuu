@@ -35,7 +35,6 @@ type ExtendField struct {
 
 // Metadata
 type Metadata struct {
-	ModCode     string
 	Name        string
 	DisplayName string
 	FullName    string
