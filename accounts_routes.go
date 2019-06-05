@@ -6,38 +6,51 @@ import (
 	"time"
 )
 
-// GenSignSecret
-func GenSignSecret(payload jwt.MapClaims, uid uint, expire time.Time) (*SignSecret, error) {
+type GenTokenDesc struct {
+	UID        uint
+	Payload    jwt.MapClaims
+	Expiration time.Duration
+	SubDocID   uint
+	Desc       string
+	IsAPIKey   bool
+}
+
+// GenToken
+func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	// 设置JWT令牌信息
 	iat := time.Now().Unix()
-	exp := expire.Unix()
-	payload["iat"] = iat // 签发时间
-	payload["exp"] = exp // 过期时间
+	exp := time.Now().Add(desc.Expiration).Unix()
+	desc.Payload["iat"] = iat // 签发时间
+	desc.Payload["exp"] = exp // 过期时间
 	// 生成新密钥
-	secretData := &SignSecret{
-		UID:    uid,
-		Secret: uuid.NewV4().String(),
-		Iat:    iat,
-		Exp:    exp,
-		Method: "LOGIN",
+	secretData = &SignSecret{
+		UID:      desc.UID,
+		Secret:   uuid.NewV4().String(),
+		Iat:      iat,
+		Exp:      exp,
+		Method:   "LOGIN",
+		SubDocID: desc.SubDocID,
+		Desc:     desc.Desc,
+		IsAPIKey: desc.IsAPIKey,
 	}
 	// 签发令牌
-	if signed, err := EncodedToken(payload, secretData.Secret); err != nil {
+	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {
 		return secretData, err
 	} else {
 		secretData.Token = signed
 	}
-	payload[TokenKey] = secretData.Token
-	return secretData, nil
-}
-
-// GenAndSaveSignSecret
-func GenAndSaveSignSecret(payload jwt.MapClaims, uid uint, expire time.Time) (secretData *SignSecret, err error) {
-	secretData, err = GenSignSecret(payload, uid, expire)
-	if err != nil {
+	desc.Payload[TokenKey] = secretData.Token
+	if err = DB().Create(secretData).Error; err != nil {
 		return
 	}
-	err = DB().Create(secretData).Error
+	// 缓存secret至redis
+	key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
+	value := Stringify(&secretData)
+	if err := RedisClient.SetNX(key, value, desc.Expiration).Err(); err != nil {
+		ERROR("令牌缓存到Redis失败：%s", err.Error())
+	}
+	// 保存登入历史
+	saveHistory(secretData)
 	return
 }
 
@@ -58,19 +71,14 @@ var LoginRoute = RouteInfo{
 		}
 		// 调用令牌签发
 		expiration := time.Second * time.Duration(ExpiresSeconds)
-		exp := time.Now().Add(expiration)
-		secretData, err := GenAndSaveSignSecret(payload, uid, exp)
+		secretData, err := GenToken(GenTokenDesc{
+			UID:        uid,
+			Payload:    payload,
+			Expiration: expiration,
+		})
 		if err != nil {
 			c.STDErrHold("令牌签发失败").Data(err).Render()
 		}
-		// 缓存secret至redis
-		key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
-		value := Stringify(&secretData)
-		if err := RedisClient.SetNX(key, value, expiration).Err(); err != nil {
-			ERROR("令牌缓存到Redis失败：%s", err.Error())
-		}
-		// 保存登入历史
-		saveHistory(c, secretData)
 		// 设置到上下文中
 		c.Set(SignContextKey, &SignContext{
 			Token:   secretData.Token,
@@ -108,7 +116,7 @@ var LogoutRoute = RouteInfo{
 					ERROR(err)
 				}
 				// 保存登出历史
-				saveHistory(c, &secretData)
+				saveHistory(&secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
 			}
@@ -144,14 +152,17 @@ var APIKeyRoute = RouteInfo{
 			c.STDErrHold("解析请求体失败").Data(err).Render()
 			return
 		}
-		secretData, err := GenSignSecret(c.SignInfo.Payload, c.SignInfo.UID, time.Unix(body.Exp, 0))
+		secretData, err := GenToken(GenTokenDesc{
+			Payload:    c.SignInfo.Payload,
+			UID:        c.SignInfo.UID,
+			Expiration: time.Unix(body.Exp, 0).Sub(time.Now()),
+			Desc:       body.Desc,
+			IsAPIKey:   true,
+		})
 		if err != nil {
 			c.STDErrHold("令牌签发失败").Data(err).Render()
 			return
 		}
-		secretData.Desc = body.Desc
-		secretData.IsAPIKey = true
-		DB().Create(secretData)
 		c.STD(secretData.Token)
 	},
 }

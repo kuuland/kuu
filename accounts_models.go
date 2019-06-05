@@ -8,7 +8,6 @@ import (
 // SignHistory
 type SignHistory struct {
 	gorm.Model `rest:"*" displayName:"登录历史"`
-	Request    string `name:"请求参数"`
 	SecretID   uint   `name:"密钥ID"`
 	SecretData string `name:"密钥"`
 	Token      string `name:"令牌"`
