@@ -20,8 +20,8 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	// 设置JWT令牌信息
 	iat := time.Now().Unix()
 	exp := time.Now().Add(desc.Expiration).Unix()
-	desc.Payload["iat"] = iat // 签发时间
-	desc.Payload["exp"] = exp // 过期时间
+	desc.Payload["Iat"] = iat // 签发时间
+	desc.Payload["Exp"] = exp // 过期时间
 	// 生成新密钥
 	secretData = &SignSecret{
 		UID:      desc.UID,
