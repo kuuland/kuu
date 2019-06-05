@@ -177,6 +177,7 @@ func Accounts(handler ...LoginHandlerFunc) *Mod {
 		loginHandler = handler[0]
 	}
 	return &Mod{
+		Code: "accounts",
 		Models: []interface{}{
 			&SignSecret{},
 			&SignHistory{},

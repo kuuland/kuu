@@ -546,6 +546,7 @@ var SetPayloadAttrs = func(payload jwt.MapClaims, user *User) jwt.MapClaims {
 // Sys
 func Sys() *Mod {
 	return &Mod{
+		Code: "sys",
 		Models: []interface{}{
 			&User{},
 			&Org{},

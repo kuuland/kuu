@@ -45,10 +45,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 	if value == nil {
 		PANIC("Model can't be nil")
 	}
-
-	if C().GetBool("gorm:migrate") {
-		DB().AutoMigrate(value)
-	}
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()

@@ -1,16 +1,35 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	"github.com/jinzhu/inflection"
 	"path"
 	"reflect"
+	"sync"
 	"time"
 )
 
-var metadata = make(map[string]*Metadata)
+var (
+	metadata        = make(map[string]*Metadata)
+	tableNames      = make(map[string]string)
+	modelStructsMap sync.Map
+)
+
+func init() {
+	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+		v, ok := tableNames[defaultTableName]
+		if !ok || v == "" {
+			PANIC("表名 %s 不存在", defaultTableName)
+		}
+		return v
+	}
+}
 
 // Mod
 type Mod struct {
+	Code        string
 	Middleware  gin.HandlersChain
 	Routes      RoutesInfo
 	Models      []interface{}
@@ -19,6 +38,7 @@ type Mod struct {
 
 // Import
 func (e *Engine) Import(mods ...*Mod) {
+	migrate := C().GetBool("gorm:migrate")
 	for _, mod := range mods {
 		for _, middleware := range mod.Middleware {
 			if middleware != nil {
@@ -27,6 +47,9 @@ func (e *Engine) Import(mods ...*Mod) {
 		}
 	}
 	for _, mod := range mods {
+		if mod.Code == "" {
+			PANIC("模块编码不能为空")
+		}
 		for _, route := range mod.Routes {
 			if route.Path == "" || route.HandlerFunc == nil {
 				PANIC("Route path and handler can't be nil")
@@ -50,7 +73,18 @@ func (e *Engine) Import(mods ...*Mod) {
 			desc := RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
+				meta.ModCode = mod.Code
 				metadata[meta.Name] = meta
+
+				defaultTableName := gorm.ToTableName(meta.Name)
+				pluralTableName := inflection.Plural(defaultTableName)
+
+				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
+				tableNames[defaultTableName] = tableName
+				tableNames[pluralTableName] = tableName
+			}
+			if migrate {
+				DB().AutoMigrate(model)
 			}
 		}
 		if mod.AfterImport != nil {
@@ -68,6 +102,11 @@ func parseMetadata(value interface{}) (m *Metadata) {
 	// Scope value need to be a struct
 	if reflectType.Kind() != reflect.Struct {
 		return
+	}
+
+	hashKey := reflectType
+	if value, ok := modelStructsMap.Load(hashKey); ok && value != nil {
+		return value.(*Metadata)
 	}
 
 	m = new(Metadata)
@@ -120,21 +159,22 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		if name != "" {
 			field.Name = name
 		}
-		if fieldStruct.Anonymous || indirectType.Kind() == reflect.Struct || indirectType.Kind() == reflect.Slice || indirectType.Kind() == reflect.Ptr {
-			if fieldStruct.Name == "Model" || fieldStruct.Name == "ExtendField" {
-				//subMeta := parseMetadata(fieldValue)
-				//if subMeta != nil && len(subMeta.Fields) > 0 {
-				//	if strings.HasPrefix(subMeta.FullName, "github.com/kuuland/kuu") {
-				//		m.Fields = append(m.Fields, subMeta.Fields...)
-				//	}
-				//}
-				continue
-			}
-		}
+		//if fieldStruct.Anonymous || indirectType.Kind() == reflect.Struct || indirectType.Kind() == reflect.Slice || indirectType.Kind() == reflect.Ptr {
+		//	if fieldStruct.Name == "Model" || fieldStruct.Name == "ExtendField" {
+		//		subMeta := parseMetadata(fieldValue)
+		//		if subMeta != nil && len(subMeta.Fields) > 0 {
+		//			if strings.HasPrefix(subMeta.FullName, "github.com/kuuland/kuu") {
+		//				m.Fields = append(m.Fields, subMeta.Fields...)
+		//			}
+		//		}
+		//		continue
+		//	}
+		//}
 		if field.Name != "" {
 			m.Fields = append(m.Fields, field)
 		}
 	}
+	modelStructsMap.Store(hashKey, m)
 	return
 }
 

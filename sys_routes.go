@@ -222,9 +222,6 @@ var ModelDocsRoute = RouteInfo{
 			}
 			validMeta = append(validMeta, m)
 		}
-		//if !m.RestDesc.IsValid() || len(m.Fields) == 0 {
-		//	continue
-		//}
 
 		name := C().DefaultGetString("name", "Kuu")
 		doc := Doc{

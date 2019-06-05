@@ -14,11 +14,6 @@ type SignHistory struct {
 	Method     string `name:"登录/登出"`
 }
 
-//TableName 设置表名
-func (SignHistory) TableName() string {
-	return "sys_SignHistory"
-}
-
 // SignSecret
 type SignSecret struct {
 	gorm.Model `rest:"*" displayName:"令牌密钥"`
@@ -31,11 +26,6 @@ type SignSecret struct {
 	Exp        int64  `name:"令牌过期时间戳"`
 	Method     string `name:"登录/登出"`
 	IsAPIKey   bool   `name:"是否API Key"`
-}
-
-//TableName 设置表名
-func (SignSecret) TableName() string {
-	return "sys_SignSecret"
 }
 
 // SignContext

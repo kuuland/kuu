@@ -35,16 +35,12 @@ type ExtendField struct {
 
 // Metadata
 type Metadata struct {
+	ModCode     string
 	Name        string
 	DisplayName string
 	FullName    string
 	Fields      []MetadataField
 	RestDesc    *RestDesc `json"-"`
-}
-
-//TableName 设置表名
-func (Metadata) TableName() string {
-	return "sys_Metadata"
 }
 
 // QueryPreload
@@ -58,14 +54,9 @@ type MetadataField struct {
 	Name    string
 	Kind    string
 	Type    string
-	Value   interface{} `json:"-"`
+	Value   interface{} `json:"-" gorm:"-"`
 	IsRef   bool
 	IsArray bool
-}
-
-//TableName 设置表名
-func (MetadataField) TableName() string {
-	return "sys_MetadataField"
 }
 
 // Routes
@@ -74,11 +65,6 @@ type Route struct {
 	ExtendField
 	Method string
 	Path   string
-}
-
-//TableName 设置表名
-func (Route) TableName() string {
-	return "sys_Route"
 }
 
 // User
@@ -97,11 +83,6 @@ type User struct {
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   bool         `name:"是否内置"`
 	SubDocID    uint         `name:"扩展档案ID"`
-}
-
-//TableName 设置表名
-func (User) TableName() string {
-	return "sys_User"
 }
 
 // BeforeSave
@@ -193,11 +174,6 @@ func (o *Org) AfterDelete() {
 	DelPrisCache()
 }
 
-//TableName 设置表名
-func (Org) TableName() string {
-	return "sys_Org"
-}
-
 type RoleAssign struct {
 	Model `rest:"*" displayName:"用户角色分配"`
 	ExtendField
@@ -217,11 +193,6 @@ func (u *User) AfterDelete() {
 	DelPrisCache()
 }
 
-//TableName 设置表名
-func (RoleAssign) TableName() string {
-	return "sys_RoleAssign"
-}
-
 // Role
 type Role struct {
 	Model `rest:"*" displayName:"角色"`
@@ -231,11 +202,6 @@ type Role struct {
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
 	IsBuiltIn           bool                  `name:"是否内置"`
-}
-
-//TableName 设置表名
-func (Role) TableName() string {
-	return "sys_Role"
 }
 
 // AfterSave
@@ -261,11 +227,6 @@ type OperationPrivileges struct {
 	MenuCode string `name:"菜单编码"`
 }
 
-//TableName 设置表名
-func (OperationPrivileges) TableName() string {
-	return "sys_OperationPrivileges"
-}
-
 // DataPrivileges
 type DataPrivileges struct {
 	Model `rest:"*" displayName:"角色数据权限"`
@@ -274,11 +235,6 @@ type DataPrivileges struct {
 	TargetOrgID   uint   `name:"目标组织ID"`
 	ReadableRange string `name:"可读范围"`
 	WritableRange string `name:"可写范围"`
-}
-
-//TableName 设置表名
-func (DataPrivileges) TableName() string {
-	return "sys_DataPrivileges"
 }
 
 // Menu
@@ -315,11 +271,6 @@ func (m *Menu) BeforeSave() {
 	}
 }
 
-//TableName 设置表名
-func (Menu) TableName() string {
-	return "sys_Menu"
-}
-
 // Dict
 type Dict struct {
 	Model `rest:"*"`
@@ -328,11 +279,6 @@ type Dict struct {
 	Name      string `gorm:"not null"`
 	Values    []DictValue
 	IsBuiltIn bool
-}
-
-//TableName 设置表名
-func (Dict) TableName() string {
-	return "sys_Dict"
 }
 
 // QueryPreload
@@ -350,11 +296,6 @@ type DictValue struct {
 	Sort   int
 }
 
-//TableName 设置表名
-func (DictValue) TableName() string {
-	return "sys_DictValue"
-}
-
 // File
 type File struct {
 	Model `rest:"*" displayName:"文件"`
@@ -368,22 +309,12 @@ type File struct {
 	Path   string `json:"path"`
 }
 
-//TableName 设置表名
-func (File) TableName() string {
-	return "sys_File"
-}
-
 // SignOrg
 type SignOrg struct {
 	Model
 	ExtendField
 	Token string
 	UID   uint
-}
-
-//TableName 设置表名
-func (SignOrg) TableName() string {
-	return "sys_SignOrg"
 }
 
 // IsValid
@@ -402,9 +333,4 @@ type Param struct {
 	Name      string `name:"参数名称" gorm:"not null"`
 	Value     string `name:"参数值"`
 	IsBuiltIn bool   `name:"是否预置"`
-}
-
-//TableName 设置表名
-func (Param) TableName() string {
-	return "sys_Param"
 }
