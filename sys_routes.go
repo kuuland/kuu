@@ -403,6 +403,24 @@ var ModelDocsRoute = RouteInfo{
 							},
 						},
 					},
+					"/whitelist": {
+						"get": {
+							Tags:        []string{"辅助接口"},
+							Summary:     "接口白名单",
+							Description: "接口白名单是指`不需要任何令牌`，可直接访问的接口，请前往在线链接查看最新列表",
+							OperationID: "enum",
+							Responses: map[int]DocPathResponse{
+								200: {
+									Description: "查询接口白名单成功",
+									Content: map[string]DocPathContentItem{
+										"text/plain": {
+											Schema: DocPathSchema{Type: "string"},
+										},
+									},
+								},
+							},
+						},
+					},
 				}
 				for _, m := range validMeta {
 					key := strings.ToLower(fmt.Sprintf("/%s", m.Name))
