@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	metadata        = make(map[string]*Metadata)
+	metadataMap     = make(map[string]*Metadata)
+	metadataList    = make([]*Metadata, 0)
 	tableNames      = make(map[string]string)
 	modelStructsMap sync.Map
 )
@@ -75,7 +76,8 @@ func (e *Engine) Import(mods ...*Mod) {
 			desc := RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
-				metadata[meta.Name] = meta
+				metadataMap[meta.Name] = meta
+				metadataList = append(metadataList, meta)
 
 				defaultTableName := gorm.ToTableName(meta.Name)
 				pluralTableName := inflection.Plural(defaultTableName)
@@ -127,6 +129,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		field := MetadataField{
 			Code: fieldStruct.Name,
 			Kind: fieldStruct.Type.Kind().String(),
+			Enum: fieldStruct.Tag.Get("enum"),
 		}
 		switch field.Kind {
 		case "bool":
@@ -182,25 +185,22 @@ func parseMetadata(value interface{}) (m *Metadata) {
 // Meta
 func Meta(value interface{}) (m *Metadata) {
 	if v, ok := value.(string); ok {
-		return metadata[v]
+		return metadataMap[v]
 	} else {
 		return parseMetadata(value)
 	}
 }
 
 // Metalist
-func Metalist() (arr []*Metadata) {
-	for _, v := range metadata {
-		arr = append(arr, v)
-	}
-	return
+func Metalist() []*Metadata {
+	return metadataList
 }
 
 // RegisterMeta
 func RegisterMeta() {
 	tx := DB().Begin()
 	tx = tx.Unscoped().Where(&Metadata{}).Delete(&Metadata{})
-	for _, meta := range metadata {
+	for _, meta := range metadataList {
 		tx = tx.Create(meta)
 	}
 	if errs := tx.GetErrors(); len(errs) > 0 {

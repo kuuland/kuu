@@ -19,6 +19,8 @@ var (
 		"GET /favicon.ico",
 		"GET /whitelist",
 		"POST /login",
+		"GET /enum",
+		"GET /meta",
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400

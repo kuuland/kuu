@@ -559,6 +559,7 @@ func Sys() *Mod {
 			UploadRoute,
 			AuthRoute,
 			MetaRoute,
+			EnumRoute,
 			ModelDocsRoute,
 		},
 		AfterImport: initSys,

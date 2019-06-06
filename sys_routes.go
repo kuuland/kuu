@@ -9,8 +9,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"path"
+	"reflect"
 	"strings"
+	"sync"
 )
+
+var valueCacheMap sync.Map
 
 // OrgLoginRoute
 var OrgLoginRoute = RouteInfo{
@@ -216,26 +220,82 @@ var MetaRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		json := c.Query("json")
 		if json != "" {
-			c.STD(metadata)
+			c.STD(metadataList)
 		} else {
-			var buffer bytes.Buffer
-			for _, m := range metadata {
-				if len(m.Fields) > 0 {
-					if m.DisplayName != "" {
-						buffer.WriteString(fmt.Sprintf("%s(%s) {\n", m.Name, m.DisplayName))
-					} else {
-						buffer.WriteString(fmt.Sprintf("%s {\n", m.Name))
+			var (
+				hashKey = "meta"
+				result  string
+			)
+			if v, ok := valueCacheMap.Load(hashKey); ok {
+				result = v.(string)
+			} else {
+				var buffer bytes.Buffer
+				for _, m := range metadataList {
+					if len(m.Fields) > 0 {
+						if m.DisplayName != "" {
+							buffer.WriteString(fmt.Sprintf("%s(%s) {\n", m.Name, m.DisplayName))
+						} else {
+							buffer.WriteString(fmt.Sprintf("%s {\n", m.Name))
+						}
+						for index, field := range m.Fields {
+							buffer.WriteString(fmt.Sprintf("\t%s(%s) %s", field.Code, field.Name, field.Type))
+							if index != len(m.Fields)-1 {
+								buffer.WriteString("\n")
+							}
+						}
+						buffer.WriteString(fmt.Sprintf("\n}\n\n"))
 					}
-					for index, field := range m.Fields {
-						buffer.WriteString(fmt.Sprintf("\t%s(%s) %s", field.Code, field.Name, field.Type))
-						if index != len(m.Fields)-1 {
+				}
+				result = buffer.String()
+				valueCacheMap.Store(hashKey, result)
+			}
+			c.String(http.StatusOK, result)
+		}
+	},
+}
+
+// EnumRoute
+var EnumRoute = RouteInfo{
+	Path:   "/enum",
+	Method: "GET",
+	HandlerFunc: func(c *Context) {
+		json := c.Query("json")
+		if json != "" {
+			c.STD(enumList)
+		} else {
+			var (
+				hashKey = "enum"
+				result  string
+			)
+			if v, ok := valueCacheMap.Load(hashKey); ok {
+				result = v.(string)
+			} else {
+				var buffer bytes.Buffer
+				for _, desc := range enumList {
+					if desc.ClassName != "" {
+						buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.ClassCode, desc.ClassName))
+					} else {
+						buffer.WriteString(fmt.Sprintf("%s {\n", desc.ClassCode))
+					}
+					index := 0
+					for value, label := range desc.Values {
+						if len(label) < 20 {
+							for i := 0; i < 20-len(label); i++ {
+								label += " "
+							}
+						}
+						buffer.WriteString(fmt.Sprintf("\t%s\t%v(%s)", label, value, reflect.ValueOf(value).Type().Kind().String()))
+						if index != len(desc.Values)-1 {
 							buffer.WriteString("\n")
 						}
+						index++
 					}
 					buffer.WriteString(fmt.Sprintf("\n}\n\n"))
 				}
+				result = buffer.String()
+				valueCacheMap.Store(hashKey, result)
 			}
-			c.String(http.StatusOK, buffer.String())
+			c.String(http.StatusOK, result)
 		}
 	},
 }
@@ -246,8 +306,28 @@ var ModelDocsRoute = RouteInfo{
 	IgnorePrefix: true,
 	Path:         "/model/docs",
 	HandlerFunc: func(c *Context) {
+		var (
+			hashKeyYAML = "model_docs_yaml"
+			hashKeyJSON = "model_docs_json"
+			result      string
+		)
+		// 取缓存
+		if c.Query("yaml") != "" {
+			if v, ok := valueCacheMap.Load(hashKeyYAML); ok {
+				result = v.(string)
+				c.String(http.StatusOK, result)
+				return
+			}
+		} else {
+			if v, ok := valueCacheMap.Load(hashKeyJSON); ok {
+				result = v.(string)
+				c.String(http.StatusOK, result)
+				return
+			}
+		}
+		// 重新生成
 		var validMeta []*Metadata
-		for _, m := range metadata {
+		for _, m := range metadataList {
 			if !m.RestDesc.IsValid() || len(m.Fields) == 0 {
 				continue
 			}
@@ -275,10 +355,10 @@ var ModelDocsRoute = RouteInfo{
 				},
 			},
 			Servers: []DocServer{
-				{Url: c.Origin(), Description: "默认服务器"},
+				{Url: fmt.Sprintf("%s%s", c.Origin(), C().GetString("prefix")), Description: "默认服务器"},
 			},
 			Tags: func() (tags []DocTag) {
-				tags = make([]DocTag, 0)
+				tags = []DocTag{{Name: "辅助接口"}}
 				for _, m := range validMeta {
 					tags = append(tags, DocTag{
 						Name:        m.Name,
@@ -288,7 +368,42 @@ var ModelDocsRoute = RouteInfo{
 				return
 			}(),
 			Paths: func() (paths map[string]DocPathItems) {
-				paths = make(map[string]DocPathItems)
+				paths = map[string]DocPathItems{
+					"/meta": {
+						"get": {
+							Tags:        []string{"辅助接口"},
+							Summary:     "查询模型列表",
+							OperationID: "meta",
+							Responses: map[int]DocPathResponse{
+								200: {
+									Description: "查询模型列表成功",
+									Content: map[string]DocPathContentItem{
+										"text/plain": {
+											Schema: DocPathSchema{Type: "string"},
+										},
+									},
+								},
+							},
+						},
+					},
+					"/enum": {
+						"get": {
+							Tags:        []string{"辅助接口"},
+							Summary:     "查询枚举列表",
+							OperationID: "enum",
+							Responses: map[int]DocPathResponse{
+								200: {
+									Description: "查询枚举列表成功",
+									Content: map[string]DocPathContentItem{
+										"text/plain": {
+											Schema: DocPathSchema{Type: "string"},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
 				for _, m := range validMeta {
 					key := strings.ToLower(fmt.Sprintf("/%s", m.Name))
 					items := make(DocPathItems)
@@ -555,6 +670,11 @@ var ModelDocsRoute = RouteInfo{
 							} else {
 								prop.Type = f.Type
 							}
+							if f.Enum != "" && enumMap[f.Enum] != nil {
+								for value, _ := range enumMap[f.Enum].Values {
+									prop.Enum = append(prop.Enum, value)
+								}
+							}
 							props[f.Code] = prop
 						}
 						schemas[m.Name] = DocComponentSchema{
@@ -575,14 +695,17 @@ var ModelDocsRoute = RouteInfo{
 		}
 		yml := doc.Marshal()
 		if c.Query("yaml") != "" {
+			valueCacheMap.Store(hashKeyYAML, yml)
 			c.String(http.StatusOK, yml)
 		} else {
-			json, e := yaml.YAMLToJSON([]byte(yml))
+			data, e := yaml.YAMLToJSON([]byte(yml))
 			if e != nil {
 				c.STDErr(e.Error())
 				return
 			}
-			c.String(http.StatusOK, string(json))
+			json := string(data)
+			valueCacheMap.Store(hashKeyJSON, json)
+			c.String(http.StatusOK, json)
 		}
 	},
 }

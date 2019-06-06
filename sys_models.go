@@ -54,6 +54,7 @@ type MetadataField struct {
 	Kind    string
 	Type    string
 	Value   interface{} `json:"-" gorm:"-"`
+	Enum    string
 	IsRef   bool
 	IsArray bool
 }
@@ -89,6 +90,12 @@ func (u *User) BeforeSave() {
 	if len(u.Password) == 32 {
 		u.Password = GenerateFromPassword(u.Password)
 	}
+	return
+}
+
+// AfterFind
+func (u *User) AfterFind() {
+	u.Password = ""
 	return
 }
 
