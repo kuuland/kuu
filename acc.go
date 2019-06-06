@@ -172,8 +172,8 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 	return nil
 }
 
-// Accounts
-func Accounts(handler ...LoginHandlerFunc) *Mod {
+// Acc
+func Acc(handler ...LoginHandlerFunc) *Mod {
 	if len(handler) > 0 {
 		loginHandler = handler[0]
 	}
