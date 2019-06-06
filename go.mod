@@ -11,6 +11,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jinzhu/gorm v1.9.8
+	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/pkg/errors v0.8.0
 	github.com/satori/go.uuid v1.2.0
