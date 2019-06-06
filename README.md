@@ -76,7 +76,7 @@ func main() {
 	r.GET("/", func(c *kuu.Context) {
 		c.STD("Hello Kuu.")
 	})
-	r.Import(kuu.Accounts(), kuu.Sys())
+	r.Import(kuu.Acc(), kuu.Sys())
 	r.Run()
 }
 ```
@@ -628,7 +628,7 @@ func MyMod() *kuu.Mod {
 
 func main() {
 	r := kuu.Default()
-	r.Import(kuu.Accounts(), kuu.Sys())     // import preset modules
+	r.Import(kuu.Acc(), kuu.Sys())     // import preset modules
 	r.Import(MyMod())                       // import custom module
 }
 ```
@@ -712,7 +712,7 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 ### Preset modules
 
-- [Accounts module](https://github.com/kuuland/kuu/blob/master/accounts.go#L153) - JWT-based token issuance, login authentication, etc.
+- [Accounts module](https://github.com/kuuland/kuu/blob/master/acc.go#L153) - JWT-based token issuance, login authentication, etc.
 - [System module](https://github.com/kuuland/kuu/blob/master/sys.go#L564) - Menu, admin, roles, organization, etc.
 - [Admin](https://github.com/kuuland/ui) - A React boilerplate.
 
