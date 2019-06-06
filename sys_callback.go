@@ -153,6 +153,9 @@ var QueryCallback = func(scope *gorm.Scope) {
 						_, hasCodeField := scope.FieldByName("Code")
 						_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 						if hasCodeField && hasCreatedByIDField {
+							// 菜单数据权限控制与组织无关，且只有两种情况：
+							// 1.自己创建的，一定看得到
+							// 2.别人创建的，必须通过分配操作权限才能看到
 							scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
 						}
 					}
