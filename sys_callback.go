@@ -142,14 +142,23 @@ var QueryCallback = func(scope *gorm.Scope) {
 		rawValues, _ := GetValue(ValuesKey)
 
 		if !IsBlank(rawDesc) {
+			desc := rawDesc.(*PrivilegesDesc)
+			values := make(Values)
 			if !IsBlank(rawValues) {
-				values := make(Values)
 				values = *(rawValues.(*Values))
 				if _, ok := values[IgnoreAuthKey]; ok {
 					return
+				} else if _, ok := values[UserMenusKey]; ok {
+					if desc.IsValid() && desc.NotRootUser() {
+						_, hasCodeField := scope.FieldByName("Code")
+						_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+						if hasCodeField && hasCreatedByIDField {
+							scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
+						}
+					}
+					return
 				}
 			}
-			desc := rawDesc.(*PrivilegesDesc)
 			if desc.IsValid() && desc.NotRootUser() {
 				_, hasOrgIDField := scope.FieldByName("OrgID")
 				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")

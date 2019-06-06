@@ -285,26 +285,6 @@ func createMockData(tx *gorm.DB) {
 	gzrOP := []OperationPrivileges{
 		{
 			RoleID:   gzr.ID,
-			MenuCode: "main",
-		},
-		{
-			RoleID:   gzr.ID,
-			MenuCode: "sys",
-		},
-		{
-			RoleID:   gzr.ID,
-			MenuCode: "sys:omg",
-		},
-		{
-			RoleID:   gzr.ID,
-			MenuCode: "sys:auth",
-		},
-		{
-			RoleID:   gzr.ID,
-			MenuCode: "sys:settings",
-		},
-		{
-			RoleID:   gzr.ID,
 			MenuCode: "sys:user",
 		},
 		{

@@ -105,12 +105,13 @@ func (c *Context) PANIC(args ...interface{}) {
 }
 
 // IgnoreAuth
-func (c *Context) IgnoreAuth(cancel ...bool) {
+func (c *Context) IgnoreAuth(cancel ...bool) *Context {
 	if len(cancel) > 0 && cancel[0] == true {
 		c.DelValue(IgnoreAuthKey)
 	} else {
 		c.SetValue(IgnoreAuthKey, true)
 	}
+	return c
 }
 
 // Scheme

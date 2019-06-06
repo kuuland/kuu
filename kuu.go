@@ -22,6 +22,8 @@ var (
 	SignInfoKey = "SignInfo"
 	// IgnoreAuthKey
 	IgnoreAuthKey = "IgnoreAuth"
+	// UserMenus
+	UserMenusKey = "UserMenus"
 	// ValuesKey
 	ValuesKey = "Values"
 )

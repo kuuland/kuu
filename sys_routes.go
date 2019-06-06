@@ -99,19 +99,50 @@ var UserMenusRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
-		desc := GetPrivilegesDesc(c.Context)
-		var (
-			menus []Menu
-			db    = DB()
-		)
-		if desc.UID != RootUID() {
-			db = db.Where("code in (?)", desc.Codes)
-		}
-		if err := db.Find(&menus).Error; err != nil {
-			ERROR(err)
-			c.STDErr("菜单查询失败")
+		c.SetValue(UserMenusKey, true)
+		var menus []Menu
+		// 查询授权菜单
+		if err := c.DB().Find(&menus).Error; err != nil {
+			c.STDErrHold("菜单查询失败").Data(err).Render()
 			return
 		}
+		// 补全父级菜单
+		var total []Menu
+		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
+			c.STDErrHold("菜单查询失败").Data(err).Render()
+			return
+		}
+		var (
+			totalMap  = make(map[uint]Menu)
+			existsMap = make(map[uint]bool)
+			finded    = make(map[uint]bool)
+		)
+		for _, item := range total {
+			totalMap[item.ID] = item
+		}
+		for _, item := range menus {
+			existsMap[item.ID] = true
+		}
+		var fall func(result []Menu) []Menu
+		fall = func(result []Menu) []Menu {
+			recall := false
+			for _, item := range result {
+				if !finded[item.ID] {
+					pitem := totalMap[item.Pid]
+					if item.Pid != 0 && pitem.ID != 0 && !existsMap[pitem.ID] {
+						result = append(result, pitem)
+						recall = true
+						existsMap[pitem.ID] = true
+					}
+					finded[item.ID] = true
+				}
+			}
+			if recall {
+				return fall(result)
+			}
+			return result
+		}
+		menus = fall(menus)
 		c.STD(menus)
 	},
 }
