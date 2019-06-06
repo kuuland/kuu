@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"strings"
 	"time"
 )
 
@@ -499,6 +500,7 @@ func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 		return nil, 0, errors.New(c.L("该用户已被禁用"))
 	}
 	// 检测密码是否正确
+	body.Password = strings.ToLower(body.Password)
 	if !CompareHashAndPassword(user.Password, body.Password) {
 		return nil, 0, errors.New(c.L("账号密码不一致"))
 	}
