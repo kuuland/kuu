@@ -95,7 +95,7 @@ func (u *User) BeforeSave() {
 
 // AfterFind
 func (u *User) AfterFind() {
-	u.Password = ""
+	//u.Password = ""
 	return
 }
 
