@@ -587,7 +587,6 @@ var ModelDocsRoute = RouteInfo{
 									Description: fmt.Sprintf("查询条件，%s对象的JSON字符串", displayName),
 									Schema: DocPathSchema{
 										Type: "string",
-										Ref:  fmt.Sprintf("#/components/schemas/%s", m.Name),
 									},
 								},
 								{

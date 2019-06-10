@@ -229,11 +229,13 @@ func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 func (e *Engine) initConfigs() {
 	if _, exists := C().Get("cors"); exists {
 		if C().GetBool("cors") {
-			e.Use(cors.Default())
+			config := cors.DefaultConfig()
+			config.AllowAllOrigins = true
+			config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "api_key", "Authorization", TokenKey, ""}
+			e.Use(cors.New(config))
 		} else {
-			v := C().GetInterface("cors")
 			var config cors.Config
-			GetSoul(v, &config)
+			C().GetInterface("cors", &config)
 			e.Use(cors.New(config))
 		}
 	}
