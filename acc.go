@@ -174,6 +174,20 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 	return nil
 }
 
+// DelAccCache
+func DelAccCache() {
+	rawDesc, _ := GetValue(PrisDescKey)
+	if !IsBlank(rawDesc) {
+		desc := rawDesc.(*PrivilegesDesc)
+		if desc.IsValid() && desc.SignInfo.Token != "" {
+			token := desc.SignInfo.Token
+			// 删除redis缓存
+			RedisClient.Del(RedisKeyBuilder(RedisSecretKey, token))
+			RedisClient.Del(RedisKeyBuilder(RedisOrgKey, token))
+		}
+	}
+}
+
 // Acc
 func Acc(handler ...LoginHandlerFunc) *Mod {
 	if len(handler) > 0 {

@@ -93,12 +93,6 @@ func (u *User) BeforeSave() {
 	return
 }
 
-// AfterFind
-func (u *User) AfterFind() {
-	//u.Password = ""
-	return
-}
-
 // QueryPreload
 func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("RoleAssigns")

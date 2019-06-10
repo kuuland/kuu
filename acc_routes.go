@@ -109,13 +109,6 @@ var LogoutRoute = RouteInfo{
 					c.STDErrHold("退出登录失败").Data(errs).Render()
 					return
 				}
-				// 删除redis缓存
-				if _, err := RedisClient.Del(RedisKeyBuilder(RedisSecretKey, secretData.Token)).Result(); err != nil {
-					ERROR(err)
-				}
-				if _, err := RedisClient.Del(RedisKeyBuilder(RedisOrgKey, secretData.Token)).Result(); err != nil {
-					ERROR(err)
-				}
 				// 保存登出历史
 				saveHistory(&secretData)
 				// 设置Cookie过期

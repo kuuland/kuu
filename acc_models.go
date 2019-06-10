@@ -3,6 +3,7 @@ package kuu
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
+	"strings"
 )
 
 // SignHistory
@@ -26,6 +27,20 @@ type SignSecret struct {
 	Exp        int64  `name:"令牌过期时间戳"`
 	Method     string `name:"登录/登出"`
 	IsAPIKey   bool   `name:"是否API Key"`
+}
+
+// AfterSave
+func (s *SignSecret) AfterSave() {
+	if s != nil && strings.ToUpper(s.Method) == "LOGOUT" {
+		DelAccCache()
+	}
+}
+
+// AfterDelete
+func (s *SignSecret) AfterDelete() {
+	if s != nil && strings.ToUpper(s.Method) == "LOGOUT" {
+		DelAccCache()
+	}
 }
 
 // SignContext
