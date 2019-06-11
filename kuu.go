@@ -226,6 +226,28 @@ func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return e.Engine.Any(relativePath, ConvertKuuHandlers(handlers)...)
 }
 
+// GetRoutinePrivilegesDesc
+func GetRoutinePrivilegesDesc() *PrivilegesDesc {
+	raw, _ := GetValue(PrisDescKey)
+	if !IsBlank(raw) {
+		desc := raw.(*PrivilegesDesc)
+		if desc.IsValid() {
+			return desc
+		}
+	}
+	return nil
+}
+
+// GetRoutineValues
+func GetRoutineValues() Values {
+	raw, _ := GetValue(ValuesKey)
+	if !IsBlank(raw) {
+		values := *(raw.(*Values))
+		return values
+	}
+	return nil
+}
+
 func (e *Engine) initConfigs() {
 	if _, exists := C().Get("cors"); exists {
 		if C().GetBool("cors") {
