@@ -139,8 +139,10 @@ func (r *STDRender) Render() {
 	if r.code != 0 {
 		if v, ok := r.data.(error); ok {
 			ERROR(v)
+			r.data = v.Error()
 		} else if v, ok := r.data.([]error); ok {
 			ERROR(v)
+			r.data = v[0].Error()
 		}
 	}
 	r.action = strings.TrimSpace(strings.ToUpper(r.action))
