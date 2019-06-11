@@ -108,15 +108,15 @@ func (r *STDRender) Action(action string) *STDRender {
 }
 
 // JSON
-func (r *STDRender) JSON() *STDRender {
+func (r *STDRender) JSON() {
 	r.action = JSONAction
-	return r
+	r.Render()
 }
 
 // Abort
-func (r *STDRender) Abort() *STDRender {
+func (r *STDRender) Abort() {
 	r.action = AbortAction
-	return r
+	r.Render()
 }
 
 // HTTPCode
