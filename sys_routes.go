@@ -90,7 +90,12 @@ var UserRolesRoute = RouteInfo{
 			c.STDErr(err.Error())
 		} else {
 			roles := make([]*Role, 0)
+			exists := make(map[uint]bool)
 			for _, assign := range user.RoleAssigns {
+				if exists[assign.Role.ID] {
+					continue
+				}
+				exists[assign.Role.ID] = true
 				roles = append(roles, assign.Role)
 			}
 			c.STD(roles)

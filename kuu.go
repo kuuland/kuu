@@ -26,6 +26,8 @@ var (
 	UserMenusKey = "UserMenus"
 	// ValuesKey
 	ValuesKey = "Values"
+	// RequestContextKey
+	RequestContextKey = "RequestContextKey"
 )
 
 // StartTime
@@ -55,6 +57,15 @@ type Engine struct {
 
 // Values
 type Values map[string]interface{}
+
+// IgnoreAuth
+func (v *Values) IgnoreAuth(cancel ...bool) {
+	if len(cancel) > 0 && cancel[0] == true {
+		delete((*v), IgnoreAuthKey)
+	} else {
+		(*v)[IgnoreAuthKey] = true
+	}
+}
 
 // Default
 func Default() (e *Engine) {
@@ -180,6 +191,7 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 			glsVals[SignInfoKey] = kc.SignInfo
 			glsVals[PrisDescKey] = kc.PrisDesc
 			glsVals[ValuesKey] = kc.Values
+			glsVals[RequestContextKey] = kc
 			SetValues(glsVals, func() { handler(kc) })
 		}
 	}
@@ -254,6 +266,16 @@ func GetRoutineValues() Values {
 	if !IsBlank(raw) {
 		values := *(raw.(*Values))
 		return values
+	}
+	return nil
+}
+
+// GetRoutineRequestContext
+func GetRoutineRequestContext() *Context {
+	raw, _ := GetValue(RequestContextKey)
+	if !IsBlank(raw) {
+		c := raw.(*Context)
+		return c
 	}
 	return nil
 }
