@@ -105,6 +105,11 @@ func shutdown(srv *http.Server) {
 	INFO("Server exiting")
 }
 
+// RegisterWhitelist
+func (e *Engine) RegisterWhitelist(rules ...interface{}) {
+	AddWhitelist(rules...)
+}
+
 // Run
 func (e *Engine) Run(addr ...string) {
 	StartTime = time.Now()

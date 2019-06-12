@@ -417,38 +417,26 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							tx = tx.First(value)
 						}
 
-						setUpdateFields := func(value interface{}) bool {
+						updateFields := func(value interface{}) {
 							doc := reflect.New(reflectType).Interface()
 							GetSoul(params.Doc, doc)
+							scope := tx.NewScope(doc)
 
-							rawScope := tx.NewScope(value)
-							docScope := tx.NewScope(doc)
-							for k, _ := range params.Doc {
-								if field, ok := rawScope.FieldByName(k); ok {
-									df, _ := docScope.FieldByName(k)
-									dv := df.Field.Interface()
-									if err := field.Set(dv); err != nil {
-										ERROR(err)
-										c.STDErr(msg)
-										return false
-									}
+							for key, _ := range params.Doc {
+								field, has := scope.FieldByName(key)
+								if has && field.Relationship != nil && field.Relationship.Kind != "" {
+									tx.Model(value).Association(field.Name).Replace(field.Field.Interface())
 								}
 							}
-							return true
+							tx = tx.Model(value).Updates(doc)
 						}
 						if indirectScopeValue := indirect(reflect.ValueOf(value)); indirectScopeValue.Kind() == reflect.Slice {
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								item := indirectScopeValue.Index(i).Interface()
-								if !setUpdateFields(item) {
-									return
-								}
-								tx.Save(item)
+								updateFields(item)
 							}
 						} else {
-							if !setUpdateFields(value) {
-								return
-							}
-							tx.Save(value)
+							updateFields(value)
 						}
 
 						if errs := tx.GetErrors(); len(errs) > 0 {

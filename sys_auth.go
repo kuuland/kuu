@@ -52,10 +52,12 @@ func GetPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
 // DelPrisCache
 func DelPrisCache() {
 	if v, err := RedisClient.Keys(RedisKeyBuilder("privileges*")).Result(); err == nil {
-		if err := RedisClient.Del(v...).Err(); err != nil {
-			ERROR(err)
-		} else {
-			INFO("清空权限缓存 ALL")
+		if len(v) > 0 {
+			if err := RedisClient.Del(v...).Err(); err != nil {
+				ERROR(err)
+			} else {
+				INFO("清空权限缓存 ALL")
+			}
 		}
 	}
 }
