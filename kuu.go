@@ -59,6 +59,11 @@ type Values map[string]interface{}
 // Default
 func Default() (e *Engine) {
 	e = &Engine{Engine: gin.Default()}
+	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
+		e.GET("/", func(c *Context) {
+			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), StartTime.Format("2006-01-02 15:04:05"))
+		})
+	}
 	onInit(e)
 	return
 }
