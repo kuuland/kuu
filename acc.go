@@ -184,6 +184,7 @@ func DelAccCache() {
 			// 删除redis缓存
 			RedisClient.Del(RedisKeyBuilder(RedisSecretKey, token))
 			RedisClient.Del(RedisKeyBuilder(RedisOrgKey, token))
+			DelPrisCacheBySign(desc.SignInfo)
 		}
 	}
 }

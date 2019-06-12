@@ -74,12 +74,12 @@ var OrgCurrentRoute = RouteInfo{
 	},
 }
 
-// UserRolesRoute
-var UserRolesRoute = RouteInfo{
+// UserRoleAssigns
+var UserRoleAssigns = RouteInfo{
 	Method: "GET",
-	Path:   "/user/roles",
+	Path:   "/user/role_assigns/:uid",
 	HandlerFunc: func(c *Context) {
-		raw := c.Query("uid")
+		raw := c.Param("uid")
 		if raw == "" {
 			c.STDErr("用户ID不能为空")
 			return
@@ -89,16 +89,7 @@ var UserRolesRoute = RouteInfo{
 			ERROR(err)
 			c.STDErr(err.Error())
 		} else {
-			roles := make([]*Role, 0)
-			exists := make(map[uint]bool)
-			for _, assign := range user.RoleAssigns {
-				if exists[assign.Role.ID] {
-					continue
-				}
-				exists[assign.Role.ID] = true
-				roles = append(roles, assign.Role)
-			}
-			c.STD(roles)
+			c.STD(user.RoleAssigns)
 		}
 	},
 }

@@ -24,7 +24,7 @@ func OrgMiddleware(c *gin.Context) {
 		if v, exists := c.Get(SignContextKey); exists {
 			sign = v.(*SignContext)
 			if err := orgAutoLogin(c, sign); err != nil {
-				STDErrHold(c, "").Data(err).Action("ABORT").Render()
+				STDErrHold(c, "").Data(err).Abort()
 			}
 		}
 	}
@@ -38,7 +38,6 @@ func orgAutoLogin(c *gin.Context, sign *SignContext) error {
 		first := (orgs)[0]
 		_, err := ExecOrgLogin(sign, first.ID)
 		return err
-
 	}
 	return nil
 }

@@ -434,18 +434,19 @@ var GetUserWithRoles = func(uid uint) (*User, error) {
 	// 查询角色档案
 	var (
 		roles   []Role
-		roleMap = make(map[uint]*Role)
+		roleMap = make(map[uint]Role)
 	)
 	if errs := DB().Where("id in (?)", roleIDs).Preload("OperationPrivileges").Preload("DataPrivileges").Find(&roles).GetErrors(); len(errs) > 0 {
 		ERROR(errs)
 		return &user, errors.New("查询角色失败")
 	}
 	for _, role := range roles {
-		roleMap[role.ID] = &role
+		roleMap[role.ID] = role
 	}
 	// 重新赋值
 	for index, assign := range user.RoleAssigns {
-		assign.Role = roleMap[assign.RoleID]
+		role := roleMap[assign.RoleID]
+		assign.Role = &role
 		user.RoleAssigns[index] = assign
 	}
 	return &user, nil
@@ -554,7 +555,7 @@ func Sys() *Mod {
 			OrgLoginRoute,
 			OrgListRoute,
 			OrgCurrentRoute,
-			UserRolesRoute,
+			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,
 			AuthRoute,
