@@ -204,12 +204,6 @@ type Role struct {
 	IsBuiltIn           bool                  `name:"是否内置"`
 }
 
-// BeforeSave
-func (r *Role) BeforeSave(db *gorm.DB) {
-	db.Model(r).Association("OperationPrivileges").Replace(r.OperationPrivileges)
-	db.Model(r).Association("DataPrivileges").Replace(r.DataPrivileges)
-}
-
 // AfterSave
 func (r *Role) AfterSave() {
 	DelPrisCache()
