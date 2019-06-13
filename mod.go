@@ -32,7 +32,7 @@ func init() {
 // Mod
 type Mod struct {
 	Code        string
-	Middleware  gin.HandlersChain
+	Middlewares gin.HandlersChain
 	Routes      RoutesInfo
 	Models      []interface{}
 	AfterImport func()
@@ -42,7 +42,7 @@ type Mod struct {
 func (e *Engine) Import(mods ...*Mod) {
 	migrate := C().GetBool("gorm:migrate")
 	for _, mod := range mods {
-		for _, middleware := range mod.Middleware {
+		for _, middleware := range mod.Middlewares {
 			if middleware != nil {
 				e.Engine.Use(middleware)
 			}

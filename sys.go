@@ -548,7 +548,7 @@ func Sys() *Mod {
 			&Route{},
 			&Language{},
 		},
-		Middleware: gin.HandlersChain{
+		Middlewares: gin.HandlersChain{
 			OrgMiddleware,
 		},
 		Routes: RoutesInfo{

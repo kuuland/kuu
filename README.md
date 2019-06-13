@@ -577,7 +577,7 @@ func (e *exampleStruct2) Validate () error {
 
 ### Modular project structure
 
-Kuu will automatically mount routes, middleware and struct RESTful APIs after `Import`:
+Kuu will automatically mount routes, middlewares and struct RESTful APIs after `Import`:
 
 ```go
 type User struct {
@@ -598,7 +598,7 @@ func MyMod() *kuu.Mod {
 			&User{},
 			&Profile{},
 		},
-		Middleware: gin.HandlersChain{
+		Middlewares: gin.HandlersChain{
 			func(c *gin.Context) {
 				// Auth middleware
 			},

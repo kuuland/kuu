@@ -200,7 +200,7 @@ func Acc(handler ...LoginHandlerFunc) *Mod {
 			&SignSecret{},
 			&SignHistory{},
 		},
-		Middleware: gin.HandlersChain{
+		Middlewares: gin.HandlersChain{
 			AuthMiddleware,
 		},
 		Routes: RoutesInfo{
