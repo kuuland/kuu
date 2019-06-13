@@ -40,19 +40,12 @@ $ cat kuu.json
 ```json
 {
   "prefix": "/api",
-  "cors": true,
-  "gzip": true,
-  "gorm:migrate": false,
   "db": {
     "dialect": "postgres",
     "args": "host=127.0.0.1 port=5432 user=root dbname=kuu password=hello sslmode=disable"
   },
   "redis": {
     "addr": "127.0.0.1:6379"
-  },
-  "statics": {
-    "/assets": "assets/",
-    "/drone_yml": ".drone.yml"
   }
 }
 ```
@@ -73,9 +66,6 @@ import (
 
 func main() {
 	r := kuu.Default()
-	r.GET("/", func(c *kuu.Context) {
-		c.STD("Hello Kuu.")
-	})
 	r.Import(kuu.Acc(), kuu.Sys())
 	r.Run()
 }
@@ -97,24 +87,29 @@ $ cat kuu.json
 
 ```json
 {
-  "string": "/api",
-  "boolean": false,
-  "number": 320,
-  "digit": 45.22,
+  "prefix": "/api",
+  "cors": true,
+  "gzip": true,
+  "gorm:migrate": false,
   "db": {
     "dialect": "postgres",
     "args": "host=127.0.0.1 port=5432 user=root dbname=kuu password=hello sslmode=disable"
+  },
+  "redis": {
+    "addr": "127.0.0.1:6379"
+  },
+  "statics": {
+    "/assets": "assets/",
+    "/drone_yml": ".drone.yml"
   }
 }
 ```
 
 ```go
 func main() {
-	kuu.C().Get("prefix")         // output "/api"
-	kuu.C().GetString("string")   // output "/api"
-	kuu.C().GetBool("boolean")    // output false
-	kuu.C().GetInt("number")      // output 320
-	kuu.C().GetFloat64("digit")   // output 45.22
+	kuu.C().Get("prefix")              // output "/api"
+	kuu.C().GetBool("cors")            // output true
+	kuu.C().GetBool("gorm:migrate")    // output true
 }
 ```
 
