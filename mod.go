@@ -85,6 +85,22 @@ func (e *Engine) Import(mods ...*Mod) {
 				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
 				tableNames[defaultTableName] = tableName
 				tableNames[pluralTableName] = tableName
+				``
+				meta.TableName = tableName
+
+				if methodValue := indirectValue(model).MethodByName("TableName"); methodValue.IsValid() {
+					var modelTableName string
+					switch method := methodValue.Interface().(type) {
+					case func() string:
+						modelTableName = method()
+					case func(*gorm.DB) string:
+						modelTableName = method(DB())
+					}
+					if modelTableName != "" {
+						meta.TableName = modelTableName
+						tableNames[modelTableName] = modelTableName
+					}
+				}
 			}
 			if migrate {
 				DB().AutoMigrate(model)
@@ -163,17 +179,6 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		if name != "" {
 			field.Name = name
 		}
-		//if fieldStruct.Anonymous || indirectType.Kind() == reflect.Struct || indirectType.Kind() == reflect.Slice || indirectType.Kind() == reflect.Ptr {
-		//	if fieldStruct.Name == "Model" || fieldStruct.Name == "ExtendField" {
-		//		subMeta := parseMetadata(fieldValue)
-		//		if subMeta != nil && len(subMeta.Fields) > 0 {
-		//			if strings.HasPrefix(subMeta.FullName, "github.com/kuuland/kuu") {
-		//				m.Fields = append(m.Fields, subMeta.Fields...)
-		//			}
-		//		}
-		//		continue
-		//	}
-		//}
 		if field.Name != "" {
 			m.Fields = append(m.Fields, field)
 		}

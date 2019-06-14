@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -37,14 +38,21 @@ type ExtendField struct {
 type Metadata struct {
 	Name        string
 	DisplayName string
+	TableName   string
 	FullName    string
 	Fields      []MetadataField
-	RestDesc    *RestDesc `json"-"`
+	RestDesc    *RestDesc    `json:"-"`
+	reflectType reflect.Type `json:"-"`
 }
 
 // QueryPreload
 func (m *Metadata) QueryPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Fields")
+}
+
+// NewValue
+func (m *Metadata) NewValue() interface{} {
+	return reflect.New(m.reflectType).Interface()
 }
 
 // MetadataField
@@ -122,7 +130,6 @@ func OrgIDMap(list []Org) map[uint]Org {
 
 // FillOrgFullInfo
 func FillOrgFullInfo(list []Org) []Org {
-
 	type info struct {
 		fullPid  string
 		fullName string
