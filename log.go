@@ -5,11 +5,13 @@ import (
 	"os"
 )
 
+var Logger = logrus.New()
+
 func init() {
 	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
+	Logger.SetLevel(logrus.DebugLevel)
 }
-
-var Logger = logrus.New()
 
 func split(args ...interface{}) (string, []interface{}) {
 	format := args[0].(string)
