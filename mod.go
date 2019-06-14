@@ -85,21 +85,6 @@ func (e *Engine) Import(mods ...*Mod) {
 				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
 				tableNames[defaultTableName] = tableName
 				tableNames[pluralTableName] = tableName
-				meta.TableName = tableName
-
-				if methodValue := indirectValue(model).MethodByName("TableName"); methodValue.IsValid() {
-					var modelTableName string
-					switch method := methodValue.Interface().(type) {
-					case func() string:
-						modelTableName = method()
-					case func(*gorm.DB) string:
-						modelTableName = method(DB())
-					}
-					if modelTableName != "" {
-						meta.TableName = modelTableName
-						tableNames[modelTableName] = modelTableName
-					}
-				}
 			}
 			if migrate {
 				DB().AutoMigrate(model)
@@ -127,9 +112,12 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		return value.(*Metadata)
 	}
 
-	m = new(Metadata)
-	m.Name = reflectType.Name()
-	m.FullName = path.Join(reflectType.PkgPath(), m.Name)
+	reflectTypeName := reflectType.Name()
+	m = &Metadata{
+		Name:        reflectTypeName,
+		FullName:    path.Join(reflectType.PkgPath(), reflectTypeName),
+		reflectType: reflectType,
+	}
 	for i := 0; i < reflectType.NumField(); i++ {
 		fieldStruct := reflectType.Field(i)
 		displayName := fieldStruct.Tag.Get("displayName")

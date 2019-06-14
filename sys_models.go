@@ -38,7 +38,6 @@ type ExtendField struct {
 type Metadata struct {
 	Name        string
 	DisplayName string
-	TableName   string
 	FullName    string
 	Fields      []MetadataField
 	RestDesc    *RestDesc    `json:"-"`
