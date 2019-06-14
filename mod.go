@@ -85,7 +85,6 @@ func (e *Engine) Import(mods ...*Mod) {
 				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
 				tableNames[defaultTableName] = tableName
 				tableNames[pluralTableName] = tableName
-				``
 				meta.TableName = tableName
 
 				if methodValue := indirectValue(model).MethodByName("TableName"); methodValue.IsValid() {
