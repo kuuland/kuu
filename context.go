@@ -11,7 +11,7 @@ type Context struct {
 	*gin.Context
 	SignInfo *SignContext
 	PrisDesc *PrivilegesDesc
-	Values   *Values
+	Values   Values
 }
 
 // L
@@ -56,17 +56,17 @@ func (c *Context) STDErrHold(msg string, code ...int32) *STDRender {
 
 // SetValue
 func (c *Context) SetValue(key string, value interface{}) {
-	(*c.Values)[key] = value
+	c.Values[key] = value
 }
 
 // DelValue
 func (c *Context) DelValue(key string) {
-	delete((*c.Values), key)
+	delete(c.Values, key)
 }
 
 // GetValue
 func (c *Context) GetValue(key string) interface{} {
-	return (*c.Values)[key]
+	return c.Values[key]
 }
 
 // PRINT
