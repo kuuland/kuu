@@ -10,7 +10,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 - [Quick start](#quick-start)
 - [Features](#features)
     - [Global configuration](#global-configuration)
-    - [Data Source Management](#data-source-management)
+    - [Data source management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
     - [Global default callbacks](#global-default-callbacks)
     - [Struct validation](#struct-validation)
