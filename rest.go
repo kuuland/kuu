@@ -2,13 +2,14 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/jinzhu/gorm"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/jinzhu/gorm"
 )
 
 type PreloadHooks interface {
@@ -290,13 +291,16 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 										db = db.Where(query, args...)
 										delete(cond, key)
 									}
+								} else {
+									db = db.Where(fmt.Sprintf("%s = ?", key), val)
 								}
+
 							}
-							if !IsBlank(cond) {
-								query := reflect.New(reflectType).Interface()
-								GetSoul(cond, query)
-								db = db.Where(query)
-							}
+							// if !IsBlank(cond) {
+							// 	query := reflect.New(reflectType).Interface()
+							// 	GetSoul(cond, query)
+							// 	db = db.Where(query)
+							// }
 						}
 						countDB := db
 						// 处理project
