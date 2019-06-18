@@ -445,9 +445,8 @@ You can override the default callbacks:
 ```go
 // Default create callback
 kuu.CreateCallback = func(scope *gorm.Scope) {
-	if v, ok := GetValue(PrisDescKey); ok && v != nil {
-		desc := v.(*PrivilegesDesc)
-		if desc.IsValid() && !scope.HasError() {
+	if !scope.HasError() {
+		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
 				if orgIDField.IsBlank {
 					orgIDField.Set(desc.SignOrgID)
@@ -467,33 +466,58 @@ kuu.CreateCallback = func(scope *gorm.Scope) {
 
 // Default delete callback
 kuu.DeleteCallback = func(scope *gorm.Scope) {
-	if v, ok := GetValue(PrisDescKey); ok && v != nil {
-		desc := v.(*PrivilegesDesc)
-		if desc.IsValid() && !scope.HasError() {
-			var extraOption string
-			if str, ok := scope.Get("gorm:delete_option"); ok {
-				extraOption = fmt.Sprint(str)
+	if !scope.HasError() {
+		var extraOption string
+		if str, ok := scope.Get("gorm:delete_option"); ok {
+			extraOption = fmt.Sprint(str)
+		}
+
+		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
+
+		if !scope.Search.Unscoped && hasDeletedAtField {
+			var sql string
+			if desc := GetRoutinePrivilegesDesc(); desc != nil {
+				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
+				if !scope.Search.Unscoped && hasDeletedByField {
+					sql = fmt.Sprintf(
+						"UPDATE %v SET %v=%v,%v=%v%v%v",
+						scope.QuotedTableName(),
+						scope.Quote(deletedByField.DBName),
+						scope.AddToVars(desc.UID),
+						scope.Quote(deletedAtField.DBName),
+						scope.AddToVars(gorm.NowFunc()),
+						AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+						AddExtraSpaceIfExist(extraOption),
+					)
+				}
 			}
-			deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
-			if !scope.Search.Unscoped && hasDeletedByField {
-				scope.Raw(fmt.Sprintf(
+			if sql == "" {
+				sql = fmt.Sprintf(
 					"UPDATE %v SET %v=%v%v%v",
 					scope.QuotedTableName(),
-					scope.Quote(deletedByField.DBName),
-					scope.AddToVars(desc.UID),
-					kuu.AddExtraSpaceIfExist(scope.CombinedConditionSql()),
-					kuu.AddExtraSpaceIfExist(extraOption),
-				)).Exec()
+					scope.Quote(deletedAtField.DBName),
+					scope.AddToVars(gorm.NowFunc()),
+					AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+					AddExtraSpaceIfExist(extraOption),
+				)
 			}
+			scope.Raw(sql).Exec()
+		} else {
+			scope.Raw(fmt.Sprintf(
+				"DELETE FROM %v%v%v",
+				scope.QuotedTableName(),
+				AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+				AddExtraSpaceIfExist(extraOption),
+			)).Exec()
 		}
 	}
 }
 
 // Default update callback
 kuu.UpdateCallback = func(scope *gorm.Scope) {
-	if v, ok := GetValue(PrisDescKey); ok && v != nil {
-		desc := v.(*PrivilegesDesc)
-		if desc.IsValid() {
+	if !scope.HasError() {
+		desc := GetRoutinePrivilegesDesc()
+		if desc != nil {
 			scope.SetColumn("UpdatedByID", desc.UID)
 		}
 	}
@@ -501,23 +525,42 @@ kuu.UpdateCallback = func(scope *gorm.Scope) {
 
 // Default query callback
 kuu.QueryCallback = func(scope *gorm.Scope) {
-	rawDesc, _ := GetValue(PrisDescKey)
-	rawValues, _ := GetValue(ValuesKey)
+	if !scope.HasError() {
+		desc := GetRoutinePrivilegesDesc()
+		values := GetRoutineValues()
 
-	if !IsBlank(rawDesc) {
-		if !IsBlank(rawValues) {
-			values := make(Values)
-			values = rawValues.(Values)
-			if _, ok := values[IgnoreAuthKey]; ok {
+		if desc == nil {
+			// 无登录登录态时
+			return
+		}
+
+		if values != nil {
+			// 有忽略标记时
+			if _, ignoreAuth := values[IgnoreAuthKey]; ignoreAuth {
+				return
+			}
+			// 查询用户菜单时
+			if _, queryUserMenus := values[UserMenusKey]; queryUserMenus {
+				if desc.NotRootUser() {
+					_, hasCodeField := scope.FieldByName("Code")
+					_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+					if hasCodeField && hasCreatedByIDField {
+						// 菜单数据权限控制与组织无关，且只有两种情况：
+						// 1.自己创建的，一定看得到
+						// 2.别人创建的，必须通过分配操作权限才能看到
+						scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
+					}
+				}
 				return
 			}
 		}
-		desc := rawDesc.(*PrivilegesDesc)
+
+		// 有登录态时的常规情况
 		if desc.NotRootUser() {
 			_, hasOrgIDField := scope.FieldByName("OrgID")
 			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 			if hasOrgIDField && hasCreatedByIDField {
-				scope.Search.Where("(org_id IS NULL) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
 			}
 		}
 	}
