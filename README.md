@@ -19,6 +19,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Standard response format](#standard-response-format)
     - [Common functions](#common-functions)
     - [Get login context](#get-login-context)
+    - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
     - [Preset modules](#preset-modules)
 - [FAQ](#faq)
@@ -506,7 +507,7 @@ kuu.QueryCallback = func(scope *gorm.Scope) {
 	if !IsBlank(rawDesc) {
 		if !IsBlank(rawValues) {
 			values := make(Values)
-			values = *(rawValues.(*Values))
+			values = rawValues.(Values)
 			if _, ok := values[IgnoreAuthKey]; ok {
 				return
 			}
@@ -693,6 +694,17 @@ r.GET(func (c *kuu.Context){
 	c.SignInfo // Login user info
 	c.PrisDesc // Login user privileges
 })
+```
+
+### Goroutine local storage
+
+```go
+kuu.GetRoutinePrivilegesDesc()
+kuu.GetRoutineValues()
+kuu.GetRoutineRequestContext()
+
+// Ignore default data filters
+kuu.IgnoreAuth() // Equivalent to c.IgnoreAuth/kuu.GetRoutineValues().IgnoreAuth
 ```
 
 ### Whitelist

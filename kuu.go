@@ -59,11 +59,11 @@ type Engine struct {
 type Values map[string]interface{}
 
 // IgnoreAuth
-func (v *Values) IgnoreAuth(cancel ...bool) {
+func (v Values) IgnoreAuth(cancel ...bool) {
 	if len(cancel) > 0 && cancel[0] == true {
-		delete((*v), IgnoreAuthKey)
+		delete(v, IgnoreAuthKey)
 	} else {
-		(*v)[IgnoreAuthKey] = true
+		v[IgnoreAuthKey] = true
 	}
 }
 
@@ -176,10 +176,9 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 	handlers = make(gin.HandlersChain, len(chain))
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
-			vals := make(Values)
 			kc := &Context{
 				Context: c,
-				Values:  &vals,
+				Values:  make(Values),
 			}
 			if !InWhitelist(c) {
 				sign := GetSignContext(c)
@@ -264,7 +263,7 @@ func GetRoutinePrivilegesDesc() *PrivilegesDesc {
 func GetRoutineValues() Values {
 	raw, _ := GetValue(ValuesKey)
 	if !IsBlank(raw) {
-		values := *(raw.(*Values))
+		values := raw.(Values)
 		return values
 	}
 	return nil
@@ -278,6 +277,16 @@ func GetRoutineRequestContext() *Context {
 		return c
 	}
 	return nil
+}
+
+// IgnoreAuth
+func IgnoreAuth(cancel ...bool) (success bool) {
+	values := GetRoutineValues()
+	if values != nil {
+		values.IgnoreAuth(cancel...)
+		success = true
+	}
+	return
 }
 
 func (e *Engine) initConfigs() {
