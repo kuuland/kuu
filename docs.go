@@ -103,6 +103,7 @@ type DocPathContentItem struct {
 type DocPathSchema struct {
 	Type        string
 	Description string
+	Format      string
 	Ref         string `yaml:"$ref"`
 	Properties  map[string]DocPathSchema
 	Items       *DocPathSchema

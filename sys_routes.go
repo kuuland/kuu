@@ -403,6 +403,44 @@ var ModelDocsRoute = RouteInfo{
 							},
 						},
 					},
+					"/upload": {
+						"post": {
+							Tags:        []string{"辅助接口"},
+							Summary:     "上传文件",
+							OperationID: "upload",
+							RequestBody: DocPathRequestBody{
+								Content: map[string]DocPathContentItem{
+									"multipart/form-data": {
+										Schema: DocPathSchema{
+											Type: "object",
+											Properties: map[string]DocPathSchema{
+												"file": {
+													Type:        "string",
+													Format:      "binary",
+													Description: "文件",
+												},
+											},
+										},
+									},
+								},
+							},
+							Responses: map[int]DocPathResponse{
+								200: {
+									Description: "上传成功",
+									Content: map[string]DocPathContentItem{
+										"application/json": {
+											Schema: DocPathSchema{Type: "string"},
+										},
+									},
+								},
+							},
+							Security: []DocPathItemSecurity{
+								map[string][]string{
+									"api_key": []string{},
+								},
+							},
+						},
+					},
 					"/whitelist": {
 						"get": {
 							Tags:        []string{"辅助接口"},
