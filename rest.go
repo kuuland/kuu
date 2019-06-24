@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
@@ -367,92 +368,88 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 				if updateMethod != "-" {
 					desc.Update = true
 					r.Handle(updateMethod, routePath, func(c *Context) {
-						var params struct {
-							All   bool
-							Multi bool
-							Cond  map[string]interface{}
-							Doc   map[string]interface{}
-						}
-						if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-							ERROR(err)
-							c.STDErr("解析请求体失败")
-							return
-						}
-						if IsBlank(params.Cond) || IsBlank(params.Doc) {
-							c.STDErr("更新条件和内容不能为空")
-							return
-						}
-						var multi bool
-						if params.Multi || params.All {
-							multi = true
-						}
-						if IsBlank(params.Cond) && !multi {
-							c.STDErr("必须指定批量更新标记")
-							return
-						}
-
-						// 执行更新
-						tx := DB().Begin().Model(reflect.New(reflectType).Interface())
-						msg := c.L("修改失败")
-						// 处理更新条件
-						for key, val := range params.Cond {
-							if m, ok := val.(map[string]interface{}); ok {
-								query, args := fieldQuery(m, key)
-								if query != "" && len(args) > 0 {
-									tx = tx.Where(query, args...)
-									delete(params.Cond, key)
-								}
+						var (
+							result interface{}
+							err    error
+						)
+						// 事务执行
+						err = c.WithTransaction(func(db *gorm.DB) error {
+							var params struct {
+								All   bool
+								Multi bool
+								Cond  map[string]interface{}
+								Doc   map[string]interface{}
 							}
-						}
-						if !IsBlank(params.Cond) {
-							q := reflect.New(reflectType).Interface()
-							Copy(params.Cond, q)
-							tx = tx.Where(q)
-						}
-						// 先查询更新前的数据
-						var value interface{}
-						if multi {
-							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							tx = tx.Find(value)
-						} else {
-							value = reflect.New(reflectType).Interface()
-							tx = tx.First(value)
-						}
-
-						updateFields := func(value interface{}) {
-							doc := reflect.New(reflectType).Interface()
-							Copy(params.Doc, doc)
-							scope := tx.NewScope(doc)
-
-							for key, _ := range params.Doc {
-								field, has := scope.FieldByName(key)
-								if has && field.Relationship != nil && field.Relationship.Kind != "" {
-									tx.Model(value).Association(field.Name).Replace(field.Field.Interface())
-								}
-							}
-							tx = tx.Model(value).Updates(doc)
-						}
-						if indirectScopeValue := indirect(reflect.ValueOf(value)); indirectScopeValue.Kind() == reflect.Slice {
-							for i := 0; i < indirectScopeValue.Len(); i++ {
-								item := indirectScopeValue.Index(i).Interface()
-								updateFields(item)
-							}
-						} else {
-							updateFields(value)
-						}
-
-						if errs := tx.GetErrors(); len(errs) > 0 {
-							ERROR(errs)
-							tx.Rollback()
-							c.STDErr(msg)
-						} else {
-							if err := tx.Commit().Error; err != nil {
+							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 								ERROR(err)
-								c.STDErr(msg)
-								return
-							} else {
-								c.STD(value)
+								return errors.New("解析请求体失败")
 							}
+							if IsBlank(params.Cond) || IsBlank(params.Doc) {
+								return errors.New("更新条件和内容不能为空")
+							}
+							var multi bool
+							if params.Multi || params.All {
+								multi = true
+							}
+							if IsBlank(params.Cond) && !multi {
+								return errors.New("必须指定批量更新标记")
+							}
+
+							// 执行更新
+							tx := DB().Begin().Model(reflect.New(reflectType).Interface())
+							// 处理更新条件
+							for key, val := range params.Cond {
+								if m, ok := val.(map[string]interface{}); ok {
+									query, args := fieldQuery(m, key)
+									if query != "" && len(args) > 0 {
+										tx = tx.Where(query, args...)
+										delete(params.Cond, key)
+									}
+								}
+							}
+							if !IsBlank(params.Cond) {
+								q := reflect.New(reflectType).Interface()
+								Copy(params.Cond, q)
+								tx = tx.Where(q)
+							}
+							// 先查询更新前的数据
+							var result interface{}
+							if multi {
+								result = reflect.New(reflect.SliceOf(reflectType)).Interface()
+								tx = tx.Find(result)
+							} else {
+								result = reflect.New(reflectType).Interface()
+								tx = tx.First(result)
+							}
+
+							updateFields := func(val interface{}) {
+								doc := reflect.New(reflectType).Interface()
+								Copy(params.Doc, doc)
+								scope := tx.NewScope(doc)
+
+								for key, _ := range params.Doc {
+									field, has := scope.FieldByName(key)
+									if has && field.Relationship != nil && field.Relationship.Kind != "" {
+										tx.Model(val).Association(field.Name).Replace(field.Field.Interface())
+									}
+								}
+								tx = tx.Model(val).Updates(doc)
+							}
+							if indirectScopeValue := indirect(reflect.ValueOf(result)); indirectScopeValue.Kind() == reflect.Slice {
+								for i := 0; i < indirectScopeValue.Len(); i++ {
+									item := indirectScopeValue.Index(i).Interface()
+									updateFields(item)
+								}
+							} else {
+								updateFields(result)
+							}
+							return nil
+						})
+						// 响应结果
+						if err != nil {
+							c.STDErrHold("修改失败").Data(err).Render()
+						} else {
+							c.STD(result)
 						}
 					})
 				}

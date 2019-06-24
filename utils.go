@@ -131,5 +131,7 @@ func Copy(src interface{}, dest interface{}) {
 		if err := json.Unmarshal(data, dest); err != nil {
 			ERROR(err)
 		}
+	} else {
+		ERROR(err)
 	}
 }
