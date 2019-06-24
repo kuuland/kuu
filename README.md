@@ -12,6 +12,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global configuration](#global-configuration)
     - [Data source management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
+    - [Associations](#associations)
     - [Global default callbacks](#global-default-callbacks)
     - [Struct validation](#struct-validation)
     - [Modular project structure](#modular-project-structure)
@@ -413,8 +414,6 @@ curl -X PUT \
 }'
 ```
 
-> Notes: set `"auto":true` to enable auto save associations.
-
 #### Delete Record
 
 ```sh
@@ -440,6 +439,102 @@ curl -X DELETE \
     },
     "multi": true
 }'
+```
+
+### Associations
+
+1. set `"auto":true` to enable auto save associations
+1. if association has a primary key, Kuu will call Update to save it, otherwise it will be created
+1. set `"preload=Emails"` to preload associations
+
+#### Create associations
+
+```sh
+curl -X PUT \
+  http://localhost:8080/api/user \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "cond": {
+        "ID": 50
+    },
+    "doc": {
+        "Emails": [
+            {
+                "Email": "test1@example.com"
+            },
+            {
+                "Email": "test2@example.com"
+            }
+        ]
+    },
+    "auto": true
+}'
+```
+
+#### Update associations
+
+`ID` is required:
+
+```sh
+curl -X PUT \
+  http://localhost:8080/api/user \
+  -d '{
+    "cond": {
+        "ID": 50
+    },
+    "doc": {
+        "Emails": [
+            {
+                "ID": 101,
+                "Email": "test111@example.com"
+            },
+            {
+                "ID": 159,
+                "Email": "test222@example.com"
+            }
+        ]
+    },
+    "auto": true
+}'
+```
+
+#### Delete associations
+
+`ID` and `DeletedAt` are required:
+
+```sh
+curl -X PUT \
+  http://localhost:8080/api/user \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "cond": {
+        "ID": 50
+    },
+    "doc": {
+        "Emails": [
+            {
+                "ID": 101,
+                "DeletedAt": "2019-06-25T17:05:06.000Z",
+                "Email": "test111@example.com"
+            },
+            {
+                "ID": 159,
+                "DeletedAt": "2019-06-25T17:05:06.000Z",
+                "Email": "test222@example.com"
+            }
+        ]
+    },
+    "auto": true
+}'
+```
+
+#### Query associations
+
+set `"preload=Emails"` to preload associations:
+
+```sh
+curl -X GET \
+  'http://localhost:8080/api/user?cond={"user":"test"}&sort=id&project=pass&preload=Emails'
 ```
 
 ### Global default callbacks
