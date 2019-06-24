@@ -28,7 +28,7 @@ func initDataSources() {
 	if _, ok := dbConfig.([]interface{}); ok {
 		// Multiple data sources
 		var dsArr []datasource
-		GetSoul(dbConfig, &dsArr)
+		Copy(dbConfig, &dsArr)
 		if len(dsArr) > 0 {
 			var first string
 			for _, ds := range dsArr {
@@ -59,7 +59,7 @@ func initDataSources() {
 	} else {
 		// Single data source
 		var ds datasource
-		GetSoul(dbConfig, &ds)
+		Copy(dbConfig, &ds)
 		if !IsBlank(ds) {
 			if ds.Name == "" {
 				ds.Name = singleDSName

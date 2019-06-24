@@ -125,10 +125,10 @@ func Parse(v string, r interface{}) {
 	}
 }
 
-// GetSoul
-func GetSoul(src interface{}, dest interface{}) {
-	if bytes, err := json.Marshal(src); err == nil {
-		if err := json.Unmarshal(bytes, dest); err != nil {
+// Copy
+func Copy(src interface{}, dest interface{}) {
+	if data, err := json.Marshal(src); err == nil {
+		if err := json.Unmarshal(data, dest); err != nil {
 			ERROR(err)
 		}
 	}
