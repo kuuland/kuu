@@ -776,5 +776,5 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 ![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
 
 ## License
-
+ 
 Kuu is available under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
