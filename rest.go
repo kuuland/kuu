@@ -2,14 +2,13 @@ package kuu
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/jinzhu/gorm"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/gin-gonic/gin/binding"
-	"github.com/jinzhu/gorm"
 )
 
 type PreloadHooks interface {
@@ -126,12 +125,12 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							multi = true
 							for i := 0; i < indirectScopeValue.Len(); i++ {
 								doc := reflect.New(reflectType).Interface()
-								GetSoul(indirectScopeValue.Index(i).Interface(), doc)
+								Copy(indirectScopeValue.Index(i).Interface(), doc)
 								docs = append(docs, doc)
 							}
 						} else {
 							doc := reflect.New(reflectType).Interface()
-							GetSoul(body, doc)
+							Copy(body, doc)
 							docs = append(docs, doc)
 						}
 						for _, doc := range docs {
@@ -203,7 +202,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						}
 						if !IsBlank(params.Cond) {
 							query := reflect.New(reflectType).Interface()
-							GetSoul(params.Cond, query)
+							Copy(params.Cond, query)
 							tx = tx.Where(query)
 						}
 						if multi {
@@ -298,7 +297,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							}
 							// if !IsBlank(cond) {
 							// 	query := reflect.New(reflectType).Interface()
-							// 	GetSoul(cond, query)
+							// 	Copy(cond, query)
 							// 	db = db.Where(query)
 							// }
 						}
@@ -408,7 +407,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						}
 						if !IsBlank(params.Cond) {
 							q := reflect.New(reflectType).Interface()
-							GetSoul(params.Cond, q)
+							Copy(params.Cond, q)
 							tx = tx.Where(q)
 						}
 						// 先查询更新前的数据
@@ -423,7 +422,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 
 						updateFields := func(value interface{}) {
 							doc := reflect.New(reflectType).Interface()
-							GetSoul(params.Doc, doc)
+							Copy(params.Doc, doc)
 							scope := tx.NewScope(doc)
 
 							for key, _ := range params.Doc {
