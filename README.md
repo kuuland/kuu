@@ -413,6 +413,8 @@ curl -X PUT \
 }'
 ```
 
+> Notes: set `"auto":true` to enable auto save associations.
+
 #### Delete Record
 
 ```sh

@@ -387,6 +387,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								Multi bool
 								Cond  map[string]interface{}
 								Doc   map[string]interface{}
+								Auto  bool
 							}
 							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 								return errors.New("解析请求体失败")
@@ -435,15 +436,22 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if err := Copy(params.Doc, doc); err != nil {
 									return err
 								}
-								scope := tx.NewScope(doc)
-
-								for key, _ := range params.Doc {
-									field, has := scope.FieldByName(key)
-									if has && field.Relationship != nil && field.Relationship.Kind != "" {
-										tx.Model(val).Association(field.Name).Replace(field.Field.Interface())
+								if params.Auto {
+									rawScope := tx.NewScope(result)
+									docScope := tx.NewScope(doc)
+									for key, _ := range params.Doc {
+										if field, ok := rawScope.FieldByName(key); ok {
+											df, _ := docScope.FieldByName(key)
+											dv := df.Field.Interface()
+											if err := field.Set(dv); err != nil {
+												return err
+											}
+										}
 									}
+									tx.Save(val)
+								} else {
+									tx = tx.Model(val).Updates(doc)
 								}
-								tx = tx.Model(val).Updates(doc)
 								return nil
 							}
 							if indirectScopeValue := indirect(reflect.ValueOf(result)); indirectScopeValue.Kind() == reflect.Slice {
