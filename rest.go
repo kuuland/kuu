@@ -436,9 +436,9 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if err := Copy(params.Doc, doc); err != nil {
 									return err
 								}
+								docScope := tx.NewScope(doc)
 								if params.Auto {
 									rawScope := tx.NewScope(result)
-									docScope := tx.NewScope(doc)
 									for key, _ := range params.Doc {
 										if field, ok := rawScope.FieldByName(key); ok {
 											df, _ := docScope.FieldByName(key)
@@ -450,7 +450,16 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 									}
 									tx.Save(val)
 								} else {
-									tx = tx.Model(val).Updates(doc)
+									values := make(map[string]interface{})
+									for key, _ := range params.Doc {
+										field, has := docScope.FieldByName(key)
+										if has && (field.Relationship == nil || field.Relationship.Kind == "") {
+											values[field.DBName] = field.Field.Interface()
+										}
+									}
+									if len(values) > 0 {
+										tx = tx.Model(val).Updates(doc)
+									}
 								}
 								return nil
 							}
