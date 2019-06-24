@@ -127,12 +127,16 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								multi = true
 								for i := 0; i < indirectScopeValue.Len(); i++ {
 									doc := reflect.New(reflectType).Interface()
-									Copy(indirectScopeValue.Index(i).Interface(), doc)
+									if err := Copy(indirectScopeValue.Index(i).Interface(), doc); err != nil {
+										return err
+									}
 									docs = append(docs, doc)
 								}
 							} else {
 								doc := reflect.New(reflectType).Interface()
-								Copy(body, doc)
+								if err := Copy(body, doc); err != nil {
+									return err
+								}
 								docs = append(docs, doc)
 							}
 							for _, doc := range docs {
@@ -200,7 +204,9 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							}
 							if !IsBlank(params.Cond) {
 								query := reflect.New(reflectType).Interface()
-								Copy(params.Cond, query)
+								if err := Copy(params.Cond, query); err != nil {
+									return err
+								}
 								tx = tx.Where(query)
 							}
 							if multi {
@@ -398,11 +404,12 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							}
 							if !IsBlank(params.Cond) {
 								q := reflect.New(reflectType).Interface()
-								Copy(params.Cond, q)
+								if err := Copy(params.Cond, q); err != nil {
+									return err
+								}
 								tx = tx.Where(q)
 							}
 							// 先查询更新前的数据
-							var result interface{}
 							if multi {
 								result = reflect.New(reflect.SliceOf(reflectType)).Interface()
 								tx = tx.Find(result)
@@ -411,9 +418,11 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								tx = tx.First(result)
 							}
 
-							updateFields := func(val interface{}) {
+							updateFields := func(val interface{}) error {
 								doc := reflect.New(reflectType).Interface()
-								Copy(params.Doc, doc)
+								if err := Copy(params.Doc, doc); err != nil {
+									return err
+								}
 								scope := tx.NewScope(doc)
 
 								for key, _ := range params.Doc {
@@ -423,14 +432,19 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 									}
 								}
 								tx = tx.Model(val).Updates(doc)
+								return nil
 							}
 							if indirectScopeValue := indirect(reflect.ValueOf(result)); indirectScopeValue.Kind() == reflect.Slice {
 								for i := 0; i < indirectScopeValue.Len(); i++ {
 									item := indirectScopeValue.Index(i).Interface()
-									updateFields(item)
+									if err := updateFields(item); err != nil {
+										return err
+									}
 								}
 							} else {
-								updateFields(result)
+								if err := updateFields(result); err != nil {
+									return err
+								}
 							}
 							return nil
 						})

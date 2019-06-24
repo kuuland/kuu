@@ -28,7 +28,9 @@ func initDataSources() {
 	if _, ok := dbConfig.([]interface{}); ok {
 		// Multiple data sources
 		var dsArr []datasource
-		Copy(dbConfig, &dsArr)
+		if err := Copy(dbConfig, &dsArr); err != nil {
+			ERROR(err)
+		}
 		if len(dsArr) > 0 {
 			var first string
 			for _, ds := range dsArr {
@@ -59,7 +61,9 @@ func initDataSources() {
 	} else {
 		// Single data source
 		var ds datasource
-		Copy(dbConfig, &ds)
+		if err := Copy(dbConfig, &ds); err != nil {
+			ERROR(err)
+		}
 		if !IsBlank(ds) {
 			if ds.Name == "" {
 				ds.Name = singleDSName
@@ -112,6 +116,7 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 	}
 	defer func() {
 		if r := recover(); r != nil {
+			ERROR(r)
 			tx.Rollback()
 		}
 	}()

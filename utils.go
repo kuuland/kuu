@@ -126,12 +126,13 @@ func Parse(v string, r interface{}) {
 }
 
 // Copy
-func Copy(src interface{}, dest interface{}) {
-	if data, err := json.Marshal(src); err == nil {
-		if err := json.Unmarshal(data, dest); err != nil {
-			ERROR(err)
-		}
-	} else {
+func Copy(src interface{}, dest interface{}) (err error) {
+	var data []byte
+	if data, err = json.Marshal(src); err == nil {
+		err = json.Unmarshal(data, dest)
+	}
+	if err != nil {
 		ERROR(err)
 	}
+	return
 }
