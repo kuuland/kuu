@@ -8,7 +8,21 @@ import (
 	"strings"
 )
 
-var skipValidations = "validations:skip_validations"
+var (
+	skipValidations = "validations:skip_validations"
+	// CreateCallback
+	CreateCallback = createCallback
+	// BeforeQueryCallback
+	BeforeQueryCallback = beforeQueryCallback
+	// DeleteCallback
+	DeleteCallback = deleteCallback
+	// UpdateCallback
+	UpdateCallback = updateCallback
+	// QueryCallback
+	QueryCallback = queryCallback
+	// ValidateCallback
+	ValidateCallback = validateCallback
+)
 
 func registerCallbacks() {
 	callback := DB().Callback()
@@ -35,15 +49,13 @@ func registerCallbacks() {
 	}
 }
 
-// BeforeQueryCallback
-var BeforeQueryCallback = func(scope *gorm.Scope) {
+func beforeQueryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BeforeFind")
 	}
 }
 
-// CreateCallback
-var CreateCallback = func(scope *gorm.Scope) {
+func createCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
@@ -62,8 +74,7 @@ var CreateCallback = func(scope *gorm.Scope) {
 	}
 }
 
-// DeleteCallback
-var DeleteCallback = func(scope *gorm.Scope) {
+func deleteCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		var extraOption string
 		if str, ok := scope.Get("gorm:delete_option"); ok {
@@ -111,16 +122,7 @@ var DeleteCallback = func(scope *gorm.Scope) {
 	}
 }
 
-// AddExtraSpaceIfExist
-func AddExtraSpaceIfExist(str string) string {
-	if str != "" {
-		return " " + str
-	}
-	return ""
-}
-
-// UpdateCallback
-var UpdateCallback = func(scope *gorm.Scope) {
+func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
 		if desc != nil {
@@ -129,8 +131,7 @@ var UpdateCallback = func(scope *gorm.Scope) {
 	}
 }
 
-// QueryCallback
-var QueryCallback = func(scope *gorm.Scope) {
+func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
 		values := GetRoutineValues()
@@ -172,8 +173,7 @@ var QueryCallback = func(scope *gorm.Scope) {
 	}
 }
 
-// ValidateCallback
-var ValidateCallback = func(scope *gorm.Scope) {
+func validateCallback(scope *gorm.Scope) {
 	if _, ok := scope.Get("gorm:update_column"); !ok {
 		if result, ok := scope.DB().Get(skipValidations); !(ok && result.(bool)) {
 			if !scope.HasError() {
@@ -196,6 +196,15 @@ var ValidateCallback = func(scope *gorm.Scope) {
 	}
 }
 
+// AddExtraSpaceIfExist
+func AddExtraSpaceIfExist(str string) string {
+	if str != "" {
+		return " " + str
+	}
+	return ""
+}
+
+// FlatValidatorErrors
 func FlatValidatorErrors(validatorErrors govalidator.Errors) []govalidator.Error {
 	resultErrors := []govalidator.Error{}
 	for _, validatorError := range validatorErrors.Errors() {
