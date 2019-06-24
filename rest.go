@@ -110,49 +110,44 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 				if createMethod != "-" {
 					desc.Create = true
 					r.Handle(createMethod, routePath, func(c *Context) {
-						var body interface{}
-						if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-							ERROR(err)
-							c.STDErr("Parsing body failed")
-							return
-						}
-						indirectScopeValue := indirect(reflect.ValueOf(body))
-						tx := DB().Begin()
 						var (
 							docs  []interface{}
 							multi bool
+							err   error
 						)
-						if indirectScopeValue.Kind() == reflect.Slice {
-							multi = true
-							for i := 0; i < indirectScopeValue.Len(); i++ {
+						// 事务执行
+						err = c.WithTransaction(func(db *gorm.DB) error {
+							var body interface{}
+							if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+								return errors.New("解析请求体失败")
+							}
+							indirectScopeValue := indirect(reflect.ValueOf(body))
+							tx := DB().Begin()
+							if indirectScopeValue.Kind() == reflect.Slice {
+								multi = true
+								for i := 0; i < indirectScopeValue.Len(); i++ {
+									doc := reflect.New(reflectType).Interface()
+									Copy(indirectScopeValue.Index(i).Interface(), doc)
+									docs = append(docs, doc)
+								}
+							} else {
 								doc := reflect.New(reflectType).Interface()
-								Copy(indirectScopeValue.Index(i).Interface(), doc)
+								Copy(body, doc)
 								docs = append(docs, doc)
 							}
+							for _, doc := range docs {
+								tx = tx.Create(doc)
+							}
+							return nil
+						})
+						// 响应结果
+						if err != nil {
+							c.STDErrHold("新增失败").Data(err).Render()
 						} else {
-							doc := reflect.New(reflectType).Interface()
-							Copy(body, doc)
-							docs = append(docs, doc)
-						}
-						for _, doc := range docs {
-							tx = tx.Create(doc)
-						}
-						msg := c.L("新增失败")
-						if errs := tx.GetErrors(); len(errs) > 0 {
-							ERROR(errs)
-							tx.Rollback()
-							c.STDErr(msg)
-						} else {
-							if err := tx.Commit().Error; err != nil {
-								ERROR(err)
-								c.STDErr(msg)
-								return
+							if multi {
+								c.STD(docs)
 							} else {
-								if multi {
-									c.STD(docs)
-								} else {
-									c.STD(docs[0])
-								}
+								c.STD(docs[0])
 							}
 						}
 					})
