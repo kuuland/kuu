@@ -445,7 +445,7 @@ curl -X DELETE \
 
 1. set `"auto":true` to enable auto save associations
 1. if association has a primary key, Kuu will call Update to save it, otherwise it will be created
-1. set `"preload=Emails"` to preload associations
+1. set `"preload=field1,field2"` to preload associations
 
 #### Create associations
 
