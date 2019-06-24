@@ -160,79 +160,74 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 				if deleteMethod != "-" {
 					desc.Delete = true
 					r.Handle(deleteMethod, routePath, func(c *Context) {
-						var params struct {
-							All   bool
-							Multi bool
-							Cond  map[string]interface{}
-						}
-						if c.Query("cond") != "" {
-							var retCond map[string]interface{}
-							Parse(c.Query("cond"), &retCond)
-							params.Cond = retCond
-
-							if c.Query("multi") != "" {
-								params.Multi = true
+						var (
+							result interface{}
+							err    error
+						)
+						// 事务执行
+						err = c.WithTransaction(func(db *gorm.DB) error {
+							var params struct {
+								All   bool
+								Multi bool
+								Cond  map[string]interface{}
 							}
-						} else {
-							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-								ERROR(err)
-								c.STDErr("解析请求体失败")
-								return
-							}
-						}
-						if IsBlank(params.Cond) {
-							c.STDErr("删除条件不能为空")
-							return
-						}
-						var multi bool
-						if params.Multi || params.All {
-							multi = true
-						}
-						tx := DB().Begin()
+							if c.Query("cond") != "" {
+								var retCond map[string]interface{}
+								Parse(c.Query("cond"), &retCond)
+								params.Cond = retCond
 
-						var value interface{}
-						params.Cond = underlineMap(params.Cond)
-						for key, val := range params.Cond {
-							if m, ok := val.(map[string]interface{}); ok {
-								query, args := fieldQuery(m, key)
-								if query != "" && len(args) > 0 {
-									tx = tx.Where(query, args...)
-									delete(params.Cond, key)
+								if c.Query("multi") != "" {
+									params.Multi = true
+								}
+							} else {
+								if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+									return errors.New("解析请求体失败")
 								}
 							}
-						}
-						if !IsBlank(params.Cond) {
-							query := reflect.New(reflectType).Interface()
-							Copy(params.Cond, query)
-							tx = tx.Where(query)
-						}
-						if multi {
-							value = reflect.New(reflect.SliceOf(reflectType)).Interface()
-							tx = tx.Find(value)
-							indirectValue := indirect(reflect.ValueOf(value))
-							if indirectValue.Len() > 0 {
-								value = indirectValue.Index(i).Addr().Interface()
+							if IsBlank(params.Cond) {
+								return errors.New("删除条件不能为空")
 							}
-							tx = tx.Delete(reflect.New(reflectType).Interface())
-						} else {
-							value = reflect.New(reflectType).Interface()
-							tx = tx.First(value)
-							tx = tx.Delete(reflect.New(reflectType).Interface())
-						}
+							var multi bool
+							if params.Multi || params.All {
+								multi = true
+							}
+							tx := DB().Begin()
 
-						msg := c.L("删除失败")
-						if errs := tx.GetErrors(); len(errs) > 0 {
-							ERROR(errs)
-							tx.Rollback()
-							c.STDErr(msg)
-						} else {
-							if err := tx.Commit().Error; err != nil {
-								ERROR(err)
-								c.STDErr(msg)
-								return
-							} else {
-								c.STD(value)
+							params.Cond = underlineMap(params.Cond)
+							for key, val := range params.Cond {
+								if m, ok := val.(map[string]interface{}); ok {
+									query, args := fieldQuery(m, key)
+									if query != "" && len(args) > 0 {
+										tx = tx.Where(query, args...)
+										delete(params.Cond, key)
+									}
+								}
 							}
+							if !IsBlank(params.Cond) {
+								query := reflect.New(reflectType).Interface()
+								Copy(params.Cond, query)
+								tx = tx.Where(query)
+							}
+							if multi {
+								result = reflect.New(reflect.SliceOf(reflectType)).Interface()
+								tx = tx.Find(result)
+								indirectValue := indirect(reflect.ValueOf(result))
+								if indirectValue.Len() > 0 {
+									result = indirectValue.Index(i).Addr().Interface()
+								}
+								tx = tx.Delete(reflect.New(reflectType).Interface())
+							} else {
+								result = reflect.New(reflectType).Interface()
+								tx = tx.First(result)
+								tx = tx.Delete(reflect.New(reflectType).Interface())
+							}
+							return nil
+						})
+						// 响应结果
+						if err != nil {
+							c.STDErrHold("删除失败").Data(err).Render()
+						} else {
+							c.STD(result)
 						}
 					})
 				}
@@ -381,7 +376,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								Doc   map[string]interface{}
 							}
 							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-								ERROR(err)
 								return errors.New("解析请求体失败")
 							}
 							if IsBlank(params.Cond) || IsBlank(params.Doc) {
