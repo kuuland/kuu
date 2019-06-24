@@ -346,6 +346,18 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							ret["page"] = page
 							ret["size"] = size
 						}
+						// 处理preload
+						rawPreload := c.Query("preload")
+						if rawPreload != "" {
+							ms := db.NewScope(reflect.New(reflectType).Interface())
+							split := strings.Split(rawPreload, ",")
+							for _, item := range split {
+								if v, ok := ms.FieldByName(item); ok {
+									db = db.Preload(v.Name)
+								}
+							}
+							ret["preload"] = rawPreload
+						}
 
 						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
 						db = callPreloadHooks(db, reflect.New(reflectType).Interface())

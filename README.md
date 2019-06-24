@@ -308,6 +308,7 @@ curl -X GET \
 | cond | query condition, JSON string | - | `cond={"user":"test"}` |
 | sort | order fields | - | `sort=id,-user` |
 | project | select fields | - | `project=user,pass` |
+| preload | preload fields | - | `preload=CreditCards,UserAddresses` |
 | page | current page(required in `PAGE` mode) | 1 | `page=2` |
 | size | record size per page(required in `PAGE` mode) | 30 | `size=100` |
 
@@ -373,6 +374,7 @@ Response JSON body:
 | cond | query condition, same as request | - |
 | sort | order fields, same as request | - |
 | project | select fields, same as request | - |
+| preload | preload fields, same as request | - |
 | totalrecords | total records | 0 |
 | page | current page, exist in `PAGE` mode | 1 |
 | size | record size per page, exist in `PAGE` mode | 30 |
