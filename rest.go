@@ -249,6 +249,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							ret["cond"] = retCond
 						}
 						db := DB().Model(reflect.New(reflectType).Interface())
+						ms := db.NewScope(reflect.New(reflectType).Interface())
 						if cond != nil {
 							for key, val := range cond {
 								if key == "$and" || key == "$or" {
@@ -291,15 +292,13 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 										delete(cond, key)
 									}
 								} else {
-									db = db.Where(fmt.Sprintf("%s = ?", key), val)
+									if field, ok := ms.FieldByName(key); ok {
+										db = db.Where(fmt.Sprintf("%s = ?", field.DBName), val)
+									} else {
+										ERROR("字段不存在：%s", key)
+									}
 								}
-
 							}
-							// if !IsBlank(cond) {
-							// 	query := reflect.New(reflectType).Interface()
-							// 	Copy(cond, query)
-							// 	db = db.Where(query)
-							// }
 						}
 						countDB := db
 						// 处理project
