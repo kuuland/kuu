@@ -438,7 +438,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								}
 								docScope := tx.NewScope(doc)
 								if params.Auto {
-									rawScope := tx.NewScope(result)
+									rawScope := tx.NewScope(val)
 									for key, _ := range params.Doc {
 										if field, ok := rawScope.FieldByName(key); ok {
 											df, _ := docScope.FieldByName(key)
