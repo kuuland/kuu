@@ -116,13 +116,12 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err   error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(db *gorm.DB) error {
+						err = c.WithTransaction(func(tx *gorm.DB) error {
 							var body interface{}
 							if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 								return errors.New("解析请求体失败")
 							}
 							indirectScopeValue := indirect(reflect.ValueOf(body))
-							tx := DB().Begin()
 							if indirectScopeValue.Kind() == reflect.Slice {
 								multi = true
 								for i := 0; i < indirectScopeValue.Len(); i++ {
@@ -164,7 +163,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err    error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(db *gorm.DB) error {
+						err = c.WithTransaction(func(tx *gorm.DB) error {
 							var params struct {
 								All   bool
 								Multi bool
@@ -190,8 +189,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							if params.Multi || params.All {
 								multi = true
 							}
-							tx := DB().Begin()
-
 							params.Cond = underlineMap(params.Cond)
 							for key, val := range params.Cond {
 								if m, ok := val.(map[string]interface{}); ok {
@@ -381,7 +378,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err    error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(db *gorm.DB) error {
+						err = c.WithTransaction(func(tx *gorm.DB) error {
 							var params struct {
 								All   bool
 								Multi bool
@@ -402,9 +399,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							if IsBlank(params.Cond) && !multi {
 								return errors.New("必须指定批量更新标记")
 							}
-
-							// 执行更新
-							tx := DB().Begin().Model(reflect.New(reflectType).Interface())
 							// 处理更新条件
 							for key, val := range params.Cond {
 								if m, ok := val.(map[string]interface{}); ok {
