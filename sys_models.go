@@ -2,10 +2,11 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 // Model
@@ -306,6 +307,8 @@ type DictValue struct {
 type File struct {
 	Model `rest:"*" displayName:"文件"`
 	ExtendField
+	Class  string `name:"文件分类" json:"class"`
+	RefID  uint   `name:"关联ID" `
 	UID    string `name:"文件唯一ID" json:"uid"`
 	Type   string `name:"文件Mine-Type" json:"type"`
 	Size   int64  `name:"文件大小" json:"size"`
