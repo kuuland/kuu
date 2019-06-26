@@ -160,6 +160,7 @@ var UploadRoute = RouteInfo{
 		EnsureDir(uploadDir)
 		// 执行文件保存
 		file, _ := c.FormFile("file")
+		extra, _ := c.GetPostForm("extra")
 		dst := path.Join(uploadDir, file.Filename)
 		if err := c.SaveUploadedFile(file, dst); err != nil {
 			ERROR(err)
@@ -167,16 +168,18 @@ var UploadRoute = RouteInfo{
 			return
 		}
 		INFO(fmt.Sprintf("'%s' uploaded!", dst))
-
-		f := File{
-			UID:    uuid.NewV4().String(),
-			Type:   file.Header["Content-Type"][0],
-			Size:   file.Size,
-			Name:   file.Filename,
-			Status: "done",
-			URL:    "/assets/" + file.Filename,
-			Path:   dst,
+		f := new(File)
+		if extra != "" {
+			Parse(extra, f)
 		}
+
+		f.UID = uuid.NewV4().String()
+		f.Type = file.Header["Content-Type"][0]
+		f.Size = file.Size
+		f.Name = file.Filename
+		f.Status = "done"
+		f.URL = "/assets/" + file.Filename
+		f.Path = dst
 
 		if errs := DB().Create(&f).GetErrors(); len(errs) > 0 {
 			ERROR(errs)
