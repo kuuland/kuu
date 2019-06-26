@@ -12,17 +12,6 @@ import (
 	"strings"
 )
 
-type PreloadHooks interface {
-	QueryPreload(*gorm.DB) *gorm.DB
-}
-
-func callPreloadHooks(db *gorm.DB, value interface{}) *gorm.DB {
-	if h, ok := value.(PreloadHooks); ok {
-		db = h.QueryPreload(db)
-	}
-	return db
-}
-
 // RestDesc
 type RestDesc struct {
 	Create bool
@@ -357,7 +346,10 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						}
 
 						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
-						db = callPreloadHooks(db, reflect.New(reflectType).Interface())
+						// 调用RestBeforeQuery钩子
+						if h, ok := reflect.New(reflectType).Interface().(RestQueryHooks); ok {
+							db = h.RestBeforeQuery(db)
+						}
 						db = db.Find(list)
 						ret["list"] = list
 						// 处理totalrecords、totalpages
