@@ -160,7 +160,8 @@ var UploadRoute = RouteInfo{
 		EnsureDir(uploadDir)
 		// 执行文件保存
 		file, _ := c.FormFile("file")
-		extra, _ := c.GetPostForm("extra")
+		extra:=c.PostForm("extra")
+
 		dst := path.Join(uploadDir, file.Filename)
 		if err := c.SaveUploadedFile(file, dst); err != nil {
 			ERROR(err)
