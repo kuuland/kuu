@@ -348,7 +348,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
 						// 调用RestBeforeQuery钩子
 						if h, ok := reflect.New(reflectType).Interface().(RestQueryHooks); ok {
-							db = h.RestBeforeQuery(db)
+							db = h.RestBeforeQuery(db, c)
 						}
 						db = db.Find(list)
 						ret["list"] = list
