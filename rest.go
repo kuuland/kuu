@@ -130,7 +130,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							for _, doc := range docs {
 								tx = tx.Create(doc)
 							}
-							return nil
+							return tx.Error
 						})
 						// 响应结果
 						if err != nil {
