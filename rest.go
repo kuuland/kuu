@@ -130,7 +130,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							for _, doc := range docs {
 								tx = tx.Create(doc)
 							}
-							return nil
+							return tx.Error
 						})
 						// 响应结果
 						if err != nil {
@@ -208,7 +208,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								tx = tx.First(result)
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							}
-							return nil
+							return tx.Error
 						})
 						// 响应结果
 						if err != nil {
@@ -447,7 +447,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 										tx = tx.Model(val).Updates(doc)
 									}
 								}
-								return nil
+								return tx.Error
 							}
 							if indirectScopeValue := indirect(reflect.ValueOf(result)); indirectScopeValue.Kind() == reflect.Slice {
 								for i := 0; i < indirectScopeValue.Len(); i++ {
