@@ -38,22 +38,27 @@ func InWhitelist(c *gin.Context) bool {
 	if len(Whitelist) == 0 {
 		return false
 	}
-	input := strings.ToUpper(fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path))
+	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path) // 格式为：GET /api/user
 	for _, item := range Whitelist {
 		if v, ok := item.(string); ok {
-			v = strings.ToUpper(v)
+			// 字符串忽略大小写
+			lowerInput := strings.ToLower(input)
+			v = strings.ToLower(v)
 			prefix := C().GetString("prefix")
-			if v == input {
+			if v == lowerInput {
+				// 完全匹配
 				return true
 			} else if C().DefaultGetBool("whitelist:prefix", true) && prefix != "" {
-				old := strings.ToUpper(fmt.Sprintf("%s ", c.Request.Method))
-				with := strings.ToUpper(fmt.Sprintf("%s %s", c.Request.Method, prefix))
+				// 加上全局prefix匹配
+				old := strings.ToLower(fmt.Sprintf("%s ", c.Request.Method))
+				with := strings.ToLower(fmt.Sprintf("%s %s", c.Request.Method, prefix))
 				v = strings.Replace(v, old, with, 1)
-				if v == input {
+				if v == lowerInput {
 					return true
 				}
 			}
 		} else if v, ok := item.(*regexp.Regexp); ok {
+			// 正则匹配
 			if v.MatchString(input) {
 				return true
 			}
