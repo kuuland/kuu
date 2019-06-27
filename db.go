@@ -120,10 +120,10 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 			tx.Rollback()
 		}
 	}()
-	if err := tx.Error; err != nil {
+	if err := fn(tx); err != nil {
 		return err
 	}
-	if err := fn(tx); err != nil {
+	if err := tx.Error; err != nil {
 		return err
 	}
 	if out {
