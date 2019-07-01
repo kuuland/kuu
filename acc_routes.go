@@ -79,6 +79,7 @@ var LoginRoute = RouteInfo{
 		})
 		if err != nil {
 			c.STDErrHold("令牌签发失败").Data(err).Render()
+			return
 		}
 		// 设置到上下文中
 		c.Set(SignContextKey, &SignContext{
