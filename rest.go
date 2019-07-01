@@ -517,17 +517,17 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 			a = append(a, "%")
 		}
 		keyword = strings.Join(a, "")
-		return fmt.Sprintf("\"%s\" LIKE ?", key), []interface{}{keyword}
+		return fmt.Sprintf(" %s LIKE ?", key), []interface{}{keyword}
 	} else if raw, has := m["$in"]; has {
-		return fmt.Sprintf("\"%s\" IN (?)", key), []interface{}{raw}
+		return fmt.Sprintf("%s IN (?)", key), []interface{}{raw}
 	} else if raw, has := m["$nin"]; has {
-		return fmt.Sprintf("\"%s\" NOT IN (?)", key), []interface{}{raw}
+		return fmt.Sprintf("%s NOT IN (?)", key), []interface{}{raw}
 	} else if raw, has := m["$eq"]; has {
-		return fmt.Sprintf("\"%s\" = ?", key), []interface{}{raw}
+		return fmt.Sprintf("%s = ?", key), []interface{}{raw}
 	} else if raw, has := m["$ne"]; has {
-		return fmt.Sprintf("\"%s\" <> ?", key), []interface{}{raw}
+		return fmt.Sprintf("%s <> ?", key), []interface{}{raw}
 	} else if raw, has := m["$exists"]; has {
-		return fmt.Sprintf("\"%s\" IS NOT NULL", key), []interface{}{raw}
+		return fmt.Sprintf("%s IS NOT NULL", key), []interface{}{raw}
 	} else {
 		gt, hgt := m["$gt"]
 		gte, hgte := m["$gte"]
@@ -535,24 +535,24 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 		lte, hlte := m["$lte"]
 		if hgt {
 			if hlt {
-				return fmt.Sprintf("\"%s\" > ? AND \"%s\" < ?", key, key), []interface{}{gt, lt}
+				return fmt.Sprintf("%s > ? AND %s < ?", key, key), []interface{}{gt, lt}
 			} else if hlte {
-				return fmt.Sprintf("\"%s\" > ? AND \"%s\" <= ?", key, key), []interface{}{gt, lte}
+				return fmt.Sprintf("%s > ? AND %s <= ?", key, key), []interface{}{gt, lte}
 			} else {
-				return fmt.Sprintf("\"%s\" > ?", key), []interface{}{gt}
+				return fmt.Sprintf("%s > ?", key), []interface{}{gt}
 			}
 		} else if hgte {
 			if hlt {
-				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" < ?", key, key), []interface{}{gte, lt}
+				return fmt.Sprintf("%s >= ? AND %s < ?", key, key), []interface{}{gte, lt}
 			} else if hlte {
-				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" <= ?", key, key), []interface{}{gte, lte}
+				return fmt.Sprintf("%s >= ? AND %s <= ?", key, key), []interface{}{gte, lte}
 			} else {
-				return fmt.Sprintf("\"%s\" >= ?", key), []interface{}{gte}
+				return fmt.Sprintf("%s >= ?", key), []interface{}{gte}
 			}
 		} else if hlt {
-			return fmt.Sprintf("\"%s\" < ?", key), []interface{}{lt}
+			return fmt.Sprintf("%s < ?", key), []interface{}{lt}
 		} else if hlte {
-			return fmt.Sprintf("\"%s\" <= ?", key), []interface{}{lte}
+			return fmt.Sprintf("%s <= ?", key), []interface{}{lte}
 		}
 	}
 	return
