@@ -11,7 +11,7 @@ type SignHistory struct {
 	gorm.Model `rest:"*" displayName:"登录历史"`
 	SecretID   uint   `name:"密钥ID"`
 	SecretData string `name:"密钥"`
-	Token      string `name:"令牌"`
+	Token      string `name:"令牌" gorm:"size:2048"`
 	Method     string `name:"登录/登出"`
 }
 
@@ -22,7 +22,7 @@ type SignSecret struct {
 	SubDocID   uint   `name:"扩展档案ID"`
 	Desc       string `name:"令牌描述"`
 	Secret     string `name:"令牌密钥"`
-	Token      string `name:"令牌"`
+	Token      string `name:"令牌" gorm:"size:2048"`
 	Iat        int64  `name:"令牌签发时间戳"`
 	Exp        int64  `name:"令牌过期时间戳"`
 	Method     string `name:"登录/登出"`
