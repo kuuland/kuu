@@ -307,14 +307,14 @@ type DictValue struct {
 type File struct {
 	Model `rest:"*" displayName:"文件"`
 	ExtendField
-	Class  string `name:"文件分类" json:"class"`
+	Class  string `name:"文件分类" `
 	RefID  uint   `name:"关联ID" `
-	UID    string `name:"文件唯一ID" json:"uid"`
-	Type   string `name:"文件Mine-Type" json:"type"`
-	Size   int64  `name:"文件大小" json:"size"`
-	Name   string `name:"文件名称" json:"name"`
-	Status string `name:"文件状态" json:"status"`
-	URL    string `name:"文件URL" json:"url"`
+	UID    string `name:"文件唯一ID" `
+	Type   string `name:"文件Mine-Type" `
+	Size   int64  `name:"文件大小" `
+	Name   string `name:"文件名称" `
+	Status string `name:"文件状态" `
+	URL    string `name:"文件URL" `
 	Path   string `json:"path"`
 }
 
