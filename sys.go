@@ -411,7 +411,7 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 		db = DB().Where("id in (?)", desc.ReadableOrgIDs).Find(&data)
 	}
 	if errs := db.GetErrors(); len(errs) > 0 {
-		return &data, errors.New(L(c, "查询组织失败"))
+		return &data, errors.New("查询组织失败")
 	}
 	return &data, nil
 }

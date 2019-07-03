@@ -115,7 +115,7 @@ var ParseToken = func(c *gin.Context) string {
 func DecodedContext(c *gin.Context) (*SignContext, error) {
 	token := ParseToken(c)
 	if token == "" {
-		return nil, errors.New(L(c, "未找到令牌"))
+		return nil, errors.New("请正确提供有效令牌")
 	}
 	data := SignContext{Token: token}
 	// 解析UID
