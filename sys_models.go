@@ -79,7 +79,7 @@ type Route struct {
 type User struct {
 	Model `rest:"*" displayName:"用户"`
 	ExtendField
-	Username    string       `name:"账号" gorm:"unique;not null"`
+	Username    string       `name:"账号" gorm:"not null"`
 	Password    string       `name:"密码" gorm:"not null" json:",omitempty"`
 	Name        string       `name:"姓名"`
 	Avatar      string       `name:"头像"`
@@ -110,8 +110,8 @@ func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
 type Org struct {
 	Model `rest:"*" displayName:"组织"`
 	ExtendField
-	Code     string `name:"组织编码" gorm:"unique;not null"`
-	Name     string `name:"组织名称" gorm:"unique;not null"`
+	Code     string `name:"组织编码" gorm:"not null"`
+	Name     string `name:"组织名称" gorm:"not null"`
 	Pid      uint   `name:"父组织ID"`
 	Sort     int    `name:"排序值"`
 	FullPid  string
@@ -204,7 +204,7 @@ func (u *User) AfterDelete() {
 type Role struct {
 	Model `rest:"*" displayName:"角色"`
 	ExtendField
-	Code                string                `name:"角色编码" gorm:"unique;not null"`
+	Code                string                `name:"角色编码" gorm:"not null"`
 	Name                string                `name:"角色名称" gorm:"not null"`
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
@@ -282,7 +282,7 @@ func (m *Menu) BeforeSave() {
 type Dict struct {
 	Model `rest:"*"`
 	ExtendField
-	Code      string `gorm:"unique;not null"`
+	Code      string `gorm:"not null"`
 	Name      string `gorm:"not null"`
 	Values    []DictValue
 	IsBuiltIn bool
@@ -338,7 +338,7 @@ func (o *SignOrg) IsValid() bool {
 type Param struct {
 	Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string `name:"参数编码" gorm:"unique;not null"`
+	Code      string `name:"参数编码" gorm:"not null"`
 	Name      string `name:"参数名称" gorm:"not null"`
 	Value     string `name:"参数值"`
 	IsBuiltIn bool   `name:"是否预置"`

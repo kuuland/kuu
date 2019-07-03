@@ -35,7 +35,7 @@ var OrgLoginRoute = RouteInfo{
 		}
 		c.IgnoreAuth()
 		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
-			c.STDErrHold("组织登录失败").Data(err).Render()
+			c.STDErr("组织登录失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -50,7 +50,7 @@ var OrgListRoute = RouteInfo{
 		c.IgnoreAuth()
 		sign := c.SignInfo
 		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
-			c.STDErrHold(c.L("获取组织列表失败")).Data(err).Render()
+			c.STDErr("获取组织列表失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -106,13 +106,13 @@ var UserMenusRoute = RouteInfo{
 		var menus []Menu
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		// 补全父级菜单
 		var total []Menu
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		var (
@@ -173,6 +173,7 @@ var UploadRoute = RouteInfo{
 		defer src.Close()
 		body, err := ioutil.ReadAll(src)
 		md5 := fmt.Sprintf("%x", md5.Sum(body))
+
 
 		//保存文件
 		temps := strings.Split(file.Filename, ".")
@@ -426,6 +427,44 @@ var ModelDocsRoute = RouteInfo{
 											Schema: DocPathSchema{Type: "string"},
 										},
 									},
+								},
+							},
+						},
+					},
+					"/upload": {
+						"post": {
+							Tags:        []string{"辅助接口"},
+							Summary:     "上传文件",
+							OperationID: "upload",
+							RequestBody: DocPathRequestBody{
+								Content: map[string]DocPathContentItem{
+									"multipart/form-data": {
+										Schema: DocPathSchema{
+											Type: "object",
+											Properties: map[string]DocPathSchema{
+												"file": {
+													Type:        "string",
+													Format:      "binary",
+													Description: "文件",
+												},
+											},
+										},
+									},
+								},
+							},
+							Responses: map[int]DocPathResponse{
+								200: {
+									Description: "上传成功",
+									Content: map[string]DocPathContentItem{
+										"application/json": {
+											Schema: DocPathSchema{Type: "string"},
+										},
+									},
+								},
+							},
+							Security: []DocPathItemSecurity{
+								map[string][]string{
+									"api_key": []string{},
 								},
 							},
 						},

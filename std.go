@@ -38,11 +38,11 @@ func std(renderNow bool, c *gin.Context, data interface{}, msg ...string) *STDRe
 	return std
 }
 
-func stdErr(renderNow bool, c *gin.Context, msg string, code ...int32) *STDRender {
+func stdErr(renderNow bool, c *gin.Context, msg string, err ...interface{}) *STDRender {
 	std := &STDRender{c: c}
 	std.message = msg
-	if len(code) > 0 {
-		std.code = code[0]
+	if len(err) > 0 {
+		std.data = err[0]
 	} else {
 		std.code = -1
 	}
@@ -58,8 +58,8 @@ func STD(c *gin.Context, data interface{}, msg ...string) *STDRender {
 }
 
 // STDErr
-func STDErr(c *gin.Context, msg string, code ...int32) *STDRender {
-	return stdErr(true, c, msg, code...)
+func STDErr(c *gin.Context, msg string, err ...interface{}) *STDRender {
+	return stdErr(true, c, msg, err...)
 }
 
 // STDHold
@@ -68,8 +68,8 @@ func STDHold(c *gin.Context, data interface{}, msg ...string) *STDRender {
 }
 
 // STDErrHold
-func STDErrHold(c *gin.Context, msg string, code ...int32) *STDRender {
-	return stdErr(false, c, msg, code...)
+func STDErrHold(c *gin.Context, msg string, err ...interface{}) *STDRender {
+	return stdErr(false, c, msg, err...)
 }
 
 // Context

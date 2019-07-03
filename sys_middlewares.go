@@ -24,7 +24,8 @@ func OrgMiddleware(c *gin.Context) {
 		if v, exists := c.Get(SignContextKey); exists {
 			sign = v.(*SignContext)
 			if err := orgAutoLogin(c, sign); err != nil {
-				STDErrHold(c, "").Data(err).Abort()
+				STDErrHold(c, "组织自动登录失败", err).Abort()
+				return
 			}
 		}
 	}

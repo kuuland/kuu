@@ -78,7 +78,8 @@ var LoginRoute = RouteInfo{
 			Expiration: expiration,
 		})
 		if err != nil {
-			c.STDErrHold("令牌签发失败").Data(err).Render()
+			c.STDErr("令牌签发失败", err)
+			return
 		}
 		// 设置到上下文中
 		c.Set(SignContextKey, &SignContext{
@@ -106,7 +107,7 @@ var LogoutRoute = RouteInfo{
 			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
 				if errs := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).GetErrors(); len(errs) > 0 {
-					c.STDErrHold("退出登录失败").Data(errs).Render()
+					c.STDErr("退出登录失败", errs)
 					return
 				}
 				// 保存登出历史
@@ -143,7 +144,7 @@ var APIKeyRoute = RouteInfo{
 			Desc string `binding:"required"`
 		}{}
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErrHold("解析请求体失败").Data(err).Render()
+			c.STDErr("解析请求体失败", err)
 			return
 		}
 		secretData, err := GenToken(GenTokenDesc{
@@ -154,7 +155,7 @@ var APIKeyRoute = RouteInfo{
 			IsAPIKey:   true,
 		})
 		if err != nil {
-			c.STDErrHold("令牌签发失败").Data(err).Render()
+			c.STDErr("令牌签发失败", err)
 			return
 		}
 		c.STD(secretData.Token)

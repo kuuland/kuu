@@ -134,7 +134,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("新增失败").Data(err).Render()
+							c.STDErr("新增失败", err)
 						} else {
 							if multi {
 								c.STD(docs)
@@ -154,17 +154,21 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						// 事务执行
 						err = c.WithTransaction(func(tx *gorm.DB) error {
 							var params struct {
-								All   bool
-								Multi bool
-								Cond  map[string]interface{}
+								All    bool
+								Multi  bool
+								UnSoft bool
+								Cond   map[string]interface{}
 							}
 							if c.Query("cond") != "" {
 								var retCond map[string]interface{}
 								Parse(c.Query("cond"), &retCond)
 								params.Cond = retCond
 
-								if c.Query("multi") != "" {
+								if c.Query("multi") != "" || c.Query("all") != "" {
 									params.Multi = true
+								}
+								if c.Query("unsoft") != "" {
+									params.UnSoft = true
 								}
 							} else {
 								if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
@@ -202,17 +206,23 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if indirectValue.Len() > 0 {
 									result = indirectValue.Index(i).Addr().Interface()
 								}
+								if params.UnSoft {
+									tx = tx.Unscoped()
+								}
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							} else {
 								result = reflect.New(reflectType).Interface()
 								tx = tx.First(result)
+								if params.UnSoft {
+									tx = tx.Unscoped()
+								}
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							}
 							return tx.Error
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("删除失败").Data(err).Render()
+							c.STDErr("删除失败", err)
 						} else {
 							c.STD(result)
 						}
@@ -465,7 +475,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("修改失败").Data(err).Render()
+							c.STDErr("修改失败", err)
 						} else {
 							c.STD(result)
 						}
@@ -517,17 +527,17 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 			a = append(a, "%")
 		}
 		keyword = strings.Join(a, "")
-		return fmt.Sprintf("\"%s\" LIKE ?", key), []interface{}{keyword}
+		return fmt.Sprintf(" %s LIKE ?", key), []interface{}{keyword}
 	} else if raw, has := m["$in"]; has {
-		return fmt.Sprintf("\"%s\" IN (?)", key), []interface{}{raw}
+		return fmt.Sprintf("%s IN (?)", key), []interface{}{raw}
 	} else if raw, has := m["$nin"]; has {
-		return fmt.Sprintf("\"%s\" NOT IN (?)", key), []interface{}{raw}
+		return fmt.Sprintf("%s NOT IN (?)", key), []interface{}{raw}
 	} else if raw, has := m["$eq"]; has {
-		return fmt.Sprintf("\"%s\" = ?", key), []interface{}{raw}
+		return fmt.Sprintf("%s = ?", key), []interface{}{raw}
 	} else if raw, has := m["$ne"]; has {
-		return fmt.Sprintf("\"%s\" <> ?", key), []interface{}{raw}
+		return fmt.Sprintf("%s <> ?", key), []interface{}{raw}
 	} else if raw, has := m["$exists"]; has {
-		return fmt.Sprintf("\"%s\" IS NOT NULL", key), []interface{}{raw}
+		return fmt.Sprintf("%s IS NOT NULL", key), []interface{}{raw}
 	} else {
 		gt, hgt := m["$gt"]
 		gte, hgte := m["$gte"]
@@ -535,24 +545,24 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 		lte, hlte := m["$lte"]
 		if hgt {
 			if hlt {
-				return fmt.Sprintf("\"%s\" > ? AND \"%s\" < ?", key, key), []interface{}{gt, lt}
+				return fmt.Sprintf("%s > ? AND %s < ?", key, key), []interface{}{gt, lt}
 			} else if hlte {
-				return fmt.Sprintf("\"%s\" > ? AND \"%s\" <= ?", key, key), []interface{}{gt, lte}
+				return fmt.Sprintf("%s > ? AND %s <= ?", key, key), []interface{}{gt, lte}
 			} else {
-				return fmt.Sprintf("\"%s\" > ?", key), []interface{}{gt}
+				return fmt.Sprintf("%s > ?", key), []interface{}{gt}
 			}
 		} else if hgte {
 			if hlt {
-				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" < ?", key, key), []interface{}{gte, lt}
+				return fmt.Sprintf("%s >= ? AND %s < ?", key, key), []interface{}{gte, lt}
 			} else if hlte {
-				return fmt.Sprintf("\"%s\" >= ? AND \"%s\" <= ?", key, key), []interface{}{gte, lte}
+				return fmt.Sprintf("%s >= ? AND %s <= ?", key, key), []interface{}{gte, lte}
 			} else {
-				return fmt.Sprintf("\"%s\" >= ?", key), []interface{}{gte}
+				return fmt.Sprintf("%s >= ?", key), []interface{}{gte}
 			}
 		} else if hlt {
-			return fmt.Sprintf("\"%s\" < ?", key), []interface{}{lt}
+			return fmt.Sprintf("%s < ?", key), []interface{}{lt}
 		} else if hlte {
-			return fmt.Sprintf("\"%s\" <= ?", key), []interface{}{lte}
+			return fmt.Sprintf("%s <= ?", key), []interface{}{lte}
 		}
 	}
 	return
