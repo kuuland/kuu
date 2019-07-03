@@ -39,12 +39,10 @@ func std(renderNow bool, c *gin.Context, data interface{}, msg ...string) *STDRe
 }
 
 func stdErr(renderNow bool, c *gin.Context, msg string, err ...interface{}) *STDRender {
-	std := &STDRender{c: c}
+	std := &STDRender{c: c, code: -1}
 	std.message = msg
 	if len(err) > 0 {
 		std.data = err[0]
-	} else {
-		std.code = -1
 	}
 	if renderNow {
 		std.Render()
