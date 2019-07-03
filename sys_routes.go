@@ -32,7 +32,7 @@ var OrgLoginRoute = RouteInfo{
 		}
 		c.IgnoreAuth()
 		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
-			c.STDErrHold("组织登录失败").Data(err).Render()
+			c.STDErr("组织登录失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -47,7 +47,7 @@ var OrgListRoute = RouteInfo{
 		c.IgnoreAuth()
 		sign := c.SignInfo
 		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
-			c.STDErrHold(c.L("获取组织列表失败")).Data(err).Render()
+			c.STDErr("获取组织列表失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -103,13 +103,13 @@ var UserMenusRoute = RouteInfo{
 		var menus []Menu
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		// 补全父级菜单
 		var total []Menu
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		var (
@@ -160,7 +160,7 @@ var UploadRoute = RouteInfo{
 		EnsureDir(uploadDir)
 		// 执行文件保存
 		file, _ := c.FormFile("file")
-		extra:=c.PostForm("extra")
+		extra := c.PostForm("extra")
 
 		dst := path.Join(uploadDir, file.Filename)
 		if err := c.SaveUploadedFile(file, dst); err != nil {

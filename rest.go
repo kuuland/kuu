@@ -134,7 +134,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("新增失败").Data(err).Render()
+							c.STDErr("新增失败", err)
 						} else {
 							if multi {
 								c.STD(docs)
@@ -222,7 +222,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("删除失败").Data(err).Render()
+							c.STDErr("删除失败", err)
 						} else {
 							c.STD(result)
 						}
@@ -475,7 +475,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						})
 						// 响应结果
 						if err != nil {
-							c.STDErrHold("修改失败").Data(err).Render()
+							c.STDErr("修改失败", err)
 						} else {
 							c.STD(result)
 						}

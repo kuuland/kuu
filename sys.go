@@ -488,22 +488,22 @@ func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		ERROR(err)
-		return nil, 0, errors.New(c.L("解析请求体失败"))
+		return nil, 0, errors.New("解析请求体失败")
 	}
 	// 检测账号是否存在
 	var user User
 	if err := DB().Where(&User{Username: body.Username}).First(&user).Error; err != nil {
 		ERROR(err)
-		return nil, 0, errors.New(c.L("用户不存在"))
+		return nil, 0, errors.New("用户不存在")
 	}
 	// 检测账号是否有效
 	if user.Disable {
-		return nil, 0, errors.New(c.L("该用户已被禁用"))
+		return nil, 0, errors.New("该用户已被禁用")
 	}
 	// 检测密码是否正确
 	body.Password = strings.ToLower(body.Password)
 	if !CompareHashAndPassword(user.Password, body.Password) {
-		return nil, 0, errors.New(c.L("账号密码不一致"))
+		return nil, 0, errors.New("账号密码不一致")
 	}
 	payload := jwt.MapClaims{
 		"UID":       user.ID,
