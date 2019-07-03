@@ -154,17 +154,21 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						// 事务执行
 						err = c.WithTransaction(func(tx *gorm.DB) error {
 							var params struct {
-								All   bool
-								Multi bool
-								Cond  map[string]interface{}
+								All    bool
+								Multi  bool
+								UnSoft bool
+								Cond   map[string]interface{}
 							}
 							if c.Query("cond") != "" {
 								var retCond map[string]interface{}
 								Parse(c.Query("cond"), &retCond)
 								params.Cond = retCond
 
-								if c.Query("multi") != "" {
+								if c.Query("multi") != "" || c.Query("all") != "" {
 									params.Multi = true
+								}
+								if c.Query("unsoft") != "" {
+									params.UnSoft = true
 								}
 							} else {
 								if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
@@ -202,10 +206,16 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if indirectValue.Len() > 0 {
 									result = indirectValue.Index(i).Addr().Interface()
 								}
+								if params.UnSoft {
+									tx = tx.Unscoped()
+								}
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							} else {
 								result = reflect.New(reflectType).Interface()
 								tx = tx.First(result)
+								if params.UnSoft {
+									tx = tx.Unscoped()
+								}
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							}
 							return tx.Error

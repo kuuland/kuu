@@ -441,6 +441,20 @@ curl -X DELETE \
 }'
 ```
 
+#### UnSoft Delete
+
+```sh
+curl -X DELETE \
+  http://localhost:8080/api/user \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "cond": {
+        "user": "test"
+    },
+    "unsoft": true
+}'
+```
+
 ### Associations
 
 1. set `"auto":true` to enable auto save associations
