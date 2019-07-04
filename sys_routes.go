@@ -2,14 +2,17 @@ package kuu
 
 import (
 	"bytes"
+	"crypto/md5"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -32,7 +35,7 @@ var OrgLoginRoute = RouteInfo{
 		}
 		c.IgnoreAuth()
 		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
-			c.STDErrHold("组织登录失败").Data(err).Render()
+			c.STDErr("组织登录失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -47,7 +50,7 @@ var OrgListRoute = RouteInfo{
 		c.IgnoreAuth()
 		sign := c.SignInfo
 		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
-			c.STDErrHold(c.L("获取组织列表失败")).Data(err).Render()
+			c.STDErr("获取组织列表失败", err)
 		} else {
 			c.STD(data)
 		}
@@ -103,13 +106,13 @@ var UserMenusRoute = RouteInfo{
 		var menus []Menu
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		// 补全父级菜单
 		var total []Menu
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
-			c.STDErrHold("菜单查询失败").Data(err).Render()
+			c.STDErr("菜单查询失败", err)
 			return
 		}
 		var (
@@ -158,28 +161,53 @@ var UploadRoute = RouteInfo{
 			uploadDir = "assets"
 		}
 		EnsureDir(uploadDir)
-		// 执行文件保存
-		file, _ := c.FormFile("file")
-		extra:=c.PostForm("extra")
 
-		dst := path.Join(uploadDir, file.Filename)
+		//	MD5
+		file, _ := c.FormFile("file")
+		src, err := file.Open()
+		if err != nil {
+			ERROR(err)
+			c.STDErr(err.Error())
+			return
+		}
+		defer src.Close()
+		body, err := ioutil.ReadAll(src)
+		md5 := fmt.Sprintf("%x", md5.Sum(body))
+
+
+		//保存文件
+		temps := strings.Split(file.Filename, ".")
+		temps[0] = md5
+		md5Name := strings.Join(temps, ".")
+		dst := path.Join(uploadDir, md5Name)
 		if err := c.SaveUploadedFile(file, dst); err != nil {
 			ERROR(err)
 			c.STDErr("保存上传文件失败")
 			return
 		}
 		INFO(fmt.Sprintf("'%s' uploaded!", dst))
-		f := new(File)
-		if extra != "" {
-			Parse(extra, f)
-		}
 
+		class := c.PostForm("class")
+		refidstr := c.PostForm("refid")
+		refid := (uint)(0)
+		if refidstr != "" {
+			temp, err := strconv.ParseUint(refidstr, 10, 64)
+			if err != nil {
+				ERROR(err)
+				c.STDErr(err.Error())
+				return
+			}
+			refid = (uint)(temp)
+		}
+		f := new(File)
+		f.Class = class
+		f.RefID = refid
 		f.UID = uuid.NewV4().String()
 		f.Type = file.Header["Content-Type"][0]
 		f.Size = file.Size
 		f.Name = file.Filename
 		f.Status = "done"
-		f.URL = "/assets/" + file.Filename
+		f.URL = "/assets/" + md5Name
 		f.Path = dst
 
 		if errs := DB().Create(&f).GetErrors(); len(errs) > 0 {

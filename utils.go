@@ -86,7 +86,7 @@ func Capitalize(str string) string {
 // Stringify
 func Stringify(v interface{}, format ...bool) (ret string) {
 	if b, err := json.Marshal(v); err == nil {
-		if len(format) > 0 {
+		if len(format) > 0 && format[0] {
 			var out bytes.Buffer
 			if err = json.Indent(&out, b, "", "  "); err == nil {
 				ret = string(out.Bytes())
@@ -136,3 +136,5 @@ func Copy(src interface{}, dest interface{}) (err error) {
 	}
 	return
 }
+
+

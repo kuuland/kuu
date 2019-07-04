@@ -119,6 +119,7 @@ List of preset config:
 
 - `prefix` - Global routes prefix for `kuu.Mod`'s Routes.
 - `gorm:migrate` - Enable GORM's auto migration for Mod's Models.
+- `logs:request` - Output request info.
 - `db` - DB configs.
 - `redis` - Redis configs.
 - `cors` - Attaches the official [CORS](https://github.com/gin-contrib/cors) gin's middleware.
@@ -438,6 +439,20 @@ curl -X DELETE \
         "user": "test"
     },
     "multi": true
+}'
+```
+
+#### UnSoft Delete
+
+```sh
+curl -X DELETE \
+  http://localhost:8080/api/user \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "cond": {
+        "user": "test"
+    },
+    "unsoft": true
 }'
 ```
 
@@ -803,8 +818,8 @@ func main() {
         c.STD("hello", "Success")           // response: {"data":"hello","code":0,"msg":"Success"}
         c.STD(200)                          // response: {"data":200,"code":0}
         c.STDErr("New record failed")       // response: {"code":-1,"msg":"New record failed"}
-        c.STDErr("New record failed", 555)  // response: {"code":555,"msg":"New record failed"}
-        c.STDErrHold("Token decoding failed", 555).Data(err).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"[err.Error()]"}
+        c.STDErr("New record failed", err)  // response: {"code":-1,"msg":"New record failed","data":"错误详细描述信息，对应err.Error()"}
+        c.STDErrHold("Token decoding failed", err).Code(555).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"错误详细描述信息，对应err.Error()"}
     })
 }
 ```

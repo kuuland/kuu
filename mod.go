@@ -23,7 +23,8 @@ func init() {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		v, ok := tableNames[defaultTableName]
 		if !ok || v == "" {
-			PANIC("表名 %s 不存在", defaultTableName)
+			WARN("自定义表名：%s", defaultTableName)
+			return defaultTableName
 		}
 		return v
 	}

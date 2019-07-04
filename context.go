@@ -40,8 +40,8 @@ func (c *Context) STD(data interface{}, msg ...string) *STDRender {
 }
 
 // STDErr
-func (c *Context) STDErr(msg string, code ...int32) *STDRender {
-	return STDErr(c.Context, msg, code...)
+func (c *Context) STDErr(msg string, err ...interface{}) *STDRender {
+	return STDErr(c.Context, msg, err...)
 }
 
 // STDHold
@@ -50,8 +50,8 @@ func (c *Context) STDHold(data interface{}, msg ...string) *STDRender {
 }
 
 // STDErrHold
-func (c *Context) STDErrHold(msg string, code ...int32) *STDRender {
-	return STDErrHold(c.Context, msg, code...)
+func (c *Context) STDErrHold(msg string, err ...interface{}) *STDRender {
+	return STDErrHold(c.Context, msg, err...)
 }
 
 // SetValue
