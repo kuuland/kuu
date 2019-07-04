@@ -19,10 +19,10 @@ type Model struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Org         *Org       `gorm:"foreignkey:OrgID"`
-	CreatedBy   *User      `gorm:"foreignkey:CreatedByID"`
-	UpdatedBy   *User      `gorm:"foreignkey:UpdatedByID"`
-	DeletedBy   *User      `gorm:"foreignkey:DeletedByID"`
+	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
 	Remark      string
 }
 
