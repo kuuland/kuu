@@ -6,10 +6,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"github.com/jtolds/gls"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -364,29 +362,6 @@ func onInit(e *Engine) {
 	e.initConfigs()
 	e.initStatics()
 
-	if C().DefaultGetBool("logs:request", true) {
-		e.Use(LogsMiddleware)
-	}
-
 	// Register default callbacks
 	registerCallbacks()
-}
-
-// LogsMiddleware
-func LogsMiddleware(c *gin.Context) {
-	info := struct {
-		Headers http.Header `json:"headers,omitempty"`
-		Query   url.Values  `json:"query,omitempty"`
-		Body    interface{} `json:"body,omitempty"`
-	}{
-		Headers: c.Request.Header,
-		Query:   c.Request.URL.Query(),
-	}
-	if err := c.ShouldBindBodyWith(&info.Body, binding.JSON); err != nil && c.Request.PostForm != nil {
-		info.Body = c.Request.PostForm
-	}
-
-	json := Stringify(info, C().DefaultGetBool("logs:request:fmt", true))
-	INFO("%s %s %s", fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path), time.Now().Format("2006-01-02 15:04:05"), json)
-	c.Next()
 }

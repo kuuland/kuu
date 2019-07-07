@@ -47,6 +47,9 @@ func registerCallbacks() {
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
+	if C().DefaultGetBool("audit:callbacks", true) {
+		registerAuditCallbacks(callback)
+	}
 }
 
 func beforeQueryCallback(scope *gorm.Scope) {
@@ -60,15 +63,21 @@ func createCallback(scope *gorm.Scope) {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
 				if orgIDField.IsBlank {
-					orgIDField.Set(desc.SignOrgID)
+					if err := orgIDField.Set(desc.SignOrgID); err != nil {
+						ERROR("自动设置组织ID失败：%s", err.Error())
+					}
 				}
 			}
 			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
-				createdByField.Set(desc.UID)
+				if err := createdByField.Set(desc.UID); err != nil {
+					ERROR("自动设置创建人ID失败：%s", err.Error())
+				}
 			}
 
 			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
-				updatedByField.Set(desc.UID)
+				if err := updatedByField.Set(desc.UID); err != nil {
+					ERROR("自动设置修改人ID失败：%s", err.Error())
+				}
 			}
 		}
 	}
@@ -126,7 +135,9 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
 		if desc != nil {
-			scope.SetColumn("UpdatedByID", desc.UID)
+			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
+				ERROR("自动设置修改人ID失败：%s", err.Error())
+			}
 		}
 	}
 }
@@ -184,10 +195,15 @@ func validateCallback(scope *gorm.Scope) {
 					if validatorErrors != nil {
 						if errors, ok := validatorErrors.(govalidator.Errors); ok {
 							for _, err := range FlatValidatorErrors(errors) {
-								scope.DB().AddError(formattedValidError(err, resource))
+								if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
+									ERROR("添加验证错误信息失败：%s", err.Error())
+								}
+
 							}
 						} else {
-							scope.DB().AddError(validatorErrors)
+							if err := scope.DB().AddError(validatorErrors); err != nil {
+								ERROR("添加验证错误信息失败：%s", err.Error())
+							}
 						}
 					}
 				}
@@ -206,7 +222,7 @@ func AddExtraSpaceIfExist(str string) string {
 
 // FlatValidatorErrors
 func FlatValidatorErrors(validatorErrors govalidator.Errors) []govalidator.Error {
-	resultErrors := []govalidator.Error{}
+	resultErrors := make([]govalidator.Error, 0)
 	for _, validatorError := range validatorErrors.Errors() {
 		if errors, ok := validatorError.(govalidator.Errors); ok {
 			for _, e := range errors {

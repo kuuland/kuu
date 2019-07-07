@@ -11,11 +11,11 @@ import (
 
 // Language
 type Language struct {
-	gorm.Model `rest`
-	Code       string
-	Name       string
-	Key        string
-	Value      string
+	gorm.Model `rest:"*" displayName:"国际化"`
+	Code       string `name:"语言编码"`
+	Name       string `name:"语言名称"`
+	Key        string `name:"翻译键"`
+	Value      string `name:"翻译值"`
 }
 
 // L
@@ -34,7 +34,7 @@ func Lang(langOrContext interface{}, key string, defaultValue string, args inter
 	}
 	lang := parseLang(langOrContext)
 	if lang == "" {
-		lang = "zh"
+		lang = "zh-CN"
 	}
 	if key == "" {
 		key = strings.Replace(defaultValue, "{", "", -1)

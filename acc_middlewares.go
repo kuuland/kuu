@@ -17,13 +17,13 @@ func AuthMiddleware(c *gin.Context) {
 		// 从请求参数中解码令牌
 		sign, err := DecodedContext(c)
 		if err != nil {
-			STDErrHold(c, "令牌解码失败", err).Code(555).Abort()
+			STDErrHold(c, "请登录后访问", err).Code(555).Abort()
 			return
 		}
 		if sign.IsValid() {
 			c.Next()
 		} else {
-			STDErrHold(c, "无效的令牌", err).Code(555).Abort()
+			STDErrHold(c, "登录会话已过期", err).Code(555).Abort()
 			return
 		}
 	}

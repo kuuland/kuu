@@ -170,10 +170,13 @@ var UploadRoute = RouteInfo{
 			c.STDErr(err.Error())
 			return
 		}
-		defer src.Close()
+		defer func() {
+			if err := src.Close(); err != nil {
+				ERROR(err)
+			}
+		}()
 		body, err := ioutil.ReadAll(src)
 		md5 := fmt.Sprintf("%x", md5.Sum(body))
-
 
 		//保存文件
 		temps := strings.Split(file.Filename, ".")
@@ -464,7 +467,7 @@ var ModelDocsRoute = RouteInfo{
 							},
 							Security: []DocPathItemSecurity{
 								map[string][]string{
-									"api_key": []string{},
+									"api_key": {},
 								},
 							},
 						},
@@ -527,7 +530,7 @@ var ModelDocsRoute = RouteInfo{
 							},
 							Security: []DocPathItemSecurity{
 								map[string][]string{
-									"api_key": []string{},
+									"api_key": {},
 								},
 							},
 						}
@@ -572,7 +575,7 @@ var ModelDocsRoute = RouteInfo{
 							},
 							Security: []DocPathItemSecurity{
 								map[string][]string{
-									"api_key": []string{},
+									"api_key": {},
 								},
 							},
 						}
@@ -622,7 +625,7 @@ var ModelDocsRoute = RouteInfo{
 							},
 							Security: []DocPathItemSecurity{
 								map[string][]string{
-									"api_key": []string{},
+									"api_key": {},
 								},
 							},
 						}
@@ -720,7 +723,7 @@ var ModelDocsRoute = RouteInfo{
 							},
 							Security: []DocPathItemSecurity{
 								map[string][]string{
-									"api_key": []string{},
+									"api_key": {},
 								},
 							},
 						}
