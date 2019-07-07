@@ -27,10 +27,11 @@ type AuditInfo struct {
 	SubDocID       uint        `json:",omitempty"`
 	Token          string      `json:",omitempty"`
 	CreateValue    interface{} `json:",omitempty"`
-	UpdateCond     interface{} `json:",omitempty"`
-	UpdateValue    interface{} `json:",omitempty"`
+	UpdateSQL      interface{} `json:",omitempty"`
+	UpdateSQLVars  interface{} `json:",omitempty"`
 	DeleteOp       string      `json:",omitempty"`
-	DeleteCond     interface{} `json:",omitempty"`
+	DeleteSQL      interface{} `json:",omitempty"`
+	DeleteSQLVars  interface{} `json:",omitempty"`
 }
 
 func (info *AuditInfo) Output() {
@@ -40,13 +41,13 @@ func (info *AuditInfo) Output() {
 
 func registerAuditCallbacks(callback *gorm.Callback) {
 	if callback.Create().Get("kuu:audit_create") == nil {
-		callback.Create().Before("gorm:create").Register("kuu:audit_create", AuditCreateCallback)
+		callback.Create().After("gorm:create").Register("kuu:audit_create", AuditCreateCallback)
 	}
 	if callback.Update().Get("kuu:audit_update") == nil {
-		callback.Update().Before("gorm:update").Register("kuu:audit_update", AuditUpdateCallback)
+		callback.Update().After("gorm:update").Register("kuu:audit_update", AuditUpdateCallback)
 	}
 	if callback.Delete().Get("kuu:audit_delete") == nil {
-		callback.Update().Before("gorm:delete").Register("kuu:audit_delete", AuditDeleteCallback)
+		callback.Update().After("gorm:delete").Register("kuu:audit_delete", AuditDeleteCallback)
 	}
 }
 
@@ -78,12 +79,8 @@ func auditCreateCallback(scope *gorm.Scope) {
 func auditUpdateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		info := NewAuditInfo(scope)
-		info.UpdateCond = scope.CombinedConditionSql()
-		if v, exists := scope.InstanceGet("gorm:update_attrs"); exists {
-			info.UpdateValue = v
-		} else {
-			info.UpdateValue = scope.Value
-		}
+		info.UpdateSQL = scope.SQL
+		info.UpdateSQLVars = scope.SQLVars
 		info.Output()
 	}
 }
@@ -97,7 +94,8 @@ func auditDeleteCallback(scope *gorm.Scope) {
 		} else {
 			info.DeleteOp = "DELETE"
 		}
-		info.DeleteCond = scope.CombinedConditionSql()
+		info.DeleteSQL = scope.SQL
+		info.DeleteSQLVars = scope.SQLVars
 		info.Output()
 	}
 }
