@@ -47,7 +47,7 @@ func registerCallbacks() {
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
-	if C().DefaultGetBool("audit:callbacks", false) {
+	if C().DefaultGetBool("audit:callbacks", true) {
 		registerAuditCallbacks(callback)
 	}
 }
