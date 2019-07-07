@@ -26,7 +26,9 @@ type AuditInfo struct {
 	UID            uint        `json:",omitempty"`
 	SubDocID       uint        `json:",omitempty"`
 	Token          string      `json:",omitempty"`
-	CreateValue    interface{} `json:",omitempty"`
+	Op             string      `json:",omitempty"`
+	SQL            interface{} `json:",omitempty"`
+	SQLVars        interface{} `json:",omitempty"`
 	UpdateSQL      interface{} `json:",omitempty"`
 	UpdateSQLVars  interface{} `json:",omitempty"`
 	DeleteOp       string      `json:",omitempty"`
@@ -52,8 +54,13 @@ func registerAuditCallbacks(callback *gorm.Callback) {
 }
 
 // NewAuditInfo
-func NewAuditInfo(scope *gorm.Scope) *AuditInfo {
-	info := AuditInfo{Time: time.Now().Format("2006-01-02 15:04:05")}
+func NewAuditInfo(scope *gorm.Scope, op string) *AuditInfo {
+	info := AuditInfo{
+		Time:    time.Now().Format("2006-01-02 15:04:05"),
+		SQL:     scope.SQL,
+		SQLVars: scope.SQLVars,
+		Op:      op,
+	}
 	if c := GetRoutineRequestContext(); c != nil {
 		info.RequestHeaders = c.Request.Header
 		info.RequestQuery = c.Request.URL.Query()
@@ -70,32 +77,25 @@ func NewAuditInfo(scope *gorm.Scope) *AuditInfo {
 
 func auditCreateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		info := NewAuditInfo(scope)
-		info.CreateValue = scope.Value
-		info.Output()
+		NewAuditInfo(scope, "CREATE").Output()
 	}
 }
 
 func auditUpdateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		info := NewAuditInfo(scope)
-		info.UpdateSQL = scope.SQL
-		info.UpdateSQLVars = scope.SQLVars
-		info.Output()
+		NewAuditInfo(scope, "UPDATE").Output()
 	}
 }
 
 func auditDeleteCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		info := NewAuditInfo(scope)
+		var op string
 		_, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		if !scope.Search.Unscoped && hasDeletedAtField {
-			info.DeleteOp = "UPDATE"
+			op = "UPDATE"
 		} else {
-			info.DeleteOp = "DELETE"
+			op = "DELETE"
 		}
-		info.DeleteSQL = scope.SQL
-		info.DeleteSQLVars = scope.SQLVars
-		info.Output()
+		NewAuditInfo(scope, op).Output()
 	}
 }
