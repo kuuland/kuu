@@ -29,11 +29,6 @@ type AuditInfo struct {
 	Op             string      `json:",omitempty"`
 	SQL            interface{} `json:",omitempty"`
 	SQLVars        interface{} `json:",omitempty"`
-	UpdateSQL      interface{} `json:",omitempty"`
-	UpdateSQLVars  interface{} `json:",omitempty"`
-	DeleteOp       string      `json:",omitempty"`
-	DeleteSQL      interface{} `json:",omitempty"`
-	DeleteSQLVars  interface{} `json:",omitempty"`
 }
 
 func (info *AuditInfo) Output() {
