@@ -145,20 +145,20 @@ func updateCallback(scope *gorm.Scope) {
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
-		values := GetRoutineValues()
+		caches := GetRoutineCaches()
 
 		if desc == nil {
 			// 无登录登录态时
 			return
 		}
 
-		if values != nil {
+		if caches != nil {
 			// 有忽略标记时
-			if _, ignoreAuth := values[IgnoreAuthKey]; ignoreAuth {
+			if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
 				return
 			}
 			// 查询用户菜单时
-			if _, queryUserMenus := values[UserMenusKey]; queryUserMenus {
+			if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
 				if desc.NotRootUser() {
 					_, hasCodeField := scope.FieldByName("Code")
 					_, hasCreatedByIDField := scope.FieldByName("CreatedByID")

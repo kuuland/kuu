@@ -16,18 +16,18 @@ import (
 )
 
 var (
-	// PrisDescKey
-	PrisDescKey = "PrisDesc"
-	// SignInfoKey
-	SignInfoKey = "SignInfo"
-	// IgnoreAuthKey
-	IgnoreAuthKey = "IgnoreAuth"
+	// GLSPrisDescKey
+	GLSPrisDescKey = "PrisDesc"
+	// GLSSignInfoKey
+	GLSSignInfoKey = "SignInfo"
+	// GLSIgnoreAuthKey
+	GLSIgnoreAuthKey = "IgnoreAuth"
 	// UserMenus
-	UserMenusKey = "UserMenus"
-	// ValuesKey
-	ValuesKey = "Values"
-	// RequestContextKey
-	RequestContextKey = "RequestContextKey"
+	GLSUserMenusKey = "UserMenus"
+	// GLSRoutineCachesKey
+	GLSRoutineCachesKey = "RoutineCaches"
+	// GLSRequestContextKey
+	GLSRequestContextKey = "RequestContext"
 )
 
 // StartTime
@@ -55,15 +55,15 @@ type Engine struct {
 	*gin.Engine
 }
 
-// Values
-type Values map[string]interface{}
+// RoutineCaches
+type RoutineCaches map[string]interface{}
 
 // IgnoreAuth
-func (v Values) IgnoreAuth(cancel ...bool) {
+func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
 	if len(cancel) > 0 && cancel[0] == true {
-		delete(v, IgnoreAuthKey)
+		delete(v, GLSIgnoreAuthKey)
 	} else {
-		v[IgnoreAuthKey] = true
+		v[GLSIgnoreAuthKey] = true
 	}
 }
 
@@ -86,13 +86,13 @@ func New() (e *Engine) {
 	return
 }
 
-// SetValues
-func SetValues(values gls.Values, call func()) {
+// SetGLSValues
+func SetGLSValues(values gls.Values, call func()) {
 	mgr.SetValues(values, call)
 }
 
-// GetValue
-func GetValue(key interface{}) (value interface{}, ok bool) {
+// GetGLSValue
+func GetGLSValue(key interface{}) (value interface{}, ok bool) {
 	return mgr.GetValue(key)
 }
 
@@ -177,8 +177,8 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
 			kc := &Context{
-				Context: c,
-				Values:  make(Values),
+				Context:       c,
+				RoutineCaches: make(RoutineCaches),
 			}
 			if !InWhitelist(c) {
 				sign := GetSignContext(c)
@@ -187,11 +187,11 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 				kc.PrisDesc = desc
 			}
 			glsVals := make(gls.Values)
-			glsVals[SignInfoKey] = kc.SignInfo
-			glsVals[PrisDescKey] = kc.PrisDesc
-			glsVals[ValuesKey] = kc.Values
-			glsVals[RequestContextKey] = kc
-			SetValues(glsVals, func() { handler(kc) })
+			glsVals[GLSSignInfoKey] = kc.SignInfo
+			glsVals[GLSPrisDescKey] = kc.PrisDesc
+			glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
+			glsVals[GLSRequestContextKey] = kc
+			SetGLSValues(glsVals, func() { handler(kc) })
 		}
 	}
 	return
@@ -249,7 +249,7 @@ func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 
 // GetRoutinePrivilegesDesc
 func GetRoutinePrivilegesDesc() *PrivilegesDesc {
-	raw, _ := GetValue(PrisDescKey)
+	raw, _ := GetGLSValue(GLSPrisDescKey)
 	if !IsBlank(raw) {
 		desc := raw.(*PrivilegesDesc)
 		if desc.IsValid() {
@@ -259,19 +259,37 @@ func GetRoutinePrivilegesDesc() *PrivilegesDesc {
 	return nil
 }
 
-// GetRoutineValues
-func GetRoutineValues() Values {
-	raw, _ := GetValue(ValuesKey)
+// GetRoutineCaches
+func GetRoutineCaches() RoutineCaches {
+	raw, _ := GetGLSValue(GLSRoutineCachesKey)
 	if !IsBlank(raw) {
-		values := raw.(Values)
+		values := raw.(RoutineCaches)
 		return values
 	}
 	return nil
 }
 
+// SetRoutineCache
+func SetRoutineCache(key string, value interface{}) {
+	values := GetRoutineCaches()
+	values[key] = value
+}
+
+// GetRoutineCache
+func GetRoutineCache(key string) interface{} {
+	values := GetRoutineCaches()
+	return values[key]
+}
+
+// DelRoutineCache
+func DelRoutineCache(key string) {
+	values := GetRoutineCaches()
+	delete(values, key)
+}
+
 // GetRoutineRequestContext
 func GetRoutineRequestContext() *Context {
-	raw, _ := GetValue(RequestContextKey)
+	raw, _ := GetGLSValue(GLSRequestContextKey)
 	if !IsBlank(raw) {
 		c := raw.(*Context)
 		return c
@@ -281,9 +299,9 @@ func GetRoutineRequestContext() *Context {
 
 // IgnoreAuth
 func IgnoreAuth(cancel ...bool) (success bool) {
-	values := GetRoutineValues()
-	if values != nil {
-		values.IgnoreAuth(cancel...)
+	caches := GetRoutineCaches()
+	if caches != nil {
+		caches.IgnoreAuth(cancel...)
 		success = true
 	}
 	return

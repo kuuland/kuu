@@ -181,7 +181,7 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 
 // DelAccCache
 func DelAccCache() {
-	rawDesc, _ := GetValue(PrisDescKey)
+	rawDesc, _ := GetGLSValue(GLSPrisDescKey)
 	if !IsBlank(rawDesc) {
 		desc := rawDesc.(*PrivilegesDesc)
 		if desc.IsValid() && desc.SignInfo.Token != "" {

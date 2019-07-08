@@ -141,7 +141,9 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 func Release() {
 	dataSourcesMap.Range(func(_, value interface{}) bool {
 		db := value.(*gorm.DB)
-		db.Close()
+		if err := db.Close(); err != nil {
+			ERROR(err)
+		}
 		return true
 	})
 }

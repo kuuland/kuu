@@ -102,7 +102,7 @@ var UserMenusRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
-		c.SetValue(UserMenusKey, true)
+		c.SetRoutineCache(GLSUserMenusKey, true)
 		var menus []Menu
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {

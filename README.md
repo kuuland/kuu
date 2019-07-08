@@ -564,15 +564,21 @@ kuu.CreateCallback = func(scope *gorm.Scope) {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
 				if orgIDField.IsBlank {
-					orgIDField.Set(desc.SignOrgID)
+					if err := orgIDField.Set(desc.SignOrgID); err != nil {
+						ERROR("自动设置组织ID失败：%s", err.Error())
+					}
 				}
 			}
 			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
-				createdByField.Set(desc.UID)
+				if err := createdByField.Set(desc.UID); err != nil {
+					ERROR("自动设置创建人ID失败：%s", err.Error())
+				}
 			}
 
 			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
-				updatedByField.Set(desc.UID)
+				if err := updatedByField.Set(desc.UID); err != nil {
+					ERROR("自动设置修改人ID失败：%s", err.Error())
+				}
 			}
 		}
 	}
@@ -633,7 +639,9 @@ kuu.UpdateCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
 		if desc != nil {
-			scope.SetColumn("UpdatedByID", desc.UID)
+			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
+				ERROR("自动设置修改人ID失败：%s", err.Error())
+			}
 		}
 	}
 }
@@ -642,20 +650,20 @@ kuu.UpdateCallback = func(scope *gorm.Scope) {
 kuu.QueryCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
-		values := GetRoutineValues()
+		caches := GetRoutineCaches()
 
 		if desc == nil {
 			// 无登录登录态时
 			return
 		}
 
-		if values != nil {
+		if caches != nil {
 			// 有忽略标记时
-			if _, ignoreAuth := values[IgnoreAuthKey]; ignoreAuth {
+			if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
 				return
 			}
 			// 查询用户菜单时
-			if _, queryUserMenus := values[UserMenusKey]; queryUserMenus {
+			if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
 				if desc.NotRootUser() {
 					_, hasCodeField := scope.FieldByName("Code")
 					_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
@@ -693,10 +701,15 @@ kuu.ValidateCallback = func(scope *gorm.Scope) {
 					if validatorErrors != nil {
 						if errors, ok := validatorErrors.(govalidator.Errors); ok {
 							for _, err := range FlatValidatorErrors(errors) {
-								scope.DB().AddError(formattedValidError(err, resource))
+								if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
+									ERROR("添加验证错误信息失败：%s", err.Error())
+								}
+
 							}
 						} else {
-							scope.DB().AddError(validatorErrors)
+							if err := scope.DB().AddError(validatorErrors); err != nil {
+								ERROR("添加验证错误信息失败：%s", err.Error())
+							}
 						}
 					}
 				}

@@ -81,7 +81,7 @@ func DelPrisCacheBySign(sign *SignContext) {
 
 // DelCurPrisCache 清除当前用户缓存
 func DelCurPrisCache() {
-	if v, ok := GetValue(SignInfoKey); ok {
+	if v, ok := GetGLSValue(GLSSignInfoKey); ok {
 		DelPrisCacheBySign(v.(*SignContext))
 	}
 }

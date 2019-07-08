@@ -9,9 +9,9 @@ import (
 // Context
 type Context struct {
 	*gin.Context
-	SignInfo *SignContext
-	PrisDesc *PrivilegesDesc
-	Values   Values
+	SignInfo      *SignContext
+	PrisDesc      *PrivilegesDesc
+	RoutineCaches RoutineCaches
 }
 
 // L
@@ -55,18 +55,18 @@ func (c *Context) STDErrHold(msg string, err ...interface{}) *STDRender {
 }
 
 // SetValue
-func (c *Context) SetValue(key string, value interface{}) {
-	c.Values[key] = value
+func (c *Context) SetRoutineCache(key string, value interface{}) {
+	SetRoutineCache(key, value)
 }
 
 // DelValue
-func (c *Context) DelValue(key string) {
-	delete(c.Values, key)
+func (c *Context) DelRoutineCache(key string) {
+	DelRoutineCache(key)
 }
 
 // GetValue
-func (c *Context) GetValue(key string) interface{} {
-	return c.Values[key]
+func (c *Context) GetRoutineCache(key string) interface{} {
+	return GetRoutineCache(key)
 }
 
 // PRINT
@@ -106,7 +106,7 @@ func (c *Context) PANIC(args ...interface{}) {
 
 // IgnoreAuth
 func (c *Context) IgnoreAuth(cancel ...bool) *Context {
-	c.Values.IgnoreAuth(cancel...)
+	c.RoutineCaches.IgnoreAuth(cancel...)
 	return c
 }
 
