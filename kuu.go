@@ -266,6 +266,9 @@ func GetRoutineCaches() RoutineCaches {
 		values := raw.(RoutineCaches)
 		return values
 	}
+	if raw != nil {
+		return raw.(RoutineCaches)
+	}
 	return nil
 }
 
