@@ -870,9 +870,16 @@ r.GET(func (c *kuu.Context){
 ### Goroutine local storage
 
 ```go
+// preset caches
 kuu.GetRoutinePrivilegesDesc()
 kuu.GetRoutineValues()
 kuu.GetRoutineRequestContext()
+
+// custom caches
+kuu.GetRoutineCaches()
+kuu.SetRoutineCache(key, value)
+kuu.GetRoutineCache(key)
+kuu.DelRoutineCache(key)
 
 // Ignore default data filters
 kuu.IgnoreAuth() // Equivalent to c.IgnoreAuth/kuu.GetRoutineValues().IgnoreAuth
