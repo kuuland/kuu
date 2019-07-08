@@ -129,7 +129,7 @@ var ValidRoute = RouteInfo{
 			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
 			c.STD(c.SignInfo.Payload)
 		} else {
-			c.STDErr("令牌已过期", 555)
+			c.STDErrHold("令牌已过期").Code(555).Render()
 		}
 	},
 }
