@@ -127,7 +127,7 @@ List of preset config:
 - `gzip` - Attaches the gin middleware to enable [GZIP](https://github.com/gin-contrib/gzip) support.
 - `statics` - Static serves files from the given file system root or serve a single file.
 - `whitelist:prefix` - Let whitelist also matches paths with global prefix, default is `true`.
-- `ignoreDefaultRootRoute` - Do not mount the default root route, default is `true`.
+- `ignoreDefaultRootRoute` - Do not mount the default root route, default is `false`.
 
 > Notes: Static paths are automatically added to the [whitelist](#whitelist).
 

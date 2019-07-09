@@ -30,8 +30,8 @@ var (
 	GLSRequestContextKey = "RequestContext"
 )
 
-// StartTime
-var StartTime time.Time
+// RunTime
+var RunTime time.Time
 
 // HandlerFunc defines the handler used by ok middleware as return value.
 type HandlerFunc func(*Context)
@@ -72,7 +72,7 @@ func Default() (e *Engine) {
 	e = &Engine{Engine: gin.Default()}
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
-			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), StartTime.Format("2006-01-02 15:04:05"))
+			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), RunTime.Format("2006-01-02 15:04:05"))
 		})
 	}
 	onInit(e)
@@ -128,7 +128,7 @@ func (e *Engine) RegisterWhitelist(rules ...interface{}) {
 
 // Run
 func (e *Engine) Run(addr ...string) {
-	StartTime = time.Now()
+	RunTime = time.Now()
 	address := resolveAddress(addr)
 	srv := &http.Server{
 		Addr:    address,
@@ -145,7 +145,7 @@ func (e *Engine) Run(addr ...string) {
 
 // RunTLS
 func (e *Engine) RunTLS(addr, certFile, keyFile string) {
-	StartTime = time.Now()
+	RunTime = time.Now()
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: e.Engine,
