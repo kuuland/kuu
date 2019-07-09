@@ -2,11 +2,8 @@ package kuu
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 // Model
@@ -33,38 +30,6 @@ type ExtendField struct {
 	Def3 string `name:"扩展字段3（默认字段）"`
 	Def4 string `name:"扩展字段4（默认字段）"`
 	Def5 string `name:"扩展字段5（默认字段）"`
-}
-
-// Metadata
-type Metadata struct {
-	Name        string
-	DisplayName string
-	FullName    string
-	Fields      []MetadataField
-	RestDesc    *RestDesc    `json:"-"`
-	reflectType reflect.Type `json:"-"`
-}
-
-// QueryPreload
-func (m *Metadata) QueryPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Fields")
-}
-
-// NewValue
-func (m *Metadata) NewValue() interface{} {
-	return reflect.New(m.reflectType).Interface()
-}
-
-// MetadataField
-type MetadataField struct {
-	Code    string
-	Name    string
-	Kind    string
-	Type    string
-	Value   interface{} `json:"-" gorm:"-"`
-	Enum    string
-	IsRef   bool
-	IsArray bool
 }
 
 // Routes
@@ -99,11 +64,6 @@ func (u *User) BeforeSave() {
 		u.Password = GenerateFromPassword(u.Password)
 	}
 	return
-}
-
-// QueryPreload
-func (u *User) QueryPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("RoleAssigns")
 }
 
 // Org
@@ -221,11 +181,6 @@ func (r *Role) AfterDelete() {
 	DelPrisCache()
 }
 
-// QueryPreload
-func (r *Role) QueryPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("OperationPrivileges").Preload("DataPrivileges")
-}
-
 // OperationPrivileges
 type OperationPrivileges struct {
 	Model `rest:"*" displayName:"角色操作权限"`
@@ -286,11 +241,6 @@ type Dict struct {
 	Name      string `gorm:"not null"`
 	Values    []DictValue
 	IsBuiltIn bool
-}
-
-// QueryPreload
-func (d *Dict) QueryPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Values")
 }
 
 // DictValue
