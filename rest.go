@@ -293,7 +293,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								}
 							}
 						}
-						countDB := db
 						// 处理project
 						rawProject := c.Query("project")
 						if rawProject != "" {
@@ -321,6 +320,25 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							}
 							ret["sort"] = rawSort
 						}
+						// 处理preload
+						rawPreload := c.Query("preload")
+						if rawPreload != "" {
+							ms := db.NewScope(reflect.New(reflectType).Interface())
+							split := strings.Split(rawPreload, ",")
+							for _, item := range split {
+								if v, ok := ms.FieldByName(item); ok {
+									db = db.Preload(v.Name)
+								}
+							}
+							ret["preload"] = rawPreload
+						}
+
+						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
+						// 调用RestBeforeQuery钩子
+						if h, ok := reflect.New(reflectType).Interface().(RestQueryHooks); ok {
+							db = h.RestBeforeQuery(db, c)
+						}
+						countDB := db
 						// 处理range
 						rawRange := strings.ToUpper(c.DefaultQuery("range", "PAGE"))
 						ret["range"] = rawRange
@@ -341,24 +359,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							db = db.Offset((page - 1) * size).Limit(size)
 							ret["page"] = page
 							ret["size"] = size
-						}
-						// 处理preload
-						rawPreload := c.Query("preload")
-						if rawPreload != "" {
-							ms := db.NewScope(reflect.New(reflectType).Interface())
-							split := strings.Split(rawPreload, ",")
-							for _, item := range split {
-								if v, ok := ms.FieldByName(item); ok {
-									db = db.Preload(v.Name)
-								}
-							}
-							ret["preload"] = rawPreload
-						}
-
-						list := reflect.New(reflect.SliceOf(reflectType)).Interface()
-						// 调用RestBeforeQuery钩子
-						if h, ok := reflect.New(reflectType).Interface().(RestQueryHooks); ok {
-							db = h.RestBeforeQuery(db, c)
 						}
 						db = db.Find(list)
 						ret["list"] = list
