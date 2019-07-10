@@ -1,4 +1,4 @@
-# Kuu
+<img src="/logo.png" alt="Modular Go Web Framework"/>
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 
