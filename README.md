@@ -906,9 +906,9 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 ### Why called Kuu?
 
-> Kuu is a lovely cat, click to read [The story of Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino).
+> [Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino)
 
-![kuu](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
+![kuu_and_shino](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
 
 ## License
  
