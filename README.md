@@ -24,6 +24,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Whitelist](#whitelist)
     - [Preset modules](#preset-modules)
 - [FAQ](#faq)
+    - [Why called Kuu?](#why-called-kuu)
 - [License](#license)
 
 ## Installation
