@@ -1,4 +1,4 @@
-<img src="/logo.png" alt="Modular Go Web Framework"/>
+<img src="/docs/logo.png" alt="Modular Go Web Framework"/>
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 
@@ -908,7 +908,7 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 > [Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino)
 
-![kuu_and_shino](https://raw.githubusercontent.com/kuuland/kuu/master/kuu.png)
+<img src="/docs/kuu_and_shino.png" alt="Kuu and Shino"/>
 
 ## License
  
