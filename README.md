@@ -24,6 +24,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
     - [Preset modules](#preset-modules)
+    - [Security framework](#security-framework)
 - [FAQ](#faq)
     - [Why called Kuu?](#why-called-kuu)
 - [License](#license)
@@ -917,6 +918,10 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 - [Accounts module](https://github.com/kuuland/kuu/blob/master/acc.go#L153) - JWT-based token issuance, login authentication, etc.
 - [System module](https://github.com/kuuland/kuu/blob/master/sys.go#L564) - Menu, admin, roles, organization, etc.
 - [Admin](https://github.com/kuuland/ui) - A React boilerplate.
+
+### Security framework
+
+<img src="/docs/kuu_security_framework.png" alt="Kuu Security framework"/>
 
 ## FAQ
 

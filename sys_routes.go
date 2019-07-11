@@ -340,19 +340,16 @@ var ModelDocsRoute = RouteInfo{
 		var (
 			hashKeyYAML = "model_docs_yaml"
 			hashKeyJSON = "model_docs_json"
-			result      string
 		)
 		// 取缓存
 		if c.Query("yaml") != "" {
 			if v, ok := valueCacheMap.Load(hashKeyYAML); ok {
-				result = v.(string)
-				c.String(http.StatusOK, result)
+				c.String(http.StatusOK, v.(string))
 				return
 			}
 		} else {
 			if v, ok := valueCacheMap.Load(hashKeyJSON); ok {
-				result = v.(string)
-				c.String(http.StatusOK, result)
+				c.String(http.StatusOK, v.(string))
 				return
 			}
 		}

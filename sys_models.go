@@ -141,6 +141,7 @@ func (o *Org) AfterDelete() {
 	DelPrisCache()
 }
 
+// RoleAssign
 type RoleAssign struct {
 	Model `rest:"*" displayName:"用户角色分配"`
 	ExtendField
