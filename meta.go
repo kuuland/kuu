@@ -3,6 +3,7 @@ package kuu
 import (
 	"path"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -107,7 +108,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 				}
 			}
 		}
-		if password := fieldStruct.Tag.Get("password"); password != "" {
+		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "password") {
 			field.IsPassword = true
 		}
 		name := fieldStruct.Tag.Get("name")

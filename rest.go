@@ -361,7 +361,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							ret["size"] = size
 						}
 						db = db.Find(list)
-						ret["list"] = list
+						ret["list"] = OmitPassword(value, list)
 						// 处理totalrecords、totalpages
 						var totalRecords int
 						countDB = countDB.Count(&totalRecords)

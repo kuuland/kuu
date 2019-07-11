@@ -12,6 +12,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Global configuration](#global-configuration)
     - [Data source management](#data-source-management)
     - [RESTful APIs for struct](#restful-apis-for-struct)
+    - [Password field filter](#password-field-filter)
     - [Associations](#associations)
     - [Global default callbacks](#global-default-callbacks)
     - [Struct validation](#struct-validation)
@@ -458,6 +459,22 @@ curl -X DELETE \
 }'
 ```
 
+### Password field filter
+
+```go
+type User struct {
+	Model   `rest:"*" displayName:"用户"`
+	Username    string  `name:"账号"`
+	Password    string  `name:"密码" kuu:"password"`
+}
+
+users := []User{
+    {Username: "root", Password: "xxx"},
+    {Username: "admin", Password: "xxx"},
+} 
+users = kuu.OmitPassword("User", users) // => []User{ { Username: "root" }, { Username: "admin" } } 
+```
+
 ### Associations
 
 1. set `"auto":true` to enable auto save associations
@@ -849,8 +866,6 @@ func main() {
 ```go
 func main() {
 	r := kuu.Default()
-	// Cross-domain support
-	r.Use(kuu.CORSMiddleware())
 	// Parse JSON from string
 	var params map[string]string
 	kuu.Parse(`{"user":"kuu","pass":"123"}`, &params)
