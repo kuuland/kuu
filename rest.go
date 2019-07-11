@@ -434,10 +434,20 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								}
 								scope := tx.NewScope(val)
 								if params.Auto {
-									for key, value := range params.Doc {
+									docScope := tx.NewScope(doc)
+									for key, val := range params.Doc {
 										if field, ok := scope.FieldByName(key); ok {
-											if err := field.Set(value); err != nil {
-												return err
+											fieldKind := field.Field.Kind()
+											if fieldKind == reflect.Interface || fieldKind == reflect.Slice || fieldKind == reflect.Array || fieldKind == reflect.Struct {
+												docField, _ := docScope.FieldByName(key)
+												docFieldValue := docField.Field.Interface()
+												if err := field.Set(docFieldValue); err != nil {
+													return err
+												}
+											} else {
+												if err := scope.SetColumn(key, val); err != nil {
+													return err
+												}
 											}
 										}
 									}
