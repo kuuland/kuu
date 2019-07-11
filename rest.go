@@ -232,6 +232,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 					desc.Query = true
 					r.Handle(queryMethod, routePath, func(c *Context) {
 						ret := map[string]interface{}{}
+						scope := DB().NewScope(value)
 						// 处理cond
 						var cond map[string]interface{}
 						rawCond := c.Query("cond")
@@ -296,29 +297,44 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 						// 处理project
 						rawProject := c.Query("project")
 						if rawProject != "" {
-							fields := strings.Split(rawProject, ",")
-							for index, field := range fields {
-								fields[index] = underline(field)
-								if strings.HasPrefix(field, "-") {
-									fields[index] = field[1:]
+							split := strings.Split(rawProject, ",")
+							var (
+								retProject []string
+								columns    []string
+							)
+							for _, name := range split {
+								if strings.HasPrefix(name, "-") {
+									name = name[1:]
+								}
+								if field, ok := scope.FieldByName(name); ok {
+									columns = append(columns, field.DBName)
+									retProject = append(retProject, field.Name)
 								}
 							}
-							db = db.Select(fields)
-							ret["project"] = rawProject
+							db = db.Select(columns)
+							ret["project"] = strings.Join(retProject, ",")
 						}
 						// 处理sort
 						rawSort := c.Query("sort")
 						if rawSort != "" {
 							split := strings.Split(rawSort, ",")
+							var retSort []string
 							for _, name := range split {
-								name = underline(name)
+								direction := "asc"
 								if strings.HasPrefix(name, "-") {
-									db = db.Order(fmt.Sprintf("%s desc", name[1:]))
-								} else {
-									db = db.Order(name)
+									name = name[1:]
+									direction = "desc"
+								}
+								if field, ok := scope.FieldByName(name); ok {
+									db = db.Order(fmt.Sprintf("%s %s", field.DBName, direction))
+									if direction == "desc" {
+										retSort = append(retSort, "-"+field.Name)
+									} else {
+										retSort = append(retSort, field.Name)
+									}
 								}
 							}
-							ret["sort"] = rawSort
+							ret["sort"] = strings.Join(retSort, ",")
 						}
 						// 处理preload
 						rawPreload := c.Query("preload")
