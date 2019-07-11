@@ -41,7 +41,7 @@ var (
 	modelStructsMap sync.Map
 )
 
-func parseMetadata(value interface{}, desc *RestDesc) (m *Metadata) {
+func parseMetadata(value interface{}) (m *Metadata) {
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()
@@ -119,7 +119,6 @@ func parseMetadata(value interface{}, desc *RestDesc) (m *Metadata) {
 		}
 	}
 	modelStructsMap.Store(hashKey, m)
-	m.RestDesc = desc
 	metadataMap[m.Name] = m
 	metadataList = append(metadataList, m)
 	return
@@ -130,7 +129,7 @@ func Meta(value interface{}) (m *Metadata) {
 	if v, ok := value.(string); ok {
 		return metadataMap[v]
 	} else {
-		return parseMetadata(value, nil)
+		return parseMetadata(value)
 	}
 }
 

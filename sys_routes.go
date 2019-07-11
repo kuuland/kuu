@@ -65,7 +65,7 @@ var OrgCurrentRoute = RouteInfo{
 		c.IgnoreAuth()
 		sign := c.SignInfo
 		var signOrg SignOrg
-		db := DB().Select("org_id").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
+		db := DB().Select("org_id").Order("created_at desc").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
 		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
 			ERROR(err)
 			c.STDErr("未找到登录组织")

@@ -432,14 +432,11 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if err := Copy(params.Doc, doc); err != nil {
 									return err
 								}
-								docScope := tx.NewScope(doc)
+								scope := tx.NewScope(val)
 								if params.Auto {
-									rawScope := tx.NewScope(val)
-									for key, _ := range params.Doc {
-										if field, ok := rawScope.FieldByName(key); ok {
-											df, _ := docScope.FieldByName(key)
-											dv := df.Field.Interface()
-											if err := field.Set(dv); err != nil {
+									for key, value := range params.Doc {
+										if field, ok := scope.FieldByName(key); ok {
+											if err := field.Set(value); err != nil {
 												return err
 											}
 										}
@@ -447,14 +444,14 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 									tx.Save(val)
 								} else {
 									values := make(map[string]interface{})
-									for key, _ := range params.Doc {
-										field, has := docScope.FieldByName(key)
+									for key, value := range params.Doc {
+										field, has := scope.FieldByName(key)
 										if has && (field.Relationship == nil || field.Relationship.Kind == "") {
-											values[field.DBName] = field.Field.Interface()
+											values[field.DBName] = value
 										}
 									}
 									if len(values) > 0 {
-										tx = tx.Model(val).Updates(doc)
+										tx = tx.Model(val).Updates(values)
 									}
 								}
 								return tx.Error
