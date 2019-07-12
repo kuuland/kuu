@@ -28,10 +28,11 @@ var (
 	GLSRoutineCachesKey = "RoutineCaches"
 	// GLSRequestContextKey
 	GLSRequestContextKey = "RequestContext"
+	// RunTime
+	RunTime time.Time
+	// IsProduction
+	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_ENV") == "prod"
 )
-
-// RunTime
-var RunTime time.Time
 
 // HandlerFunc defines the handler used by ok middleware as return value.
 type HandlerFunc func(*Context)

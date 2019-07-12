@@ -77,7 +77,7 @@ func createCallback(scope *gorm.Scope) {
 							break
 						}
 					}
-					if !writable {
+					if desc.NotRootUser() && !writable {
 						_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
 					}
 				}
@@ -110,7 +110,9 @@ func deleteCallback(scope *gorm.Scope) {
 			var sql string
 			if desc := GetRoutinePrivilegesDesc(); desc != nil {
 				// 添加可写权限控制
-				scope.Search.Where("org_id in (?)", desc.WritableOrgIDs)
+				if desc.NotRootUser() {
+					scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR )org_id in (?))", desc.WritableOrgIDs)
+				}
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -151,7 +153,9 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			// 添加可写权限控制
-			scope.Search.Where("org_id in (?)", desc.WritableOrgIDs)
+			if desc.NotRootUser() {
+				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?))", desc.WritableOrgIDs)
+			}
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}

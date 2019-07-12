@@ -1,16 +1,72 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
+	"path"
+	"strings"
+	"time"
 )
 
-var Logger = logrus.New()
+var (
+	Logger        = logrus.New()
+	DailyFileName = fmt.Sprintf("kuu-%s.log", time.Now().Format("2006-01-02"))
+	DailyFile     *os.File
+	LogDir        string
+)
 
 func init() {
+
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
-	Logger.SetLevel(logrus.DebugLevel)
+	if IsProduction {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+		Logger.SetFormatter(&logrus.JSONFormatter{})
+		fmt.Println("==> 生产环境自动启用文件模式存储日志")
+		LogDir = C().DefaultGetString("logs", "logs")
+	} else {
+		logrus.SetFormatter(&logrus.TextFormatter{})
+		Logger.SetFormatter(&logrus.TextFormatter{})
+		LogDir = C().GetString("logs")
+	}
+	if LogDir != "" {
+		Logger.AddHook(new(DailyFileHook))
+	}
+}
+
+type DailyFileHook struct{}
+
+func (h *DailyFileHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *DailyFileHook) Fire(entry *logrus.Entry) error {
+	now := fmt.Sprintf("kuu-%s.log", time.Now().Format("2006-01-02"))
+	if now != DailyFileName || DailyFile == nil {
+		DailyFileName = now
+		changeLoggerOutput(now)
+	}
+	fmt.Println(fmt.Sprintf("[KUU-%s %s] %s", strings.ToUpper(entry.Level.String()), time.Now().Format("2006-01-02 15:04:05"), entry.Message))
+	return nil
+}
+
+func changeLoggerOutput(filePath string) {
+	if LogDir == "" {
+		return
+	}
+	EnsureDir(LogDir)
+	filePath = path.Join(LogDir, filePath)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		Logger.Out = file
+		if DailyFile != nil {
+			_ = DailyFile.Close()
+		}
+		DailyFile = file
+	} else {
+		ERROR("创建日志文件失败，使用标准输出流输出日志")
+	}
 }
 
 func split(args ...interface{}) (string, []interface{}) {

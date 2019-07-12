@@ -143,6 +143,7 @@ List of preset config:
 - `statics` - Static serves files from the given file system root or serve a single file.
 - `whitelist:prefix` - Let whitelist also matches paths with global prefix, default is `true`.
 - `ignoreDefaultRootRoute` - Do not mount the default root route, default is `false`.
+- `logs` - Log dir.
 
 > Notes: Static paths are automatically added to the [whitelist](#whitelist).
 
