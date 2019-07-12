@@ -448,11 +448,11 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								if err := Copy(params.Doc, doc); err != nil {
 									return err
 								}
-								scope := tx.NewScope(val)
+								rawScope := tx.NewScope(val)
+								docScope := tx.NewScope(doc)
 								if params.Auto {
-									docScope := tx.NewScope(doc)
 									for key, val := range params.Doc {
-										if field, ok := scope.FieldByName(key); ok {
+										if field, ok := rawScope.FieldByName(key); ok {
 											fieldKind := field.Field.Kind()
 											if fieldKind == reflect.Interface || fieldKind == reflect.Slice || fieldKind == reflect.Array || fieldKind == reflect.Struct {
 												docField, _ := docScope.FieldByName(key)
@@ -461,7 +461,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 													return err
 												}
 											} else {
-												if err := scope.SetColumn(key, val); err != nil {
+												if err := rawScope.SetColumn(key, val); err != nil {
 													return err
 												}
 											}
@@ -469,16 +469,20 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 									}
 									tx.Save(val)
 								} else {
-									values := make(map[string]interface{})
-									for key, value := range params.Doc {
-										field, has := scope.FieldByName(key)
-										if has && (field.Relationship == nil || field.Relationship.Kind == "") {
-											values[field.DBName] = value
-										}
-									}
-									if len(values) > 0 {
-										tx = tx.Model(val).Updates(values)
-									}
+									//values := make(map[string]interface{})
+									//for key, value := range params.Doc {
+									//	field, has := docScope.FieldByName(key)
+									//	if has && (field.Relationship == nil || field.Relationship.Kind == "") {
+									//		values[field.DBName] = value
+									//	} else if field.Field.Kind() == reflect.Bool {
+									//
+									//	}
+									//}
+									//if len(values) > 0 {
+									//	tx = tx.Model(val).Updates(values)
+									//}
+									// TODO 未兼容默认值更改
+									tx = tx.Updates(val)
 								}
 								return tx.Error
 							}
