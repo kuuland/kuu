@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -67,6 +68,19 @@ func createCallback(scope *gorm.Scope) {
 						ERROR("自动设置组织ID失败：%s", err.Error())
 					}
 				}
+				// 可写权限判断
+				var writable bool
+				if orgID, ok := orgIDField.Field.Interface().(uint); ok {
+					for _, item := range desc.WritableOrgIDs {
+						if orgID == item {
+							writable = true
+							break
+						}
+					}
+					if !writable {
+						_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
+					}
+				}
 			}
 			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
 				if err := createdByField.Set(desc.UID); err != nil {
@@ -95,6 +109,8 @@ func deleteCallback(scope *gorm.Scope) {
 		if !scope.Search.Unscoped && hasDeletedAtField {
 			var sql string
 			if desc := GetRoutinePrivilegesDesc(); desc != nil {
+				// 添加可写权限控制
+				scope.Search.Where("org_id in (?)", desc.WritableOrgIDs)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -133,8 +149,9 @@ func deleteCallback(scope *gorm.Scope) {
 
 func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		desc := GetRoutinePrivilegesDesc()
-		if desc != nil {
+		if desc := GetRoutinePrivilegesDesc(); desc != nil {
+			// 添加可写权限控制
+			scope.Search.Where("org_id in (?)", desc.WritableOrgIDs)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
@@ -185,25 +202,27 @@ func queryCallback(scope *gorm.Scope) {
 }
 
 func validateCallback(scope *gorm.Scope) {
-	if _, ok := scope.Get("gorm:update_column"); !ok {
-		if result, ok := scope.DB().Get(skipValidations); !(ok && result.(bool)) {
-			if !scope.HasError() {
+	if !scope.HasError() {
+		if _, ok := scope.Get("gorm:update_column"); !ok {
+			result, ok := scope.DB().Get(skipValidations)
+			if !(ok && result.(bool)) {
 				scope.CallMethod("Validate")
-				if scope.Value != nil {
-					resource := scope.IndirectValue().Interface()
-					_, validatorErrors := govalidator.ValidateStruct(resource)
-					if validatorErrors != nil {
-						if errors, ok := validatorErrors.(govalidator.Errors); ok {
-							for _, err := range FlatValidatorErrors(errors) {
-								if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
-									ERROR("添加验证错误信息失败：%s", err.Error())
-								}
-
-							}
-						} else {
-							if err := scope.DB().AddError(validatorErrors); err != nil {
+				if scope.Value == nil {
+					return
+				}
+				resource := scope.IndirectValue().Interface()
+				_, validatorErrors := govalidator.ValidateStruct(resource)
+				if validatorErrors != nil {
+					if errs, ok := validatorErrors.(govalidator.Errors); ok {
+						for _, err := range FlatValidatorErrors(errs) {
+							if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
 								ERROR("添加验证错误信息失败：%s", err.Error())
 							}
+
+						}
+					} else {
+						if err := scope.DB().AddError(validatorErrors); err != nil {
+							ERROR("添加验证错误信息失败：%s", err.Error())
 						}
 					}
 				}
@@ -224,8 +243,8 @@ func AddExtraSpaceIfExist(str string) string {
 func FlatValidatorErrors(validatorErrors govalidator.Errors) []govalidator.Error {
 	resultErrors := make([]govalidator.Error, 0)
 	for _, validatorError := range validatorErrors.Errors() {
-		if errors, ok := validatorError.(govalidator.Errors); ok {
-			for _, e := range errors {
+		if errs, ok := validatorError.(govalidator.Errors); ok {
+			for _, e := range errs {
 				resultErrors = append(resultErrors, e.(govalidator.Error))
 			}
 		}

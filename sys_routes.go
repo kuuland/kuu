@@ -341,14 +341,16 @@ var ModelDocsRoute = RouteInfo{
 			hashKeyYAML = "model_docs_yaml"
 			hashKeyJSON = "model_docs_json"
 		)
+
+		json := c.Query("json") != ""
 		// 取缓存
-		if c.Query("yaml") != "" {
-			if v, ok := valueCacheMap.Load(hashKeyYAML); ok {
+		if json {
+			if v, ok := valueCacheMap.Load(hashKeyJSON); ok {
 				c.String(http.StatusOK, v.(string))
 				return
 			}
 		} else {
-			if v, ok := valueCacheMap.Load(hashKeyJSON); ok {
+			if v, ok := valueCacheMap.Load(hashKeyYAML); ok {
 				c.String(http.StatusOK, v.(string))
 				return
 			}
@@ -777,10 +779,7 @@ var ModelDocsRoute = RouteInfo{
 			},
 		}
 		yml := doc.Marshal()
-		if c.Query("yaml") != "" {
-			valueCacheMap.Store(hashKeyYAML, yml)
-			c.String(http.StatusOK, yml)
-		} else {
+		if json {
 			data, e := yaml.YAMLToJSON([]byte(yml))
 			if e != nil {
 				c.STDErr(e.Error())
@@ -789,6 +788,9 @@ var ModelDocsRoute = RouteInfo{
 			json := string(data)
 			valueCacheMap.Store(hashKeyJSON, json)
 			c.String(http.StatusOK, json)
+		} else {
+			valueCacheMap.Store(hashKeyYAML, yml)
+			c.String(http.StatusOK, yml)
 		}
 	},
 }
