@@ -82,8 +82,8 @@ func createCallback(scope *gorm.Scope) {
 					}
 				}
 			}
-			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
-				if err := createdByField.Set(desc.UID); err != nil {
+			if createdByIDField, ok := scope.FieldByName("CreatedByID"); ok {
+				if err := createdByIDField.Set(desc.UID); err != nil {
 					ERROR("自动设置创建人ID失败：%s", err.Error())
 				}
 			}
@@ -110,9 +110,7 @@ func deleteCallback(scope *gorm.Scope) {
 			var sql string
 			if desc := GetRoutinePrivilegesDesc(); desc != nil {
 				// 添加可写权限控制
-				if desc.NotRootUser() {
-					scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR )org_id in (?))", desc.WritableOrgIDs)
-				}
+				AddDataScopeWhereSQL(scope, desc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -153,12 +151,23 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			// 添加可写权限控制
-			if desc.NotRootUser() {
-				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?))", desc.WritableOrgIDs)
-			}
+			AddDataScopeWhereSQL(scope, desc)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
+		}
+	}
+}
+
+// AddDataScopeWhereSQL
+func AddDataScopeWhereSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	if desc != nil && desc.NotRootUser() {
+		_, hasOrgIDField := scope.FieldByName("OrgID")
+		_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+		if hasOrgIDField && hasCreatedByIDField {
+			scope.Search.Where("(org_id in (?)) or (created_by_id = ?)", desc.WritableOrgIDs, desc.UID)
+		} else if hasCreatedByIDField {
+			scope.Search.Where("(created_by_id = ?)", desc.UID)
 		}
 	}
 }
@@ -199,7 +208,9 @@ func queryCallback(scope *gorm.Scope) {
 			_, hasOrgIDField := scope.FieldByName("OrgID")
 			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 			if hasOrgIDField && hasCreatedByIDField {
-				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+				scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+			} else if hasCreatedByIDField {
+				scope.Search.Where("created_by_id = ?", desc.UID)
 			}
 		}
 	}

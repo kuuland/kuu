@@ -23,6 +23,21 @@ type Model struct {
 	Remark      string
 }
 
+// ModelExOrg
+type ModelExOrg struct {
+	ID          uint       `gorm:"primary_key"`
+	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	CreatedByID uint       `name:"创建人ID（默认字段）"`
+	UpdatedByID uint       `name:"修改人ID（默认字段）"`
+	DeletedByID uint       `name:"删除人ID（默认字段）"`
+	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	Remark      string
+}
+
 // ExtendField
 type ExtendField struct {
 	Def1 uint   `name:"扩展字段1（默认字段）"`
@@ -202,7 +217,7 @@ type DataPrivileges struct {
 
 // Menu
 type Menu struct {
-	Model `rest:"*" displayName:"菜单"`
+	ModelExOrg `rest:"*" displayName:"菜单"`
 	ExtendField
 	Code          string `name:"菜单编码"`
 	Name          string `name:"菜单名称" gorm:"not null"`

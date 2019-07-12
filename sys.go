@@ -12,27 +12,41 @@ import (
 
 const initCode = "sys:init"
 
-var rootUser *User
+var (
+	rootUser *User
+	rootOrg  *Org
+)
 
 // RootUID
 func RootUID() uint {
-	if rootUser != nil {
-		return rootUser.ID
-	}
-	return 0
+	return 1
 }
 
 // RootUser
 func RootUser() *User {
+	if rootUser == nil {
+		db := DB().Where("id = ?", 1).First(rootUser)
+		if err := db.Error; err != nil {
+			ERROR(err)
+		}
+	}
 	return rootUser
 }
 
-func getRootUser() *User {
-	var root User
-	if errs := DB().Model(&User{Username: "root"}).First(&root).GetErrors(); len(errs) > 0 {
-		ERROR(errs)
+// RootOrgID
+func RootOrgID() uint {
+	return 1
+}
+
+// RootOrg
+func RootOrg() *User {
+	if rootOrg == nil {
+		db := DB().Where("id = ?", 1).First(rootOrg)
+		if err := db.Error; err != nil {
+			ERROR(err)
+		}
 	}
-	return &root
+	return rootUser
 }
 
 func preflight() bool {
@@ -44,8 +58,77 @@ func preflight() bool {
 	return false
 }
 
+func initSys() {
+	if preflight() {
+		return
+	}
+	// 初始化预置数据
+	err := WithTransaction(func(tx *gorm.DB) error {
+		// 初始化预置用户
+		createRootUser(tx)
+		// 初始化预置组织
+		createRootOrg(tx)
+		// 初始化字典、菜单
+		createPresetDicts(tx)
+		createPresetMenus(tx)
+		if C().GetBool("mock") {
+			createMockData(tx)
+		}
+		// 保存初始化标记
+		param := Param{
+			Model: Model{
+
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+			},
+			Code:      initCode,
+			IsBuiltIn: true,
+			Name:      "系统初始化标记",
+			Value:     "ok",
+		}
+		tx.Create(&param)
+		return tx.Error
+	})
+	if err != nil {
+		PANIC("初始化预置数据失败：%s", err.Error())
+	}
+}
+
+func createRootUser(tx *gorm.DB) {
+	root := User{
+		Model: Model{
+			ID: RootUID(),
+		},
+		Username:  "root",
+		Name:      "预置用户",
+		Password:  MD5("kuu"),
+		IsBuiltIn: true,
+	}
+	tx.Create(&root)
+	rootUser = &root
+}
+
+func createRootOrg(tx *gorm.DB) {
+	root := Org{
+		Model: Model{
+			ID:          RootOrgID(),
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
+		Code: "default",
+		Name: "默认组织",
+	}
+	tx.Create(&root)
+	rootOrg = &root
+}
+
 func createPresetDicts(tx *gorm.DB) {
 	tx.Create(&Dict{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
 		Code:      "sys_menu_type",
 		Name:      "菜单类型",
 		IsBuiltIn: true,
@@ -63,6 +146,11 @@ func createPresetDicts(tx *gorm.DB) {
 		},
 	})
 	tx.Create(&Dict{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
 		Code:      "sys_data_range",
 		Name:      "数据范围",
 		IsBuiltIn: true,
@@ -250,53 +338,98 @@ func createPresetMenus(tx *gorm.DB) {
 func createMockData(tx *gorm.DB) {
 	// 新增组织
 	gzo := &Org{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code: "GZ",
 		Name: "广州",
 	}
 	tx.Create(gzo)
 	tho := &Org{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code: "TH",
 		Name: "天河",
 		Pid:  gzo.ID,
 	}
 	tx.Create(tho)
 	yxo := &Org{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code: "YX",
 		Name: "越秀",
 		Pid:  gzo.ID,
 	}
 	tx.Create(yxo)
 	lwo := &Org{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code: "LW",
 		Name: "荔湾",
 		Pid:  gzo.ID,
 	}
 	tx.Create(lwo)
 	sho := &Org{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code: "SH",
 		Name: "上海",
 	}
 	tx.Create(sho)
 	// 新建角色
 	gzr := &Role{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
 		Code: "gz_admin",
 		Name: "广州管理员",
 	}
 	tx.Create(gzr)
 	gzrOP := []OperationPrivileges{
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:   gzr.ID,
 			MenuCode: "sys:user",
 		},
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:   gzr.ID,
 			MenuCode: "sys:org",
 		},
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:   gzr.ID,
 			MenuCode: "sys:param",
 		},
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:   gzr.ID,
 			MenuCode: "sys:role",
 		},
@@ -306,18 +439,33 @@ func createMockData(tx *gorm.DB) {
 	}
 	gzrDP := []DataPrivileges{
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:        gzr.ID,
 			TargetOrgID:   gzo.ID,
 			ReadableRange: "CURRENT_FOLLOWING",
 			WritableRange: "CURRENT_FOLLOWING",
 		},
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:        gzr.ID,
 			TargetOrgID:   tho.ID,
 			ReadableRange: "CURRENT",
 			WritableRange: "CURRENT",
 		},
 		{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
 			RoleID:        gzr.ID,
 			TargetOrgID:   yxo.ID,
 			ReadableRange: "CURRENT",
@@ -329,6 +477,11 @@ func createMockData(tx *gorm.DB) {
 	}
 	// 新增用户
 	gz01 := &User{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
 		Username: "gz01",
 		Password: MD5("12345"),
 		Name:     "广州用户01",
@@ -339,50 +492,6 @@ func createMockData(tx *gorm.DB) {
 		},
 	}
 	tx.Create(gz01)
-}
-
-func initSys() {
-	if preflight() {
-		rootUser = getRootUser()
-	} else {
-		tx := DB().Begin()
-		// 初始化预置用户
-		root := User{
-			Username:  "root",
-			Name:      "预置用户",
-			Password:  MD5("kuu"),
-			IsBuiltIn: true,
-		}
-		tx.Create(&root)
-		rootUser = &root
-		// 初始化字典、菜单
-		createPresetDicts(tx)
-		createPresetMenus(tx)
-		if C().GetBool("mock") {
-			createMockData(tx)
-		}
-		// 保存初始化标记
-		param := Param{
-			Code:      initCode,
-			IsBuiltIn: true,
-			Name:      "系统初始化标记",
-			Value:     "ok",
-		}
-		param.CreatedByID = rootUser.ID
-		param.UpdatedByID = rootUser.ID
-		tx.Create(&param)
-		// 统一提交
-		if errs := tx.GetErrors(); len(errs) > 0 {
-			ERROR(errs)
-			if err := tx.Rollback().Error; err != nil {
-				PANIC("Init menu rollback failed: %s", err.Error())
-			}
-		} else {
-			if err := tx.Commit().Error; err != nil {
-				PANIC("Init menu commit failed: %s", err.Error())
-			}
-		}
-	}
 }
 
 // GetSignContext
