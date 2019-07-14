@@ -16,14 +16,17 @@ func MD5(p string) (v string) {
 }
 
 // GenerateFromPassword 生成新密码
-func GenerateFromPassword(p string) (v string) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
-	return string(hash)
+func GenerateFromPassword(p string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
+	return string(hash), err
 }
 
 // CompareHashAndPassword 密码比对
 func CompareHashAndPassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		ERROR(err)
+	}
 	return err == nil
 }
 

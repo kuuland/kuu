@@ -32,7 +32,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Method:   "LOGIN",
 		SubDocID: desc.SubDocID,
 		Desc:     desc.Desc,
-		IsAPIKey: desc.IsAPIKey,
+		IsAPIKey: NewNullBool(desc.IsAPIKey),
 	}
 	// 签发令牌
 	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {
