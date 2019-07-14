@@ -469,20 +469,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 									}
 									tx.Save(val)
 								} else {
-									values := make(map[string]interface{})
-									for key, value := range params.Doc {
-										field, has := docScope.FieldByName(key)
-										if has && (field.Relationship == nil || field.Relationship.Kind == "") {
-											values[field.DBName] = value
-										} else if field.Field.Kind() == reflect.Bool {
-									
-										}
-									}
-									if len(values) > 0 {
-										tx = tx.Model(val).Updates(values)
-									}
-									// TODO 未兼容默认值更改
-// 									tx = tx.Updates(val)
+									tx = tx.Model(val).Updates(doc)
 								}
 								return tx.Error
 							}

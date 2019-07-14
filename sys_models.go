@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"strings"
 	"time"
 )
@@ -52,16 +53,19 @@ type User struct {
 	Mobile      string       `name:"手机号"`
 	Email       string       `name:"邮箱地址"`
 	Language    string       `name:"语言"`
-	Disable     bool         `name:"是否禁用"`
+	Disable     NullBool     `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
-	IsBuiltIn   bool         `name:"是否内置"`
+	IsBuiltIn   NullBool     `name:"是否内置"`
 	SubDocID    uint         `name:"扩展档案ID"`
 }
 
 // BeforeSave
-func (u *User) BeforeSave() {
+func (u *User) BeforeSave(scope *gorm.Scope) (err error) {
 	if len(u.Password) == 32 {
-		u.Password = GenerateFromPassword(u.Password)
+		var hashed string
+		if hashed, err = GenerateFromPassword(u.Password); err == nil {
+			err = scope.SetColumn("Password", hashed)
+		}
 	}
 	return
 }
@@ -169,7 +173,7 @@ type Role struct {
 	Name                string                `name:"角色名称" gorm:"not null"`
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
-	IsBuiltIn           bool                  `name:"是否内置"`
+	IsBuiltIn           NullBool              `name:"是否内置"`
 }
 
 // AfterSave
@@ -204,26 +208,26 @@ type DataPrivileges struct {
 type Menu struct {
 	Model `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string `name:"菜单编码"`
-	Name          string `name:"菜单名称" gorm:"not null"`
-	URI           string `name:"菜单地址"`
-	Icon          string `name:"菜单图标"`
-	Pid           uint   `name:"父菜单ID"`
-	Group         string `name:"菜单分组名"`
-	Disable       bool   `name:"是否禁用"`
-	IsLink        bool   `name:"是否外链"`
-	Sort          int    `name:"排序值"`
-	IsBuiltIn     bool   `name:"是否内置"`
-	IsDefaultOpen bool   `name:"是否默认打开"`
-	Closeable     bool   `name:"是否可关闭"`
-	IsVirtual     bool
+	Code          string   `name:"菜单编码"`
+	Name          string   `name:"菜单名称" gorm:"not null"`
+	URI           string   `name:"菜单地址"`
+	Icon          string   `name:"菜单图标"`
+	Pid           uint     `name:"父菜单ID"`
+	Group         string   `name:"菜单分组名"`
+	Disable       NullBool `name:"是否禁用"`
+	IsLink        NullBool `name:"是否外链"`
+	Sort          int      `name:"排序值"`
+	IsBuiltIn     NullBool `name:"是否内置"`
+	IsDefaultOpen NullBool `name:"是否默认打开"`
+	Closeable     NullBool `name:"是否可关闭"`
+	IsVirtual     NullBool
 	Type          string
 }
 
 // AfterSave
 func (m *Menu) BeforeSave() {
 	if m.Code == "" {
-		if m.URI != "" && !m.IsLink {
+		if m.URI != "" && !m.IsLink.Bool {
 			code := m.URI
 			if strings.HasPrefix(m.URI, "/") {
 				code = m.URI[1:]
@@ -241,7 +245,7 @@ type Dict struct {
 	Code      string `gorm:"not null"`
 	Name      string `gorm:"not null"`
 	Values    []DictValue
-	IsBuiltIn bool
+	IsBuiltIn NullBool
 }
 
 // DictValue
@@ -289,8 +293,8 @@ func (o *SignOrg) IsValid() bool {
 type Param struct {
 	Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string `name:"参数编码" gorm:"not null"`
-	Name      string `name:"参数名称" gorm:"not null"`
-	Value     string `name:"参数值"`
-	IsBuiltIn bool   `name:"是否预置"`
+	Code      string   `name:"参数编码" gorm:"not null"`
+	Name      string   `name:"参数名称" gorm:"not null"`
+	Value     string   `name:"参数值"`
+	IsBuiltIn NullBool `name:"是否预置"`
 }

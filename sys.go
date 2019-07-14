@@ -37,7 +37,7 @@ func getRootUser() *User {
 
 func preflight() bool {
 	var param Param
-	DB().Where(&Param{Code: initCode, IsBuiltIn: true}).Find(&param)
+	DB().Where(&Param{Code: initCode, IsBuiltIn: NewNullBool(true)}).Find(&param)
 	if param.ID != 0 {
 		return true
 	}
@@ -48,7 +48,7 @@ func createPresetDicts(tx *gorm.DB) {
 	tx.Create(&Dict{
 		Code:      "sys_menu_type",
 		Name:      "菜单类型",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 		Values: []DictValue{
 			{
 				Label: "菜单",
@@ -65,7 +65,7 @@ func createPresetDicts(tx *gorm.DB) {
 	tx.Create(&Dict{
 		Code:      "sys_data_range",
 		Name:      "数据范围",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 		Values: []DictValue{
 			{
 				Label: "个人范围",
@@ -92,7 +92,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "主导航菜单",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
 	tx.Create(&rootMenu)
 	sysMenu := Menu{
@@ -102,7 +102,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "setting",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
 	tx.Create(&sysMenu)
 	orgMenu := Menu{
@@ -112,7 +112,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "appstore",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
 	tx.Create(&orgMenu)
 	userMenu := Menu{
@@ -122,8 +122,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/user",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&userMenu)
 	sysOrgMenu := Menu{
@@ -133,8 +133,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/org",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&sysOrgMenu)
 	permissionMenu := Menu{
@@ -144,7 +144,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "dropbox",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
 	tx.Create(&permissionMenu)
 	roleMenu := Menu{
@@ -154,8 +154,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/role",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&roleMenu)
 	settingMenu := Menu{
@@ -165,7 +165,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "tool",
 		Sort:      300,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
 	tx.Create(&settingMenu)
 	menuMenu := Menu{
@@ -175,8 +175,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/menu",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&menuMenu)
 	paramMenu := Menu{
@@ -186,8 +186,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/param",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&paramMenu)
 	dictMenu := Menu{
@@ -197,8 +197,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/dict",
 		Sort:      300,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&dictMenu)
 	auditMenu := Menu{
@@ -208,8 +208,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/audit",
 		Sort:      400,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&auditMenu)
 	fileMenu := Menu{
@@ -219,8 +219,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/file",
 		Sort:      500,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&fileMenu)
 	i18nMenu := Menu{
@@ -230,8 +230,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/i18n",
 		Sort:      600,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&i18nMenu)
 	messageMenu := Menu{
@@ -241,8 +241,8 @@ func createPresetMenus(tx *gorm.DB) {
 		URI:       "/sys/message",
 		Sort:      700,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
 	tx.Create(&messageMenu)
 }
@@ -351,7 +351,7 @@ func initSys() {
 			Username:  "root",
 			Name:      "预置用户",
 			Password:  MD5("kuu"),
-			IsBuiltIn: true,
+			IsBuiltIn: NewNullBool(true),
 		}
 		tx.Create(&root)
 		rootUser = &root
@@ -364,7 +364,7 @@ func initSys() {
 		// 保存初始化标记
 		param := Param{
 			Code:      initCode,
-			IsBuiltIn: true,
+			IsBuiltIn: NewNullBool(true),
 			Name:      "系统初始化标记",
 			Value:     "ok",
 		}
@@ -497,7 +497,7 @@ func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 		return nil, 0, errors.New("用户不存在")
 	}
 	// 检测账号是否有效
-	if user.Disable {
+	if user.Disable.Bool {
 		return nil, 0, errors.New("该用户已被禁用")
 	}
 	// 检测密码是否正确
