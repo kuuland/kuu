@@ -68,18 +68,10 @@ func createCallback(scope *gorm.Scope) {
 						ERROR("自动设置组织ID失败：%s", err.Error())
 					}
 				}
-				// 可写权限判断
-				var writable bool
-				if orgID, ok := orgIDField.Field.Interface().(uint); ok {
-					for _, item := range desc.WritableOrgIDs {
-						if orgID == item {
-							writable = true
-							break
-						}
-					}
-					if desc.NotRootUser() && !writable {
-						_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
-					}
+				// 写权限判断
+				orgID := orgIDField.Field.Interface().(uint)
+				if desc.IsWritableOrgID(orgID) {
+					_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
 				}
 			}
 			if createdByIDField, ok := scope.FieldByName("CreatedByID"); ok {
@@ -110,7 +102,7 @@ func deleteCallback(scope *gorm.Scope) {
 			var sql string
 			if desc := GetRoutinePrivilegesDesc(); desc != nil {
 				// 添加可写权限控制
-				AddDataScopeWhereSQL(scope, desc)
+				AddDataScopeWritableSQL(scope, desc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -151,7 +143,7 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			// 添加可写权限控制
-			AddDataScopeWhereSQL(scope, desc)
+			AddDataScopeWritableSQL(scope, desc)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
@@ -159,29 +151,15 @@ func updateCallback(scope *gorm.Scope) {
 	}
 }
 
-// AddDataScopeWhereSQL
-func AddDataScopeWhereSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	if desc != nil && desc.NotRootUser() {
-		_, hasOrgIDField := scope.FieldByName("OrgID")
-		_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-		if hasOrgIDField && hasCreatedByIDField {
-			scope.Search.Where("(org_id in (?)) or (created_by_id = ?)", desc.WritableOrgIDs, desc.UID)
-		} else if hasCreatedByIDField {
-			scope.Search.Where("(created_by_id = ?)", desc.UID)
-		}
-	}
-}
-
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
-		caches := GetRoutineCaches()
-
 		if desc == nil {
 			// 无登录登录态时
 			return
 		}
 
+		caches := GetRoutineCaches()
 		if caches != nil {
 			// 有忽略标记时
 			if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
@@ -202,17 +180,7 @@ func queryCallback(scope *gorm.Scope) {
 				return
 			}
 		}
-
-		// 有登录态时的常规情况
-		if desc.NotRootUser() {
-			_, hasOrgIDField := scope.FieldByName("OrgID")
-			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-			if hasOrgIDField && hasCreatedByIDField {
-				scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
-			} else if hasCreatedByIDField {
-				scope.Search.Where("created_by_id = ?", desc.UID)
-			}
-		}
+		AddDataScopeReadableSQL(scope, desc)
 	}
 }
 
@@ -243,6 +211,28 @@ func validateCallback(scope *gorm.Scope) {
 				}
 			}
 		}
+	}
+}
+
+// AddDataScopeReadableSQL
+func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	_, hasOrgIDField := scope.FieldByName("OrgID")
+	_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+	if hasOrgIDField && hasCreatedByIDField {
+		scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
+	} else if hasCreatedByIDField {
+		scope.Search.Where("(created_by_id = ?)", desc.UID)
+	}
+}
+
+// AddDataScopeWritableSQL
+func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	_, hasOrgIDField := scope.FieldByName("OrgID")
+	_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+	if hasOrgIDField && hasCreatedByIDField {
+		scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.WritableOrgIDs, desc.UID)
+	} else if hasCreatedByIDField {
+		scope.Search.Where("(created_by_id = ?)", desc.UID)
 	}
 }
 

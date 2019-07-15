@@ -63,11 +63,13 @@ func initSys() {
 		return
 	}
 	// 初始化预置数据
-	err := WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
+	err := WithTransaction(func(tx *gorm.DB) *gorm.DB {
 		// 初始化预置用户
 		tx = createRootUser(tx)
 		// 初始化预置组织
 		tx = createRootOrg(tx)
+		// 初始化预置用户权限
+		tx = createRootPrivileges(tx)
 		// 初始化字典、菜单
 		tx = createPresetDicts(tx)
 		tx = createPresetMenus(tx)
@@ -84,7 +86,7 @@ func initSys() {
 			Value:     "ok",
 		}
 		tx = tx.Create(&param)
-		return tx, tx.Error
+		return tx
 	})
 	if err != nil {
 		PANIC("初始化预置数据失败：%s", err.Error())
@@ -122,6 +124,44 @@ func createRootOrg(tx *gorm.DB) *gorm.DB {
 	}
 	tx = tx.Create(&root)
 	rootOrg = &root
+	return tx
+}
+
+func createRootPrivileges(tx *gorm.DB) *gorm.DB {
+	// 创建角色
+	rootRole := &Role{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
+		Code:      "root_role",
+		Name:      "预置角色",
+		IsBuiltIn: NewNullBool(true),
+	}
+	tx = tx.Create(rootRole)
+	// 创建数据权限记录
+	tx = tx.Create(&DataPrivileges{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
+		RoleID:        rootRole.ID,
+		TargetOrgID:   RootOrgID(),
+		ReadableRange: DataScopeCurrentFollowing,
+		WritableRange: DataScopeCurrentFollowing,
+	})
+	// 创建分配记录
+	tx = tx.Create(&RoleAssign{
+		Model: Model{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
+		},
+		RoleID: rootRole.ID,
+		UserID: RootUID(),
+	})
 	return tx
 }
 

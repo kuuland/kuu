@@ -8,6 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	DataScopePersonal         = "PERSONAL"
+	DataScopeCurrent          = "CURRENT"
+	DataScopeCurrentFollowing = "CURRENT_FOLLOWING"
+)
+
+func init() {
+	Enum("DataScope", "数据范围定义").
+		Add(DataScopePersonal, "个人范围").
+		Add(DataScopeCurrent, "当前组织").
+		Add(DataScopeCurrentFollowing, "当前及以下组织")
+}
+
 // RedisUserPrisKey
 func RedisUserPrisKey(sign *SignContext, roleIDs string) string {
 	return RedisKeyBuilder("privileges", strconv.Itoa(int(sign.UID)), roleIDs, strconv.Itoa(int(sign.OrgID)))
@@ -88,14 +101,26 @@ func DelCurPrisCache() {
 
 // PrivilegesDesc
 type PrivilegesDesc struct {
-	UID            uint
-	Codes          []string
-	Permissions    map[string]int64
-	ReadableOrgIDs []uint
-	WritableOrgIDs []uint
-	Valid          bool
-	SignOrgID      uint
-	SignInfo       *SignContext
+	UID              uint
+	Codes            []string
+	Permissions      map[string]int64
+	ReadableOrgIDs   []uint
+	ReadableOrgIDMap map[uint]bool
+	WritableOrgIDs   []uint
+	WritableOrgIDMap map[uint]bool
+	Valid            bool
+	SignOrgID        uint
+	SignInfo         *SignContext
+}
+
+// IsWritableOrgID
+func (desc *PrivilegesDesc) IsWritableOrgID(orgID uint) bool {
+	return desc.WritableOrgIDMap[orgID] == true
+}
+
+// IsReadableOrgID
+func (desc *PrivilegesDesc) IsReadableOrgID(orgID uint) bool {
+	return desc.ReadableOrgIDMap[orgID] == true
 }
 
 // IsValid
@@ -168,9 +193,9 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	roleIDs := make([]string, 0)
 	orm := make(map[uint]*orange)
 	vmap := map[string]int{
-		"PERSONAL":          1,
-		"CURRENT":           2,
-		"CURRENT_FOLLOWING": 3,
+		DataScopePersonal:         1,
+		DataScopeCurrent:          2,
+		DataScopeCurrentFollowing: 3,
 	}
 	for _, assign := range user.RoleAssigns {
 		if assign.Role == nil {
@@ -250,7 +275,9 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	for code, _ := range desc.Permissions {
 		desc.Codes = append(desc.Codes, code)
 	}
+	desc.ReadableOrgIDMap = readableOrgIDs
 	desc.ReadableOrgIDs = keys(readableOrgIDs)
+	desc.WritableOrgIDMap = writableOrgIDs
 	desc.WritableOrgIDs = keys(writableOrgIDs)
 
 	// 添加缓存

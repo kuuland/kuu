@@ -215,8 +215,8 @@ type DataPrivileges struct {
 	ExtendField
 	RoleID        uint   `name:"角色ID"`
 	TargetOrgID   uint   `name:"目标组织ID"`
-	ReadableRange string `name:"可读范围"`
-	WritableRange string `name:"可写范围"`
+	ReadableRange string `name:"可读范围" enum:"DataScope"`
+	WritableRange string `name:"可写范围" enum:"DataScope"`
 }
 
 // Menu
