@@ -103,7 +103,7 @@ func DS(name string) *gorm.DB {
 }
 
 // WithTransaction
-func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
+func WithTransaction(fn func(*gorm.DB) *gorm.DB, with ...*gorm.DB) error {
 	var (
 		tx  *gorm.DB
 		out bool
@@ -120,18 +120,15 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 			tx.Rollback()
 		}
 	}()
-	if err := fn(tx); err != nil {
-		return err
-	}
-	if err := tx.Error; err != nil {
-		return err
-	}
+	tx = fn(tx)
 	if out {
 		return nil
 	}
 	if errs := tx.GetErrors(); len(errs) > 0 {
 		if err := tx.Rollback().Error; err != nil {
 			return err
+		} else {
+			return tx.Error
 		}
 	}
 	return tx.Commit().Error
