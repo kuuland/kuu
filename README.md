@@ -199,15 +199,16 @@ r.GET("/ping", func(c *kuu.Context) {
 ### Use transaction
 
 ```go
-err := kuu.WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
+err := kuu.WithTransaction(func(tx *gorm.DB) *gorm.DB {
 	// ...
     tx = tx.Create(&memberDoc)
     if tx.NewRecord(memberDoc) {
-        return tx, errors.New("Failed to create member profile")
+    	_ = tx.AddError(errors.New("Failed to create member profile"))
+        return tx
     }
     // ...
     tx = tx.Create(...)
-    return tx, tx.Error
+    return tx
 })
 ```
 

@@ -105,10 +105,11 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err   error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
+						err = c.WithTransaction(func(tx *gorm.DB) *gorm.DB {
 							var body interface{}
 							if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-								return tx, errors.New("解析请求体失败")
+								_ = tx.AddError(errors.New("解析请求体失败"))
+								return tx
 							}
 							indirectScopeValue := indirect(reflect.ValueOf(body))
 							if indirectScopeValue.Kind() == reflect.Slice {
@@ -116,21 +117,23 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								for i := 0; i < indirectScopeValue.Len(); i++ {
 									doc := reflect.New(reflectType).Interface()
 									if err := Copy(indirectScopeValue.Index(i).Interface(), doc); err != nil {
-										return tx, err
+										_ = tx.AddError(err)
+										return tx
 									}
 									docs = append(docs, doc)
 								}
 							} else {
 								doc := reflect.New(reflectType).Interface()
 								if err := Copy(body, doc); err != nil {
-									return tx, err
+									_ = tx.AddError(err)
+									return tx
 								}
 								docs = append(docs, doc)
 							}
 							for _, doc := range docs {
 								tx = tx.Create(doc)
 							}
-							return tx, tx.Error
+							return tx
 						})
 						// 响应结果
 						if err != nil {
@@ -152,7 +155,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err    error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
+						err = c.WithTransaction(func(tx *gorm.DB) *gorm.DB {
 							var params struct {
 								All    bool
 								Multi  bool
@@ -172,11 +175,13 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								}
 							} else {
 								if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-									return tx, errors.New("解析请求体失败")
+									_ = tx.AddError(errors.New("解析请求体失败"))
+									return tx
 								}
 							}
 							if IsBlank(params.Cond) {
-								return tx, errors.New("删除条件不能为空")
+								_ = tx.AddError(errors.New("删除条件不能为空"))
+								return tx
 							}
 							var multi bool
 							if params.Multi || params.All {
@@ -195,7 +200,8 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							if !IsBlank(params.Cond) {
 								query := reflect.New(reflectType).Interface()
 								if err := Copy(params.Cond, query); err != nil {
-									return tx, err
+									_ = tx.AddError(err)
+									return tx
 								}
 								tx = tx.Where(query)
 							}
@@ -218,7 +224,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								}
 								tx = tx.Delete(reflect.New(reflectType).Interface())
 							}
-							return tx, tx.Error
+							return tx
 						})
 						// 响应结果
 						if err != nil {
@@ -396,7 +402,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							err    error
 						)
 						// 事务执行
-						err = c.WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
+						err = c.WithTransaction(func(tx *gorm.DB) *gorm.DB {
 							var params struct {
 								All   bool
 								Multi bool
@@ -405,17 +411,20 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								Auto  bool
 							}
 							if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-								return tx, errors.New("解析请求体失败")
+								_ = tx.AddError(errors.New("解析请求体失败"))
+								return tx
 							}
 							if IsBlank(params.Cond) || IsBlank(params.Doc) {
-								return tx, errors.New("更新条件和内容不能为空")
+								_ = tx.AddError(errors.New("更新条件和内容不能为空"))
+								return tx
 							}
 							var multi bool
 							if params.Multi || params.All {
 								multi = true
 							}
 							if IsBlank(params.Cond) && !multi {
-								return tx, errors.New("必须指定批量更新标记")
+								_ = tx.AddError(errors.New("必须指定批量更新标记"))
+								return tx
 							}
 							// 处理更新条件
 							for key, val := range params.Cond {
@@ -430,7 +439,8 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 							if !IsBlank(params.Cond) {
 								q := reflect.New(reflectType).Interface()
 								if err := Copy(params.Cond, q); err != nil {
-									return tx, err
+									_ = tx.AddError(err)
+									return tx
 								}
 								tx = tx.Where(q)
 							}
@@ -477,15 +487,17 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 								for i := 0; i < indirectScopeValue.Len(); i++ {
 									item := indirectScopeValue.Index(i).Interface()
 									if err := updateFields(item); err != nil {
-										return tx, err
+										_ = tx.AddError(err)
+										return tx
 									}
 								}
 							} else {
 								if err := updateFields(result); err != nil {
-									return tx, err
+									_ = tx.AddError(err)
+									return tx
 								}
 							}
-							return tx, tx.Error
+							return tx
 						})
 						// 响应结果
 						if err != nil {
