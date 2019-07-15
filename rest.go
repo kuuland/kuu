@@ -22,10 +22,7 @@ type RestDesc struct {
 
 // IsValid
 func (r *RestDesc) IsValid() bool {
-	if !r.Create && !r.Delete && !r.Query && !r.Update {
-		return false
-	}
-	return true
+	return r.Create || r.Delete || r.Query || r.Update
 }
 
 // RESTful
