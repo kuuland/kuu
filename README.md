@@ -11,6 +11,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 - [Features](#features)
     - [Global configuration](#global-configuration)
     - [Data source management](#data-source-management)
+    - [Use transaction](#use-transaction)
     - [RESTful APIs for struct](#restful-apis-for-struct)
         - [Create Record](#create-record)
         - [Batch Create](#batch-create)
@@ -195,6 +196,21 @@ r.GET("/ping", func(c *kuu.Context) {
 })
 ```
 
+### Use transaction
+
+```go
+err := kuu.WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) { 
+    tx = tx.Create(&memberDoc)
+    if tx.NewRecord(memberDoc) {
+        return tx, errors.New("Failed to create member profile")
+    }
+    // ...
+    tx = tx.Create(&memberUser)
+    return tx, tx.Error
+})
+```
+
+> Notes: Remember to reassign `tx`!!!
 
 ### RESTful APIs for struct
 
