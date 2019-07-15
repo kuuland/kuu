@@ -38,13 +38,13 @@ func (info *AuditInfo) Output() {
 
 func registerAuditCallbacks(callback *gorm.Callback) {
 	if callback.Create().Get("kuu:audit_create") == nil {
-		callback.Create().After("gorm:create").Register("kuu:audit_create", AuditCreateCallback)
+		callback.Create().After("gorm:commit_or_rollback_transaction").Register("kuu:audit_create", AuditCreateCallback)
 	}
 	if callback.Update().Get("kuu:audit_update") == nil {
-		callback.Update().After("gorm:update").Register("kuu:audit_update", AuditUpdateCallback)
+		callback.Update().After("gorm:commit_or_rollback_transaction").Register("kuu:audit_update", AuditUpdateCallback)
 	}
 	if callback.Delete().Get("kuu:audit_delete") == nil {
-		callback.Update().After("gorm:delete").Register("kuu:audit_delete", AuditDeleteCallback)
+		callback.Update().After("gorm:commit_or_rollback_transaction").Register("kuu:audit_delete", AuditDeleteCallback)
 	}
 }
 

@@ -51,7 +51,7 @@ func RootOrg() *User {
 
 func preflight() bool {
 	var param Param
-	DB().Where(&Param{Code: initCode, IsBuiltIn: true}).Find(&param)
+	DB().Where(&Param{Code: initCode, IsBuiltIn: NewNullBool(true)}).Find(&param)
 	if param.ID != 0 {
 		return true
 	}
@@ -63,17 +63,14 @@ func initSys() {
 		return
 	}
 	// 初始化预置数据
-	err := WithTransaction(func(tx *gorm.DB) error {
+	err := WithTransaction(func(tx *gorm.DB) (*gorm.DB, error) {
 		// 初始化预置用户
-		createRootUser(tx)
+		tx = createRootUser(tx)
 		// 初始化预置组织
-		createRootOrg(tx)
+		tx = createRootOrg(tx)
 		// 初始化字典、菜单
-		createPresetDicts(tx)
-		createPresetMenus(tx)
-		if C().GetBool("mock") {
-			createMockData(tx)
-		}
+		tx = createPresetDicts(tx)
+		tx = createPresetMenus(tx)
 		// 保存初始化标记
 		param := Param{
 			Model: Model{
@@ -82,48 +79,54 @@ func initSys() {
 				UpdatedByID: RootUID(),
 			},
 			Code:      initCode,
-			IsBuiltIn: true,
+			IsBuiltIn: NewNullBool(true),
 			Name:      "系统初始化标记",
 			Value:     "ok",
 		}
-		tx.Create(&param)
-		return tx.Error
+		tx = tx.Create(&param)
+		return tx, tx.Error
 	})
 	if err != nil {
 		PANIC("初始化预置数据失败：%s", err.Error())
 	}
 }
 
-func createRootUser(tx *gorm.DB) {
+func createRootUser(tx *gorm.DB) *gorm.DB {
 	root := User{
 		Model: Model{
-			ID: RootUID(),
+			ID:          RootUID(),
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
 		},
 		Username:  "root",
 		Name:      "预置用户",
 		Password:  MD5("kuu"),
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&root)
+	tx = tx.Create(&root)
 	rootUser = &root
+	return tx
 }
 
-func createRootOrg(tx *gorm.DB) {
+func createRootOrg(tx *gorm.DB) *gorm.DB {
 	root := Org{
 		Model: Model{
 			ID:          RootOrgID(),
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
+			OrgID:       RootOrgID(),
 		},
 		Code: "default",
 		Name: "默认组织",
 	}
-	tx.Create(&root)
+	tx = tx.Create(&root)
 	rootOrg = &root
+	return tx
 }
 
-func createPresetDicts(tx *gorm.DB) {
-	tx.Create(&Dict{
+func createPresetDicts(tx *gorm.DB) *gorm.DB {
+	tx = tx.Create(&Dict{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -131,7 +134,7 @@ func createPresetDicts(tx *gorm.DB) {
 		},
 		Code:      "sys_menu_type",
 		Name:      "菜单类型",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 		Values: []DictValue{
 			{
 				Label: "菜单",
@@ -145,7 +148,7 @@ func createPresetDicts(tx *gorm.DB) {
 			},
 		},
 	})
-	tx.Create(&Dict{
+	tx = tx.Create(&Dict{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -153,7 +156,7 @@ func createPresetDicts(tx *gorm.DB) {
 		},
 		Code:      "sys_data_range",
 		Name:      "数据范围",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 		Values: []DictValue{
 			{
 				Label: "个人范围",
@@ -172,326 +175,229 @@ func createPresetDicts(tx *gorm.DB) {
 			},
 		},
 	})
+	return tx
 }
 
-func createPresetMenus(tx *gorm.DB) {
+func createPresetMenus(tx *gorm.DB) *gorm.DB {
 	rootMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code:      "main",
 		Name:      "主导航菜单",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&rootMenu)
+	tx = tx.Create(&rootMenu)
 	sysMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code:      "sys",
 		Pid:       rootMenu.ID,
 		Name:      "系统管理",
 		Icon:      "setting",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&sysMenu)
+	tx = tx.Create(&sysMenu)
 	orgMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code:      "sys:omg",
 		Pid:       sysMenu.ID,
 		Name:      "组织管理",
 		Icon:      "appstore",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&orgMenu)
+	tx = tx.Create(&orgMenu)
 	userMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       orgMenu.ID,
 		Name:      "用户管理",
 		Icon:      "user",
 		URI:       "/sys/user",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&userMenu)
+	tx = tx.Create(&userMenu)
 	sysOrgMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       orgMenu.ID,
 		Name:      "组织机构",
 		Icon:      "cluster",
 		URI:       "/sys/org",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&sysOrgMenu)
+	tx = tx.Create(&sysOrgMenu)
 	permissionMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code:      "sys:auth",
 		Pid:       sysMenu.ID,
 		Name:      "权限管理",
 		Icon:      "dropbox",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&permissionMenu)
+	tx = tx.Create(&permissionMenu)
 	roleMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       permissionMenu.ID,
 		Name:      "角色管理",
 		Icon:      "team",
 		URI:       "/sys/role",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&roleMenu)
+	tx = tx.Create(&roleMenu)
 	settingMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Code:      "sys:settings",
 		Pid:       sysMenu.ID,
 		Name:      "系统设置",
 		Icon:      "tool",
 		Sort:      300,
 		Type:      "menu",
-		IsBuiltIn: true,
+		IsBuiltIn: NewNullBool(true),
 	}
-	tx.Create(&settingMenu)
+	tx = tx.Create(&settingMenu)
 	menuMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "菜单管理",
 		Icon:      "bars",
 		URI:       "/sys/menu",
 		Sort:      100,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&menuMenu)
+	tx = tx.Create(&menuMenu)
 	paramMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "参数管理",
 		Icon:      "profile",
 		URI:       "/sys/param",
 		Sort:      200,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&paramMenu)
+	tx = tx.Create(&paramMenu)
 	dictMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "字典管理",
 		Icon:      "build",
 		URI:       "/sys/dict",
 		Sort:      300,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&dictMenu)
+	tx = tx.Create(&dictMenu)
 	auditMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "审计日志",
 		Icon:      "book",
 		URI:       "/sys/audit",
 		Sort:      400,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&auditMenu)
+	tx = tx.Create(&auditMenu)
 	fileMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "文件",
 		Icon:      "file",
 		URI:       "/sys/file",
 		Sort:      500,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&fileMenu)
+	tx = tx.Create(&fileMenu)
 	i18nMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "国际化",
 		Icon:      "global",
 		URI:       "/sys/i18n",
 		Sort:      600,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&i18nMenu)
+	tx = tx.Create(&i18nMenu)
 	messageMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
 		Pid:       settingMenu.ID,
 		Name:      "消息",
 		Icon:      "message",
 		URI:       "/sys/message",
 		Sort:      700,
 		Type:      "menu",
-		IsBuiltIn: true,
-		Closeable: true,
+		IsBuiltIn: NewNullBool(true),
+		Closeable: NewNullBool(true),
 	}
-	tx.Create(&messageMenu)
-}
-
-func createMockData(tx *gorm.DB) {
-	// 新增组织
-	gzo := &Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Code: "GZ",
-		Name: "广州",
-	}
-	tx.Create(gzo)
-	tho := &Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Code: "TH",
-		Name: "天河",
-		Pid:  gzo.ID,
-	}
-	tx.Create(tho)
-	yxo := &Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Code: "YX",
-		Name: "越秀",
-		Pid:  gzo.ID,
-	}
-	tx.Create(yxo)
-	lwo := &Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Code: "LW",
-		Name: "荔湾",
-		Pid:  gzo.ID,
-	}
-	tx.Create(lwo)
-	sho := &Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Code: "SH",
-		Name: "上海",
-	}
-	tx.Create(sho)
-	// 新建角色
-	gzr := &Role{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
-		},
-		Code: "gz_admin",
-		Name: "广州管理员",
-	}
-	tx.Create(gzr)
-	gzrOP := []OperationPrivileges{
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:   gzr.ID,
-			MenuCode: "sys:user",
-		},
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:   gzr.ID,
-			MenuCode: "sys:org",
-		},
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:   gzr.ID,
-			MenuCode: "sys:param",
-		},
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:   gzr.ID,
-			MenuCode: "sys:role",
-		},
-	}
-	for _, item := range gzrOP {
-		tx.Create(&item)
-	}
-	gzrDP := []DataPrivileges{
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:        gzr.ID,
-			TargetOrgID:   gzo.ID,
-			ReadableRange: "CURRENT_FOLLOWING",
-			WritableRange: "CURRENT_FOLLOWING",
-		},
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:        gzr.ID,
-			TargetOrgID:   tho.ID,
-			ReadableRange: "CURRENT",
-			WritableRange: "CURRENT",
-		},
-		{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:        gzr.ID,
-			TargetOrgID:   yxo.ID,
-			ReadableRange: "CURRENT",
-			WritableRange: "CURRENT",
-		},
-	}
-	for _, item := range gzrDP {
-		tx.Create(&item)
-	}
-	// 新增用户
-	gz01 := &User{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
-		},
-		Username: "gz01",
-		Password: MD5("12345"),
-		Name:     "广州用户01",
-		RoleAssigns: []RoleAssign{
-			{
-				RoleID: gzr.ID,
-			},
-		},
-	}
-	tx.Create(gz01)
+	tx = tx.Create(&messageMenu)
+	return tx
 }
 
 // GetSignContext
@@ -606,7 +512,7 @@ func defaultLoginHandler(c *Context) (jwt.MapClaims, uint, error) {
 		return nil, 0, errors.New("用户不存在")
 	}
 	// 检测账号是否有效
-	if user.Disable {
+	if user.Disable.Bool {
 		return nil, 0, errors.New("该用户已被禁用")
 	}
 	// 检测密码是否正确

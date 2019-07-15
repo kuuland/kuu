@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/jtolds/gls"
+	"log"
 	"sync"
 )
 
@@ -17,6 +18,24 @@ type datasource struct {
 	Name    string
 	Dialect string
 	Args    string
+}
+
+type dbLogger struct {
+	gorm.LogWriter
+}
+
+// Print format & print log
+func (logger dbLogger) Print(values ...interface{}) {
+	logger.Println(values...)
+}
+
+// Println format & print log
+func (logger dbLogger) Println(values ...interface{}) {
+	messages := gorm.LogFormatter(values...)
+	if len(messages) > 0 {
+		INFO(messages...)
+		log.Println(messages...)
+	}
 }
 
 func initDataSources() {
@@ -51,6 +70,7 @@ func initDataSources() {
 					dataSourcesMap.Store(ds.Name, db)
 					if gin.IsDebugging() {
 						db.LogMode(true)
+						//db.SetLogger(dbLogger{})
 					}
 				}
 			}
@@ -78,6 +98,7 @@ func initDataSources() {
 				dataSourcesMap.Store(ds.Name, db)
 				if gin.IsDebugging() {
 					db.LogMode(true)
+					//db.SetLogger(dbLogger{})
 				}
 			}
 		}
@@ -103,7 +124,7 @@ func DS(name string) *gorm.DB {
 }
 
 // WithTransaction
-func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
+func WithTransaction(fn func(*gorm.DB) (*gorm.DB, error), with ...*gorm.DB) error {
 	var (
 		tx  *gorm.DB
 		out bool
@@ -120,8 +141,12 @@ func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
 			tx.Rollback()
 		}
 	}()
-	if err := fn(tx); err != nil {
+	if db, err := fn(tx); err != nil {
 		return err
+	} else if db.Error != nil {
+		return db.Error
+	} else {
+		tx = db
 	}
 	if err := tx.Error; err != nil {
 		return err

@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -23,7 +24,7 @@ func init() {
 	if IsProduction {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 		Logger.SetFormatter(&logrus.JSONFormatter{})
-		fmt.Println("==> 生产环境自动启用文件模式存储日志")
+		log.Println("==> 生产环境自动启用文件模式存储日志")
 		LogDir = C().DefaultGetString("logs", "logs")
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{})
@@ -47,7 +48,7 @@ func (h *DailyFileHook) Fire(entry *logrus.Entry) error {
 		DailyFileName = now
 		changeLoggerOutput(now)
 	}
-	fmt.Println(fmt.Sprintf("[KUU-%s %s] %s", strings.ToUpper(entry.Level.String()), time.Now().Format("2006-01-02 15:04:05"), entry.Message))
+	log.Println(fmt.Sprintf("[KUU-%s] %s", strings.ToUpper(entry.Level.String()), entry.Message))
 	return nil
 }
 
