@@ -452,7 +452,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 				}
 				indirectValue := indirect(reflect.ValueOf(result))
 				for index := 0; index < indirectValue.Len(); index++ {
-					doc := indirectValue.Index(index).Elem().Addr().Interface()
+					doc := indirectValue.Index(index).Addr().Interface()
 					if err := execDelete(doc); err != nil {
 						return err
 					}

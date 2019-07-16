@@ -70,7 +70,7 @@ func createCallback(scope *gorm.Scope) {
 				}
 				// 写权限判断
 				orgID := orgIDField.Field.Interface().(uint)
-				if desc.IsWritableOrgID(orgID) {
+				if !desc.IsWritableOrgID(orgID) {
 					_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
 				}
 			}

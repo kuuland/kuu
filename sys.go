@@ -62,6 +62,7 @@ func initSys() {
 	if preflight() {
 		return
 	}
+	IgnoreAuth()
 	// 初始化预置数据
 	err := WithTransaction(func(tx *gorm.DB) error {
 		// 初始化预置用户
@@ -76,9 +77,9 @@ func initSys() {
 		// 保存初始化标记
 		param := Param{
 			Model: Model{
-
 				CreatedByID: RootUID(),
 				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
 			},
 			Code:      initCode,
 			IsBuiltIn: NewNullBool(true),
@@ -91,6 +92,7 @@ func initSys() {
 	if err != nil {
 		PANIC("初始化预置数据失败：%s", err.Error())
 	}
+	IgnoreAuth(true)
 }
 
 func createRootUser(tx *gorm.DB) {
