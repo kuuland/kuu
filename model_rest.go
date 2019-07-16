@@ -178,19 +178,11 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 				docScope := tx.NewScope(doc)
 				bizScope := NewBizScope(c, val, tx)
 				if params.Auto {
-					for key, val := range params.Doc {
-						if field, ok := rawScope.FieldByName(key); ok {
-							fieldKind := field.Field.Kind()
-							if fieldKind == reflect.Interface || fieldKind == reflect.Slice || fieldKind == reflect.Array || fieldKind == reflect.Struct {
-								docField, _ := docScope.FieldByName(key)
-								docFieldValue := docField.Field.Interface()
-								if err := field.Set(docFieldValue); err != nil {
-									return err
-								}
-							} else {
-								if err := rawScope.SetColumn(key, val); err != nil {
-									return err
-								}
+					for key, _ := range params.Doc {
+						if field, ok := docScope.FieldByName(key); ok {
+							val := field.Field.Interface()
+							if err := rawScope.SetColumn(key, val); err != nil {
+								return err
 							}
 						}
 					}
