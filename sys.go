@@ -63,16 +63,16 @@ func initSys() {
 		return
 	}
 	// 初始化预置数据
-	err := WithTransaction(func(tx *gorm.DB) *gorm.DB {
+	err := WithTransaction(func(tx *gorm.DB) error {
 		// 初始化预置用户
-		tx = createRootUser(tx)
+		createRootUser(tx)
 		// 初始化预置组织
-		tx = createRootOrg(tx)
+		createRootOrg(tx)
 		// 初始化预置用户权限
-		tx = createRootPrivileges(tx)
+		createRootPrivileges(tx)
 		// 初始化字典、菜单
-		tx = createPresetDicts(tx)
-		tx = createPresetMenus(tx)
+		createPresetDicts(tx)
+		createPresetMenus(tx)
 		// 保存初始化标记
 		param := Param{
 			Model: Model{
@@ -85,15 +85,15 @@ func initSys() {
 			Name:      "系统初始化标记",
 			Value:     "ok",
 		}
-		tx = tx.Create(&param)
-		return tx
+		tx.Create(&param)
+		return tx.Error
 	})
 	if err != nil {
 		PANIC("初始化预置数据失败：%s", err.Error())
 	}
 }
 
-func createRootUser(tx *gorm.DB) *gorm.DB {
+func createRootUser(tx *gorm.DB) {
 	root := User{
 		Model: Model{
 			ID:          RootUID(),
@@ -106,12 +106,11 @@ func createRootUser(tx *gorm.DB) *gorm.DB {
 		Password:  MD5("kuu"),
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&root)
+	tx.Create(&root)
 	rootUser = &root
-	return tx
 }
 
-func createRootOrg(tx *gorm.DB) *gorm.DB {
+func createRootOrg(tx *gorm.DB) {
 	root := Org{
 		Model: Model{
 			ID:          RootOrgID(),
@@ -122,12 +121,11 @@ func createRootOrg(tx *gorm.DB) *gorm.DB {
 		Code: "default",
 		Name: "默认组织",
 	}
-	tx = tx.Create(&root)
+	tx.Create(&root)
 	rootOrg = &root
-	return tx
 }
 
-func createRootPrivileges(tx *gorm.DB) *gorm.DB {
+func createRootPrivileges(tx *gorm.DB) {
 	// 创建角色
 	rootRole := &Role{
 		Model: Model{
@@ -139,9 +137,9 @@ func createRootPrivileges(tx *gorm.DB) *gorm.DB {
 		Name:      "预置角色",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(rootRole)
+	tx.Create(rootRole)
 	// 创建数据权限记录
-	tx = tx.Create(&DataPrivileges{
+	tx.Create(&DataPrivileges{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -153,7 +151,7 @@ func createRootPrivileges(tx *gorm.DB) *gorm.DB {
 		WritableRange: DataScopeCurrentFollowing,
 	})
 	// 创建分配记录
-	tx = tx.Create(&RoleAssign{
+	tx.Create(&RoleAssign{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -162,11 +160,10 @@ func createRootPrivileges(tx *gorm.DB) *gorm.DB {
 		RoleID: rootRole.ID,
 		UserID: RootUID(),
 	})
-	return tx
 }
 
-func createPresetDicts(tx *gorm.DB) *gorm.DB {
-	tx = tx.Create(&Dict{
+func createPresetDicts(tx *gorm.DB) {
+	tx.Create(&Dict{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -188,7 +185,7 @@ func createPresetDicts(tx *gorm.DB) *gorm.DB {
 			},
 		},
 	})
-	tx = tx.Create(&Dict{
+	tx.Create(&Dict{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -215,10 +212,9 @@ func createPresetDicts(tx *gorm.DB) *gorm.DB {
 			},
 		},
 	})
-	return tx
 }
 
-func createPresetMenus(tx *gorm.DB) *gorm.DB {
+func createPresetMenus(tx *gorm.DB) {
 	rootMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -230,7 +226,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		Type:      "menu",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&rootMenu)
+	tx.Create(&rootMenu)
 	sysMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -244,7 +240,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		Type:      "menu",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&sysMenu)
+	tx.Create(&sysMenu)
 	orgMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -258,7 +254,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		Type:      "menu",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&orgMenu)
+	tx.Create(&orgMenu)
 	userMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -273,7 +269,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&userMenu)
+	tx.Create(&userMenu)
 	sysOrgMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -288,7 +284,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&sysOrgMenu)
+	tx.Create(&sysOrgMenu)
 	permissionMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -302,7 +298,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		Type:      "menu",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&permissionMenu)
+	tx.Create(&permissionMenu)
 	roleMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -317,7 +313,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&roleMenu)
+	tx.Create(&roleMenu)
 	settingMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -331,7 +327,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		Type:      "menu",
 		IsBuiltIn: NewNullBool(true),
 	}
-	tx = tx.Create(&settingMenu)
+	tx.Create(&settingMenu)
 	menuMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -346,7 +342,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&menuMenu)
+	tx.Create(&menuMenu)
 	paramMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -361,7 +357,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&paramMenu)
+	tx.Create(&paramMenu)
 	dictMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -376,7 +372,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&dictMenu)
+	tx.Create(&dictMenu)
 	auditMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -391,7 +387,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&auditMenu)
+	tx.Create(&auditMenu)
 	fileMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -406,7 +402,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&fileMenu)
+	tx.Create(&fileMenu)
 	i18nMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -421,7 +417,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&i18nMenu)
+	tx.Create(&i18nMenu)
 	messageMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -436,8 +432,7 @@ func createPresetMenus(tx *gorm.DB) *gorm.DB {
 		IsBuiltIn: NewNullBool(true),
 		Closeable: NewNullBool(true),
 	}
-	tx = tx.Create(&messageMenu)
-	return tx
+	tx.Create(&messageMenu)
 }
 
 // GetSignContext

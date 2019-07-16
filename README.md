@@ -199,20 +199,19 @@ r.GET("/ping", func(c *kuu.Context) {
 ### Use transaction
 
 ```go
-err := kuu.WithTransaction(func(tx *gorm.DB) *gorm.DB {
+err := kuu.WithTransaction(func(tx *gorm.DB) error {
 	// ...
-    tx = tx.Create(&memberDoc)
+    tx.Create(&memberDoc)
     if tx.NewRecord(memberDoc) {
-    	_ = tx.AddError(errors.New("Failed to create member profile"))
-        return tx
+        return errors.New("Failed to create member profile")
     }
     // ...
-    tx = tx.Create(...)
-    return tx
+    tx.Create(...)
+    return tx.Error
 })
 ```
 
-> Notes: Remember to reassign `tx`!!!
+> Notes: Remember to return `tx.Error`!!!
 
 ### RESTful APIs for struct
 

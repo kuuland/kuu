@@ -8,8 +8,13 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"regexp"
+	"runtime"
 	"strconv"
 )
+
+var goSrcRegexp = regexp.MustCompile(`kuuland/kuu(@.*)?/.*.go`)
+var goTestRegexp = regexp.MustCompile(`kuuland/kuu(@.*)?/.*test.go`)
 
 // IsBlank
 func IsBlank(value interface{}) bool {
@@ -38,6 +43,16 @@ func IsBlank(value interface{}) bool {
 		return vi.IsNil()
 	}
 	return reflect.DeepEqual(indirectValue.Interface(), reflect.Zero(indirectValue.Type()).Interface())
+}
+
+func fileWithLineNum() string {
+	for i := 2; i < 15; i++ {
+		_, file, line, ok := runtime.Caller(i)
+		if ok && (!goSrcRegexp.MatchString(file) || goTestRegexp.MatchString(file)) {
+			return fmt.Sprintf("%v:%v", file, line)
+		}
+	}
+	return ""
 }
 
 func indirectValue(value interface{}) reflect.Value {
