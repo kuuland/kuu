@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -62,28 +61,40 @@ func beforeQueryCallback(scope *gorm.Scope) {
 func createCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
+			var (
+				hasOrgIDField       bool = false
+				orgID               uint
+				hasCreatedByIDField bool = false
+				createdByID         uint
+			)
 			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
 				if orgIDField.IsBlank {
 					if err := orgIDField.Set(desc.SignOrgID); err != nil {
 						ERROR("自动设置组织ID失败：%s", err.Error())
 					}
 				}
-				// 写权限判断
-				orgID := orgIDField.Field.Interface().(uint)
-				if !desc.IsWritableOrgID(orgID) {
-					_ = scope.Err(errors.New(fmt.Sprintf("用户 %v 在组织 %v 中无可写权限", desc.UID, orgID)))
-				}
+				hasOrgIDField = ok
+				orgID = orgIDField.Field.Interface().(uint)
 			}
 			if createdByIDField, ok := scope.FieldByName("CreatedByID"); ok {
 				if err := createdByIDField.Set(desc.UID); err != nil {
 					ERROR("自动设置创建人ID失败：%s", err.Error())
 				}
+				hasCreatedByIDField = ok
+				createdByID = createdByIDField.Field.Interface().(uint)
 			}
-
 			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
 				if err := updatedByField.Set(desc.UID); err != nil {
 					ERROR("自动设置修改人ID失败：%s", err.Error())
 				}
+			}
+			// 写权限判断
+			if orgID == 0 {
+				if hasCreatedByIDField && createdByID != desc.UID {
+					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
+				}
+			} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
+				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
 			}
 		}
 	}
@@ -97,10 +108,15 @@ func deleteCallback(scope *gorm.Scope) {
 		}
 
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
+		var desc *PrivilegesDesc
+		if desc = GetRoutinePrivilegesDesc(); desc != nil {
+			AddDataScopeWritableSQL(scope, desc)
+		}
 
 		if !scope.Search.Unscoped && hasDeletedAtField {
 			var sql string
-			if desc := GetRoutinePrivilegesDesc(); desc != nil {
+			if desc != nil {
+				AddDataScopeWritableSQL(scope, desc)
 				// 添加可写权限控制
 				AddDataScopeWritableSQL(scope, desc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
