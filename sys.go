@@ -15,10 +15,21 @@ const initCode = "sys:init"
 var (
 	rootUser *User
 	rootOrg  *Org
+	rootRole *Role
 )
 
 // RootUID
 func RootUID() uint {
+	return 1
+}
+
+// RootOrgID
+func RootOrgID() uint {
+	return 1
+}
+
+// RootRoleID
+func RootRoleID() uint {
 	return 1
 }
 
@@ -33,20 +44,26 @@ func RootUser() *User {
 	return rootUser
 }
 
-// RootOrgID
-func RootOrgID() uint {
-	return 1
-}
-
 // RootOrg
-func RootOrg() *User {
+func RootOrg() *Org {
 	if rootOrg == nil {
 		db := DB().Where("id = ?", 1).First(rootOrg)
 		if err := db.Error; err != nil {
 			ERROR(err)
 		}
 	}
-	return rootUser
+	return rootOrg
+}
+
+// RootRole
+func RootRole() *Role {
+	if rootRole == nil {
+		db := DB().Where("id = ?", 1).First(rootRole)
+		if err := db.Error; err != nil {
+			ERROR(err)
+		}
+	}
+	return rootRole
 }
 
 func preflight() bool {
@@ -131,6 +148,7 @@ func createRootPrivileges(tx *gorm.DB) {
 	// 创建角色
 	rootRole := &Role{
 		Model: Model{
+			ID:          RootRoleID(),
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
 			OrgID:       RootOrgID(),
@@ -152,20 +170,6 @@ func createRootPrivileges(tx *gorm.DB) {
 		ReadableRange: DataScopeCurrentFollowing,
 		WritableRange: DataScopeCurrentFollowing,
 	})
-	// 创建操作权限记录
-	var menus []Menu
-	tx.Find(&menus)
-	for _, menu := range menus {
-		tx.Create(&OperationPrivileges{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			RoleID:   rootRole.ID,
-			MenuCode: menu.Code,
-		})
-	}
 	// 创建分配记录
 	tx.Create(&RoleAssign{
 		Model: Model{

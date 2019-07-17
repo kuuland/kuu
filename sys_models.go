@@ -239,6 +239,31 @@ type Menu struct {
 	Type          string
 }
 
+func updatePresetRolePrivileges(tx *gorm.DB, deleteBefore bool, ignoreAuth bool) {
+	if ignoreAuth {
+		IgnoreAuth()
+	}
+	if deleteBefore {
+		tx.Unscoped().Where(OperationPrivileges{RoleID: RootRoleID()}).Delete(OperationPrivileges{})
+	}
+	var menus []Menu
+	tx.Find(&menus)
+	for _, menu := range menus {
+		tx.Create(&OperationPrivileges{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
+			RoleID:   RootRoleID(),
+			MenuCode: menu.Code,
+		})
+	}
+	if ignoreAuth {
+		IgnoreAuth(true)
+	}
+}
+
 // AfterSave
 func (m *Menu) BeforeSave() {
 	if m.Code == "" {
@@ -251,6 +276,16 @@ func (m *Menu) BeforeSave() {
 			m.Code = code
 		}
 	}
+}
+
+// AfterSave
+func (m *Menu) AfterSave(db *gorm.DB) {
+	updatePresetRolePrivileges(db, true, true)
+}
+
+// AfterDelete
+func (m *Menu) AfterDelete(db *gorm.DB) {
+	updatePresetRolePrivileges(db, true, true)
 }
 
 // Dict
