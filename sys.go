@@ -69,11 +69,11 @@ func initSys() {
 		createRootUser(tx)
 		// 初始化预置组织
 		createRootOrg(tx)
-		// 初始化预置用户权限
-		createRootPrivileges(tx)
 		// 初始化字典、菜单
 		createPresetDicts(tx)
 		createPresetMenus(tx)
+		// 初始化预置用户权限
+		createRootPrivileges(tx)
 		// 保存初始化标记
 		param := Param{
 			Model: Model{
@@ -152,6 +152,20 @@ func createRootPrivileges(tx *gorm.DB) {
 		ReadableRange: DataScopeCurrentFollowing,
 		WritableRange: DataScopeCurrentFollowing,
 	})
+	// 创建操作权限记录
+	var menus []Menu
+	tx.Find(&menus)
+	for _, menu := range menus {
+		tx.Create(&OperationPrivileges{
+			Model: Model{
+				CreatedByID: RootUID(),
+				UpdatedByID: RootUID(),
+				OrgID:       RootOrgID(),
+			},
+			RoleID:   rootRole.ID,
+			MenuCode: menu.Code,
+		})
+	}
 	// 创建分配记录
 	tx.Create(&RoleAssign{
 		Model: Model{
