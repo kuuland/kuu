@@ -503,7 +503,7 @@ users := []User{
     {Username: "root", Password: "xxx"},
     {Username: "admin", Password: "xxx"},
 } 
-users = kuu.OmitPassword("User", users) // => []User{ { Username: "root" }, { Username: "admin" } } 
+users = kuu.Meta("User").OmitPassword(users) // => []User{ { Username: "root" }, { Username: "admin" } } 
 ```
 
 ### Associations

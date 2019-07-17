@@ -19,7 +19,7 @@ func bizBeforeQueryCallback(scope *Scope) {
 func bizQueryCallback(scope *Scope) {
 	if !scope.HasError() {
 		scope.DB = scope.DB.Find(scope.QueryResult.List)
-		scope.QueryResult.List = OmitPassword(reflect.New(scope.ReflectType).Interface(), scope.QueryResult.List)
+		scope.QueryResult.List = Meta(reflect.New(scope.ReflectType).Interface()).OmitPassword(scope.QueryResult.List)
 		// 处理totalrecords、totalpages
 		var totalRecords int
 		scope.DB.Offset(-1).Limit(-1).Count(&totalRecords)

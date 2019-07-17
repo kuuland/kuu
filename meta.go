@@ -23,6 +23,48 @@ func (m *Metadata) NewValue() interface{} {
 	return reflect.New(m.reflectType).Interface()
 }
 
+// OmitPassword
+func (m *Metadata) OmitPassword(data interface{}) interface{} {
+	if m == nil {
+		return data
+	}
+
+	var passwordKeys []string
+	for _, field := range m.Fields {
+		if field.IsPassword {
+			passwordKeys = append(passwordKeys, field.Code)
+		}
+	}
+	if len(passwordKeys) == 0 {
+		return data
+	}
+
+	execOmit := func(indirectValue reflect.Value) {
+		var val interface{}
+		if indirectValue.CanAddr() {
+			val = indirectValue.Addr().Interface()
+		} else {
+			val = indirectValue.Interface()
+		}
+		scope := DB().NewScope(val)
+		for _, key := range passwordKeys {
+			if _, ok := scope.FieldByName(key); ok {
+				if err := scope.SetColumn(key, ""); err != nil {
+					ERROR(err)
+				}
+			}
+		}
+	}
+	if indirectValue := indirect(reflect.ValueOf(data)); indirectValue.Kind() == reflect.Slice {
+		for i := 0; i < indirectValue.Len(); i++ {
+			execOmit(indirectValue.Index(i))
+		}
+	} else {
+		execOmit(indirectValue)
+	}
+	return data
+}
+
 // MetadataField
 type MetadataField struct {
 	Code       string
