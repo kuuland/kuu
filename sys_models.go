@@ -292,7 +292,7 @@ type File struct {
 type SignOrg struct {
 	Model
 	ExtendField
-	Token string
+	Token string `gorm:"size:4096"`
 	UID   uint
 }
 
