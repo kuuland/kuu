@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+var (
+	metadataMap     = make(map[string]*Metadata)
+	metadataList    = make([]*Metadata, 0)
+	modelStructsMap sync.Map
+)
+
 // Metadata
 type Metadata struct {
 	Name        string
@@ -16,6 +22,21 @@ type Metadata struct {
 	Fields      []MetadataField
 	RestDesc    *RestDesc    `json:"-"`
 	reflectType reflect.Type `json:"-"`
+}
+
+// MetadataField
+type MetadataField struct {
+	Code       string
+	Name       string
+	Kind       string
+	Type       string
+	Value      interface{} `json:"-" gorm:"-"`
+	Enum       string
+	IsRef      bool
+	IsPassword bool
+	IsUID      bool
+	IsSubDocID bool
+	IsArray    bool
 }
 
 // NewValue
@@ -65,24 +86,29 @@ func (m *Metadata) OmitPassword(data interface{}) interface{} {
 	return data
 }
 
-// MetadataField
-type MetadataField struct {
-	Code       string
-	Name       string
-	Kind       string
-	Type       string
-	Value      interface{} `json:"-" gorm:"-"`
-	Enum       string
-	IsRef      bool
-	IsPassword bool
-	IsArray    bool
+// UIDNames
+func (m *Metadata) UIDNames() (names []string) {
+	if m != nil {
+		for _, field := range m.Fields {
+			if field.IsUID {
+				names = append(names, field.Code)
+			}
+		}
+	}
+	return
 }
 
-var (
-	metadataMap     = make(map[string]*Metadata)
-	metadataList    = make([]*Metadata, 0)
-	modelStructsMap sync.Map
-)
+// SubDocIDNames
+func (m *Metadata) SubDocIDNames() (names []string) {
+	if m != nil {
+		for _, field := range m.Fields {
+			if field.IsSubDocID {
+				names = append(names, field.Code)
+			}
+		}
+	}
+	return
+}
 
 func parseMetadata(value interface{}) (m *Metadata) {
 	reflectType := reflect.ValueOf(value).Type()
@@ -152,6 +178,12 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "password") {
 			field.IsPassword = true
+		}
+		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "uid") {
+			field.IsUID = true
+		}
+		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "subid") {
+			field.IsSubDocID = true
 		}
 		name := fieldStruct.Tag.Get("name")
 		if name != "" {

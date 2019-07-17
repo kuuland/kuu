@@ -232,23 +232,71 @@ func validateCallback(scope *gorm.Scope) {
 
 // AddDataScopeReadableSQL
 func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	_, hasOrgIDField := scope.FieldByName("OrgID")
-	_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-	if hasOrgIDField && hasCreatedByIDField {
-		scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
-	} else if hasCreatedByIDField {
-		scope.Search.Where("(created_by_id = ?)", desc.UID)
+	var (
+		sqls  []string
+		attrs []interface{}
+	)
+	if f, ok := scope.FieldByName("OrgID"); ok {
+		sqls = append(sqls, "(? in (?))")
+		attrs = append(attrs, f.DBName, desc.ReadableOrgIDs)
+	}
+	if f, ok := scope.FieldByName("CreatedByID"); ok {
+		sqls = append(sqls, "(? = ?)")
+		attrs = append(attrs, f.DBName, desc.UID)
+	}
+	if names := Meta(scope.Value).UIDNames(); len(names) > 0 {
+		for _, name := range names {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "(? = ?)")
+				attrs = append(attrs, f.DBName, desc.UID)
+			}
+		}
+	}
+	if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
+		for _, name := range names {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "(? = ?)")
+				attrs = append(attrs, f.DBName, desc.SignInfo.SubDocID)
+			}
+		}
+	}
+	if len(sqls) > 0 {
+		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 	}
 }
 
 // AddDataScopeWritableSQL
 func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	_, hasOrgIDField := scope.FieldByName("OrgID")
-	_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-	if hasOrgIDField && hasCreatedByIDField {
-		scope.Search.Where("(org_id in (?)) OR (created_by_id = ?)", desc.WritableOrgIDs, desc.UID)
-	} else if hasCreatedByIDField {
-		scope.Search.Where("(created_by_id = ?)", desc.UID)
+	var (
+		sqls  []string
+		attrs []interface{}
+	)
+	if f, ok := scope.FieldByName("OrgID"); ok {
+		sqls = append(sqls, "(? in (?))")
+		attrs = append(attrs, f.DBName, desc.WritableOrgIDs)
+	}
+	if f, ok := scope.FieldByName("CreatedByID"); ok {
+		sqls = append(sqls, "(? = ?)")
+		attrs = append(attrs, f.DBName, desc.UID)
+	}
+	if names := Meta(scope.Value).UIDNames(); len(names) > 0 {
+		for _, name := range names {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "(? = ?)")
+				attrs = append(attrs, f.DBName, desc.UID)
+			}
+		}
+	}
+	if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
+		for _, name := range names {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "(? = ?)")
+				attrs = append(attrs, f.DBName, desc.SignInfo.SubDocID)
+			}
+		}
+	}
+	if len(sqls) > 0 {
+		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 	}
 }
 
