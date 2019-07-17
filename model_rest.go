@@ -216,6 +216,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		if err != nil {
 			c.STDErr("修改失败", err)
 		} else {
+			result = OmitPassword(reflect.New(reflectType).Interface(), result)
 			c.STD(result)
 		}
 	}
@@ -465,6 +466,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		if err != nil {
 			c.STDErr("删除失败", err)
 		} else {
+			result = OmitPassword(reflect.New(reflectType).Interface(), result)
 			c.STD(result)
 		}
 	}
@@ -500,11 +502,12 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 				}
 				docs = append(docs, doc)
 			}
-			for _, doc := range docs {
+			for i, doc := range docs {
 				bizScope := NewBizScope(c, doc, tx).callCallbacks(BizCreateKind)
 				if bizScope.HasError() {
 					return bizScope.DB.Error
 				}
+				docs[i] = OmitPassword(reflect.New(reflectType).Interface(), doc)
 			}
 			return tx.Error
 		})
