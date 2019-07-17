@@ -116,9 +116,6 @@ func deleteCallback(scope *gorm.Scope) {
 		if !scope.Search.Unscoped && hasDeletedAtField {
 			var sql string
 			if desc != nil {
-				AddDataScopeWritableSQL(scope, desc)
-				// 添加可写权限控制
-				AddDataScopeWritableSQL(scope, desc)
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -232,66 +229,48 @@ func validateCallback(scope *gorm.Scope) {
 
 // AddDataScopeReadableSQL
 func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	var (
-		sqls  []string
-		attrs []interface{}
-	)
-	if f, ok := scope.FieldByName("OrgID"); ok {
-		sqls = append(sqls, "(? in (?))")
-		attrs = append(attrs, f.DBName, desc.ReadableOrgIDs)
-	}
-	if f, ok := scope.FieldByName("CreatedByID"); ok {
-		sqls = append(sqls, "(? = ?)")
-		attrs = append(attrs, f.DBName, desc.UID)
-	}
-	if names := Meta(scope.Value).UIDNames(); len(names) > 0 {
-		for _, name := range names {
-			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "(? = ?)")
-				attrs = append(attrs, f.DBName, desc.UID)
-			}
-		}
-	}
-	if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
-		for _, name := range names {
-			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "(? = ?)")
-				attrs = append(attrs, f.DBName, desc.SignInfo.SubDocID)
-			}
-		}
-	}
-	if len(sqls) > 0 {
-		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
-	}
+	addDataScopeSQL(scope, desc, desc.ReadableOrgIDs)
 }
 
 // AddDataScopeWritableSQL
 func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	addDataScopeSQL(scope, desc, desc.WritableOrgIDs)
+}
+
+func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 	var (
 		sqls  []string
 		attrs []interface{}
 	)
 	if f, ok := scope.FieldByName("OrgID"); ok {
-		sqls = append(sqls, "(? in (?))")
-		attrs = append(attrs, f.DBName, desc.WritableOrgIDs)
+		sqls = append(sqls, "("+f.DBName+" in (?))")
+		attrs = append(attrs, orgIDs)
 	}
 	if f, ok := scope.FieldByName("CreatedByID"); ok {
-		sqls = append(sqls, "(? = ?)")
-		attrs = append(attrs, f.DBName, desc.UID)
+		sqls = append(sqls, "("+f.DBName+" = ?)")
+		attrs = append(attrs, desc.UID)
+	}
+	if names := Meta(scope.Value).OrgIDNames(); len(names) > 0 {
+		for _, name := range names {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "("+f.DBName+" in (?))")
+				attrs = append(attrs, orgIDs)
+			}
+		}
 	}
 	if names := Meta(scope.Value).UIDNames(); len(names) > 0 {
 		for _, name := range names {
 			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "(? = ?)")
-				attrs = append(attrs, f.DBName, desc.UID)
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.UID)
 			}
 		}
 	}
 	if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
 		for _, name := range names {
 			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "(? = ?)")
-				attrs = append(attrs, f.DBName, desc.SignInfo.SubDocID)
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.SignInfo.SubDocID)
 			}
 		}
 	}

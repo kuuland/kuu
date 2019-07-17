@@ -36,6 +36,7 @@ type MetadataField struct {
 	IsPassword bool
 	IsUID      bool
 	IsSubDocID bool
+	IsOrgID    bool
 	IsArray    bool
 }
 
@@ -110,6 +111,18 @@ func (m *Metadata) SubDocIDNames() (names []string) {
 	return
 }
 
+// OrgIDNames
+func (m *Metadata) OrgIDNames() (names []string) {
+	if m != nil {
+		for _, field := range m.Fields {
+			if field.IsOrgID {
+				names = append(names, field.Code)
+			}
+		}
+	}
+	return
+}
+
 func parseMetadata(value interface{}) (m *Metadata) {
 	reflectType := reflect.ValueOf(value).Type()
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
@@ -176,15 +189,21 @@ func parseMetadata(value interface{}) (m *Metadata) {
 				}
 			}
 		}
-		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "password") {
-			field.IsPassword = true
+		if kuu := fieldStruct.Tag.Get("kuu"); kuu != "" {
+			if strings.Contains(kuu, "password") {
+				field.IsPassword = true
+			}
+			if strings.Contains(kuu, "uid") {
+				field.IsUID = true
+			}
+			if strings.Contains(kuu, "subid") {
+				field.IsSubDocID = true
+			}
+			if strings.Contains(kuu, "orgid") {
+				field.IsOrgID = true
+			}
 		}
-		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "uid") {
-			field.IsUID = true
-		}
-		if kuu := fieldStruct.Tag.Get("kuu"); strings.Contains(kuu, "subid") {
-			field.IsSubDocID = true
-		}
+
 		name := fieldStruct.Tag.Get("name")
 		if name != "" {
 			field.Name = name
