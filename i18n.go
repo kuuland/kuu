@@ -18,6 +18,13 @@ type Language struct {
 	Value      string `name:"翻译值"`
 }
 
+// LocaleMessage
+type LocaleMessage struct {
+	Key              string
+	DefaultMessage   string
+	FormattedContext interface{}
+}
+
 // L
 func L(langOrContext interface{}, defaultValue string, args ...interface{}) string {
 	if len(args) > 0 {

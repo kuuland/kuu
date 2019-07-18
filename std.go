@@ -17,6 +17,7 @@ var (
 	AbortAction = "ABORT"
 )
 
+// STDRender
 type STDRender struct {
 	c        *gin.Context
 	httpCode int

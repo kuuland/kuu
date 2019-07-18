@@ -238,6 +238,9 @@ func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
 }
 
 func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
+	if scope.Value == nil {
+		return
+	}
 	var (
 		sqls  []string
 		attrs []interface{}
