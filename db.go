@@ -124,31 +124,20 @@ func DS(name string) *gorm.DB {
 }
 
 // WithTransaction
-func WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
-	var (
-		tx  *gorm.DB
-		out bool
-	)
-	if len(with) > 0 {
-		tx = with[0]
-		out = true
-	} else {
-		tx = DB().Begin()
-		if err := tx.Error; err != nil {
-			return err
-		}
+func WithTransaction(fn func(*gorm.DB) error) error {
+	tx := DB().Begin()
+	if err := tx.Error; err != nil {
+		return err
 	}
 	defer func() {
-		if !out {
-			if r := recover(); r != nil {
-				ERROR(r)
-				tx.Rollback()
-			}
+		if r := recover(); r != nil {
+			ERROR(r)
+			tx.Rollback()
 		}
 	}()
 	if err := fn(tx); err != nil {
-		if !out {
-			tx.Rollback()
+		if rberr := tx.Rollback().Error; rberr != nil {
+			ERROR(rberr)
 		}
 		return err
 	}

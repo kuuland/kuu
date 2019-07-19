@@ -18,11 +18,17 @@ func bizBeforeQueryCallback(scope *Scope) {
 }
 func bizQueryCallback(scope *Scope) {
 	if !scope.HasError() {
-		scope.DB = scope.DB.Find(scope.QueryResult.List)
+		if err := scope.DB.Find(scope.QueryResult.List).Error; err != nil {
+			_ = scope.Err(err)
+			return
+		}
 		scope.QueryResult.List = Meta(reflect.New(scope.ReflectType).Interface()).OmitPassword(scope.QueryResult.List)
 		// 处理totalrecords、totalpages
 		var totalRecords int
-		scope.DB.Offset(-1).Limit(-1).Count(&totalRecords)
+		if err := scope.DB.Offset(-1).Limit(-1).Count(&totalRecords).Error; err != nil {
+			_ = scope.Err(err)
+			return
+		}
 		scope.QueryResult.TotalRecords = totalRecords
 		if scope.QueryResult.Range == "PAGE" {
 			scope.QueryResult.TotalPages = int(math.Ceil(float64(totalRecords) / float64(scope.QueryResult.Size)))

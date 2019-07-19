@@ -432,6 +432,8 @@ curl -X PUT \
 }'
 ```
 
+> Notes: Pass **only** the fields that need to be updated!!!
+
 #### Batch Updates
 
 ```sh
@@ -448,6 +450,8 @@ curl -X PUT \
     "multi": true
 }'
 ```
+
+> Notes: Pass **only** the fields that need to be updated!!!
 
 #### Delete Record
 
@@ -508,8 +512,8 @@ users = kuu.Meta("User").OmitPassword(users) // => []User{ { Username: "root" },
 
 ### Associations
 
-1. set `"auto":true` to enable auto save associations
 1. if association has a primary key, Kuu will call Update to save it, otherwise it will be created
+1. If the association has both `ID` and `DeletedAt`, Kuu will delete it.
 1. set `"preload=field1,field2"` to preload associations
 
 #### Create associations
@@ -531,8 +535,7 @@ curl -X PUT \
                 "Email": "test2@example.com"
             }
         ]
-    },
-    "auto": true
+    }
 }'
 ```
 
@@ -558,10 +561,11 @@ curl -X PUT \
                 "Email": "test222@example.com"
             }
         ]
-    },
-    "auto": true
+    }
 }'
 ```
+
+> Notes: Pass **only** the fields that need to be updated!!!
 
 #### Delete associations
 
@@ -588,8 +592,7 @@ curl -X PUT \
                 "Email": "test222@example.com"
             }
         ]
-    },
-    "auto": true
+    }
 }'
 ```
 
@@ -599,7 +602,7 @@ set `"preload=Emails"` to preload associations:
 
 ```sh
 curl -X GET \
-  'http://localhost:8080/api/user?cond={"user":"test"}&sort=id&project=pass&preload=Emails'
+  'http://localhost:8080/api/user?cond={"ID":115}&preload=Emails'
 ```
 
 ### Global default callbacks

@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 var goSrcRegexp = regexp.MustCompile(`kuuland/kuu(@.*)?/.*.go`)

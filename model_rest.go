@@ -123,13 +123,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		)
 		// 事务执行
 		err = c.WithTransaction(func(tx *gorm.DB) error {
-			var params struct {
-				All   bool
-				Multi bool
-				Cond  map[string]interface{}
-				Doc   map[string]interface{}
-				Auto  bool
-			}
+			var params BizUpdateParams
 			if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 				return errors.New("解析请求体失败")
 			}
@@ -144,11 +138,12 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 				return errors.New("必须指定批量更新标记")
 			}
 			// 处理更新条件
+			queryDB := tx.New()
 			for key, val := range params.Cond {
 				if m, ok := val.(map[string]interface{}); ok {
 					query, args := fieldQuery(m, key)
 					if query != "" && len(args) > 0 {
-						tx = tx.Where(query, args...)
+						queryDB = queryDB.Where(query, args...)
 						delete(params.Cond, key)
 					}
 				}
@@ -158,15 +153,15 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 				if err := Copy(params.Cond, q); err != nil {
 					return err
 				}
-				tx = tx.Where(q)
+				queryDB = queryDB.Where(q)
 			}
 			// 先查询更新前的数据
 			if multi {
 				result = reflect.New(reflect.SliceOf(reflectType)).Interface()
-				tx = tx.Find(result)
+				queryDB.Find(result)
 			} else {
 				result = reflect.New(reflectType).Interface()
-				tx = tx.First(result)
+				queryDB.First(result)
 			}
 
 			updateFields := func(val interface{}) error {
@@ -174,24 +169,10 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 				if err := Copy(params.Doc, doc); err != nil {
 					return err
 				}
-				rawScope := tx.NewScope(val)
-				docScope := tx.NewScope(doc)
 				bizScope := NewBizScope(c, val, tx)
-				if params.Auto {
-					for key, _ := range params.Doc {
-						if field, ok := docScope.FieldByName(key); ok {
-							val := field.Field.Interface()
-							if err := rawScope.SetColumn(key, val); err != nil {
-								return err
-							}
-						}
-					}
-					bizScope.UpdateCond = val
-					bizScope.IsAutoSave = true
-				} else {
-					bizScope.UpdateCond = val
-					bizScope.Value = doc
-				}
+				bizScope.UpdateParams = &params
+				bizScope.UpdateCond = val
+				bizScope.Value = doc
 				bizScope.callCallbacks(BizUpdateKind)
 				if bizScope.HasError() {
 					return bizScope.DB.Error
@@ -224,7 +205,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 
 func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
-		ret := new(QueryResult)
+		ret := new(BizQueryResult)
 		scope := DB().NewScope(reflect.New(reflectType).Interface())
 		// 处理cond
 		var cond map[string]interface{}

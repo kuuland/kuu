@@ -14,7 +14,10 @@ func bizBeforeCreateCallback(scope *Scope) {
 
 func bizCreateCallback(scope *Scope) {
 	if !scope.HasError() {
-		scope.DB = scope.DB.Create(scope.Value)
+		if err := scope.DB.Create(scope.Value).Error; err != nil {
+			_ = scope.Err(err)
+			return
+		}
 	}
 }
 

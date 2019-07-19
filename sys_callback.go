@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -18,6 +19,8 @@ var (
 	DeleteCallback = deleteCallback
 	// UpdateCallback
 	UpdateCallback = updateCallback
+	// AfterSaveCallback
+	AfterSaveCallback = afterSaveCallback
 	// QueryCallback
 	QueryCallback = queryCallback
 	// ValidateCallback
@@ -38,14 +41,20 @@ func registerCallbacks() {
 	if callback.Query().Get("kuu:before_query") == nil {
 		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
 	}
+	if callback.Create().Get("kuu:create") == nil {
+		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
+	}
+	if callback.Update().Get("kuu:after_create") == nil {
+		callback.Update().After("gorm:create").Register("kuu:after_create", AfterSaveCallback)
+	}
 	if callback.Update().Get("kuu:update") == nil {
 		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
 	}
+	if callback.Update().Get("kuu:after_update") == nil {
+		callback.Update().After("gorm:update").Register("kuu:after_update", AfterSaveCallback)
+	}
 	if callback.Delete().Get("kuu:delete") == nil {
 		callback.Delete().Replace("gorm:delete", DeleteCallback)
-	}
-	if callback.Create().Get("kuu:create") == nil {
-		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
 	if C().DefaultGetBool("audit:callbacks", true) {
 		registerAuditCallbacks(callback)
@@ -67,34 +76,39 @@ func createCallback(scope *gorm.Scope) {
 				hasCreatedByIDField bool = false
 				createdByID         uint
 			)
-			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
-				if orgIDField.IsBlank {
-					if err := orgIDField.Set(desc.SignOrgID); err != nil {
-						ERROR("自动设置组织ID失败：%s", err.Error())
+			if field, ok := scope.FieldByName("OrgID"); ok {
+				if field.IsBlank {
+					if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
+						_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
+						return
 					}
 				}
 				hasOrgIDField = ok
-				orgID = orgIDField.Field.Interface().(uint)
+				orgID = field.Field.Interface().(uint)
 			}
-			if createdByIDField, ok := scope.FieldByName("CreatedByID"); ok {
-				if err := createdByIDField.Set(desc.UID); err != nil {
-					ERROR("自动设置创建人ID失败：%s", err.Error())
+			if field, ok := scope.FieldByName("CreatedByID"); ok {
+				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
+					_ = scope.Err(fmt.Errorf("自动设置创建人ID失败：%s", err.Error()))
+					return
 				}
 				hasCreatedByIDField = ok
-				createdByID = createdByIDField.Field.Interface().(uint)
+				createdByID = field.Field.Interface().(uint)
 			}
-			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
-				if err := updatedByField.Set(desc.UID); err != nil {
-					ERROR("自动设置修改人ID失败：%s", err.Error())
+			if field, ok := scope.FieldByName("UpdatedByID"); ok {
+				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
+					_ = scope.Err(fmt.Errorf("自动设置修改人ID失败：%s", err.Error()))
+					return
 				}
 			}
 			// 写权限判断
 			if orgID == 0 {
 				if hasCreatedByIDField && createdByID != desc.UID {
 					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
+					return
 				}
 			} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
 				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
+				return
 			}
 		}
 	}
@@ -149,6 +163,10 @@ func deleteCallback(scope *gorm.Scope) {
 				AddExtraSpaceIfExist(extraOption),
 			)).Exec()
 		}
+		if scope.DB().RowsAffected < 1 {
+			_ = scope.Err(errors.New("未删除任何记录，请检查更新条件或数据权限"))
+			return
+		}
 	}
 }
 
@@ -160,6 +178,15 @@ func updateCallback(scope *gorm.Scope) {
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
+		}
+	}
+}
+
+func afterSaveCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		if scope.DB().RowsAffected < 1 {
+			_ = scope.Err(errors.New("未新增或修改任何记录，请检查更新条件或数据权限"))
+			return
 		}
 	}
 }

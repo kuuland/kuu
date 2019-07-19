@@ -8,19 +8,27 @@ import (
 
 // Scope
 type Scope struct {
-	skipLeft    bool
-	Value       interface{}
-	ReflectType reflect.Type
-	Context     *Context
-	DB          *gorm.DB
-	callbacks   *Callback
-	QueryResult *QueryResult
-	UpdateCond  interface{}
-	IsAutoSave  bool
+	skipLeft     bool
+	Value        interface{}
+	ReflectType  reflect.Type
+	Context      *Context
+	DB           *gorm.DB
+	callbacks    *Callback
+	QueryResult  *BizQueryResult
+	UpdateCond   interface{}
+	UpdateParams *BizUpdateParams
 }
 
-// QueryResult
-type QueryResult struct {
+// BizUpdateParams
+type BizUpdateParams struct {
+	All   bool
+	Multi bool
+	Cond  map[string]interface{}
+	Doc   map[string]interface{}
+}
+
+// BizQueryResult
+type BizQueryResult struct {
 	Cond         map[string]interface{} `json:"cond,omitempty"`
 	Project      string                 `json:"project,omitempty"`
 	Preload      string                 `json:"preload,omitempty"`

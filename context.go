@@ -30,8 +30,8 @@ func (c *Context) DB() *gorm.DB {
 }
 
 // WithTransaction
-func (c *Context) WithTransaction(fn func(*gorm.DB) error, with ...*gorm.DB) error {
-	return WithTransaction(fn, with...)
+func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
+	return WithTransaction(fn)
 }
 
 // STD
