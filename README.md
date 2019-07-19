@@ -596,6 +596,8 @@ curl -X PUT \
 }'
 ```
 
+> Notes: `DeletedAt` is only used as a flag, and will be re-assigned using server time when deleted.
+
 #### Query associations
 
 set `"preload=Emails"` to preload associations:
@@ -614,23 +616,45 @@ You can override the default callbacks:
 kuu.CreateCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
-			if orgIDField, ok := scope.FieldByName("OrgID"); ok {
-				if orgIDField.IsBlank {
-					if err := orgIDField.Set(desc.SignOrgID); err != nil {
-						ERROR("自动设置组织ID失败：%s", err.Error())
+			var (
+				hasOrgIDField       bool = false
+				orgID               uint
+				hasCreatedByIDField bool = false
+				createdByID         uint
+			)
+			if field, ok := scope.FieldByName("OrgID"); ok {
+				if field.IsBlank {
+					if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
+						_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
+						return
 					}
 				}
+				hasOrgIDField = ok
+				orgID = field.Field.Interface().(uint)
 			}
-			if createdByField, ok := scope.FieldByName("CreatedByID"); ok {
-				if err := createdByField.Set(desc.UID); err != nil {
-					ERROR("自动设置创建人ID失败：%s", err.Error())
+			if field, ok := scope.FieldByName("CreatedByID"); ok {
+				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
+					_ = scope.Err(fmt.Errorf("自动设置创建人ID失败：%s", err.Error()))
+					return
+				}
+				hasCreatedByIDField = ok
+				createdByID = field.Field.Interface().(uint)
+			}
+			if field, ok := scope.FieldByName("UpdatedByID"); ok {
+				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
+					_ = scope.Err(fmt.Errorf("自动设置修改人ID失败：%s", err.Error()))
+					return
 				}
 			}
-
-			if updatedByField, ok := scope.FieldByName("UpdatedByID"); ok {
-				if err := updatedByField.Set(desc.UID); err != nil {
-					ERROR("自动设置修改人ID失败：%s", err.Error())
+			// 写权限判断
+			if orgID == 0 {
+				if hasCreatedByIDField && createdByID != desc.UID {
+					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
+					return
 				}
+			} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
+				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
+				return
 			}
 		}
 	}
@@ -646,10 +670,14 @@ kuu.DeleteCallback = func(scope *gorm.Scope) {
 		}
 
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
+		var desc *PrivilegesDesc
+		if desc = GetRoutinePrivilegesDesc(); desc != nil {
+			AddDataScopeWritableSQL(scope, desc)
+		}
 
 		if !scope.Search.Unscoped && hasDeletedAtField {
 			var sql string
-			if desc := GetRoutinePrivilegesDesc(); desc != nil {
+			if desc != nil {
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
 				if !scope.Search.Unscoped && hasDeletedByField {
 					sql = fmt.Sprintf(
@@ -683,14 +711,19 @@ kuu.DeleteCallback = func(scope *gorm.Scope) {
 				AddExtraSpaceIfExist(extraOption),
 			)).Exec()
 		}
+		if scope.DB().RowsAffected < 1 {
+			_ = scope.Err(errors.New("未删除任何记录，请检查更新条件或数据权限"))
+			return
+		}
 	}
 }
 
 // Default update callback
 kuu.UpdateCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
-		desc := GetRoutinePrivilegesDesc()
-		if desc != nil {
+		if desc := GetRoutinePrivilegesDesc(); desc != nil {
+			// 添加可写权限控制
+			AddDataScopeWritableSQL(scope, desc)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
@@ -702,13 +735,12 @@ kuu.UpdateCallback = func(scope *gorm.Scope) {
 kuu.QueryCallback = func(scope *gorm.Scope) {
 	if !scope.HasError() {
 		desc := GetRoutinePrivilegesDesc()
-		caches := GetRoutineCaches()
-
 		if desc == nil {
 			// 无登录登录态时
 			return
 		}
 
+		caches := GetRoutineCaches()
 		if caches != nil {
 			// 有忽略标记时
 			if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
@@ -729,39 +761,33 @@ kuu.QueryCallback = func(scope *gorm.Scope) {
 				return
 			}
 		}
-
-		// 有登录态时的常规情况
-		if desc.NotRootUser() {
-			_, hasOrgIDField := scope.FieldByName("OrgID")
-			_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-			if hasOrgIDField && hasCreatedByIDField {
-				scope.Search.Where("(org_id IS NULL) OR (org_id = 0) OR (org_id in (?)) OR (created_by_id = ?)", desc.ReadableOrgIDs, desc.UID)
-			}
-		}
+		AddDataScopeReadableSQL(scope, desc)
 	}
 }
 
 // Default validate callback
 kuu.ValidateCallback = func(scope *gorm.Scope) {
-	if _, ok := scope.Get("gorm:update_column"); !ok {
-		if result, ok := scope.DB().Get(skipValidations); !(ok && result.(bool)) {
-			if !scope.HasError() {
+	if !scope.HasError() {
+		if _, ok := scope.Get("gorm:update_column"); !ok {
+			result, ok := scope.DB().Get(skipValidations)
+			if !(ok && result.(bool)) {
 				scope.CallMethod("Validate")
-				if scope.Value != nil {
-					resource := scope.IndirectValue().Interface()
-					_, validatorErrors := govalidator.ValidateStruct(resource)
-					if validatorErrors != nil {
-						if errors, ok := validatorErrors.(govalidator.Errors); ok {
-							for _, err := range FlatValidatorErrors(errors) {
-								if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
-									ERROR("添加验证错误信息失败：%s", err.Error())
-								}
-
-							}
-						} else {
-							if err := scope.DB().AddError(validatorErrors); err != nil {
+				if scope.Value == nil {
+					return
+				}
+				resource := scope.IndirectValue().Interface()
+				_, validatorErrors := govalidator.ValidateStruct(resource)
+				if validatorErrors != nil {
+					if errs, ok := validatorErrors.(govalidator.Errors); ok {
+						for _, err := range FlatValidatorErrors(errs) {
+							if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
 								ERROR("添加验证错误信息失败：%s", err.Error())
 							}
+
+						}
+					} else {
+						if err := scope.DB().AddError(validatorErrors); err != nil {
+							ERROR("添加验证错误信息失败：%s", err.Error())
 						}
 					}
 				}
