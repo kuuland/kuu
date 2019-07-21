@@ -21,12 +21,12 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
         - [Delete Record](#delete-record)
         - [Batch Delete](#batch-delete)
         - [UnSoft Delete](#unsoft-delete)
-    - [Password field filter](#password-field-filter)
     - [Associations](#associations)
         - [Create associations](#create-associations)
         - [Update associations](#update-associations)
         - [Delete associations](#delete-associations)
         - [Query associations](#query-associations)
+    - [Password field filter](#password-field-filter)
     - [Global default callbacks](#global-default-callbacks)
     - [Struct validation](#struct-validation)
     - [Modular project structure](#modular-project-structure)
@@ -494,22 +494,6 @@ curl -X DELETE \
 }'
 ```
 
-### Password field filter
-
-```go
-type User struct {
-	Model   `rest:"*" displayName:"用户"`
-	Username    string  `name:"账号"`
-	Password    string  `name:"密码" kuu:"password"`
-}
-
-users := []User{
-    {Username: "root", Password: "xxx"},
-    {Username: "admin", Password: "xxx"},
-} 
-users = kuu.Meta("User").OmitPassword(users) // => []User{ { Username: "root" }, { Username: "admin" } } 
-```
-
 ### Associations
 
 1. if association has a primary key, Kuu will call Update to save it, otherwise it will be created
@@ -605,6 +589,22 @@ set `"preload=Emails"` to preload associations:
 ```sh
 curl -X GET \
   'http://localhost:8080/api/user?cond={"ID":115}&preload=Emails'
+```
+
+### Password field filter
+
+```go
+type User struct {
+	Model   `rest:"*" displayName:"用户"`
+	Username    string  `name:"账号"`
+	Password    string  `name:"密码" kuu:"password"`
+}
+
+users := []User{
+    {Username: "root", Password: "xxx"},
+    {Username: "admin", Password: "xxx"},
+} 
+users = kuu.Meta("User").OmitPassword(users) // => []User{ { Username: "root" }, { Username: "admin" } } 
 ```
 
 ### Global default callbacks
