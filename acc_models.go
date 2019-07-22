@@ -46,6 +46,7 @@ func (s *SignSecret) AfterDelete() {
 // SignContext
 type SignContext struct {
 	Token    string
+	Lang     string
 	UID      uint
 	SubDocID uint
 	OrgID    uint

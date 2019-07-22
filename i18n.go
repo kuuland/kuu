@@ -68,7 +68,7 @@ func parseLang(langOrContext interface{}) (lang string) {
 }
 
 func parseKuuLang(c *gin.Context) (lang string) {
-	for _, key := range []string{"KuuLang", "Kuu-Lang", "Kuu_Lang"} {
+	for _, key := range []string{"KuuLang", "Kuu-Lang", "Kuu_Lang", "Lang"} {
 		if lang = c.GetHeader(key); lang != "" {
 			return
 		}

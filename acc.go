@@ -117,7 +117,7 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	if token == "" {
 		return nil, errors.New("请正确提供有效令牌")
 	}
-	data := SignContext{Token: token}
+	data := SignContext{Token: token, Lang: parseLang(c)}
 	// 解析UID
 	var secret SignSecret
 	if v, err := RedisClient.Get(RedisKeyBuilder(RedisSecretKey, token)).Result(); err == nil {
