@@ -1,0 +1,14 @@
+language: go
+go:
+  - 1.x
+sudo: required
+env:
+  - GO111MODULE=on
+  - GOARCH=amd64
+  - GOOS=linux
+  - CGO_ENABLED=0
+
+install: true
+script:
+  - go test
+  - go build
