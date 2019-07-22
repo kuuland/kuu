@@ -8,27 +8,26 @@ import (
 )
 
 type GenTokenDesc struct {
-	UID        uint
-	Payload    jwt.MapClaims
-	Expiration time.Duration
-	SubDocID   uint
-	Desc       string
-	IsAPIKey   bool
+	UID      uint
+	Payload  jwt.MapClaims
+	Exp      int64 `binding:"required"`
+	SubDocID uint
+	Desc     string `binding:"required"`
+	IsAPIKey bool
 }
 
 // GenToken
 func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	// 设置JWT令牌信息
 	iat := time.Now().Unix()
-	exp := time.Now().Add(desc.Expiration).Unix()
-	desc.Payload["Iat"] = iat // 签发时间
-	desc.Payload["Exp"] = exp // 过期时间
+	desc.Payload["Iat"] = iat      // 签发时间
+	desc.Payload["Exp"] = desc.Exp // 过期时间
 	// 生成新密钥
 	secretData = &SignSecret{
 		UID:      desc.UID,
 		Secret:   uuid.NewV4().String(),
 		Iat:      iat,
-		Exp:      exp,
+		Exp:      desc.Exp,
 		Method:   "LOGIN",
 		SubDocID: desc.SubDocID,
 		Desc:     desc.Desc,
@@ -47,7 +46,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	// 缓存secret至redis
 	key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
 	value := Stringify(&secretData)
-	if err := RedisClient.SetNX(key, value, desc.Expiration).Err(); err != nil {
+	if err := RedisClient.SetNX(key, value, time.Unix(desc.Exp, 0).Sub(time.Now())).Err(); err != nil {
 		ERROR("令牌缓存到Redis失败：%s", err.Error())
 	}
 	// 保存登入历史
@@ -71,11 +70,10 @@ var LoginRoute = RouteInfo{
 			return
 		}
 		// 调用令牌签发
-		expiration := time.Second * time.Duration(ExpiresSeconds)
 		secretData, err := GenToken(GenTokenDesc{
-			UID:        uid,
-			Payload:    payload,
-			Expiration: expiration,
+			UID:     uid,
+			Payload: payload,
+			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
 		})
 		if err != nil {
 			c.STDErr("令牌签发失败", err)
@@ -139,21 +137,16 @@ var APIKeyRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/apikey",
 	HandlerFunc: func(c *Context) {
-		var body = struct {
-			Exp  int64  `binding:"required"`
-			Desc string `binding:"required"`
-		}{}
+		var body GenTokenDesc
 		if err := c.ShouldBindJSON(&body); err != nil {
 			c.STDErr("解析请求体失败", err)
 			return
 		}
-		secretData, err := GenToken(GenTokenDesc{
-			Payload:    c.SignInfo.Payload,
-			UID:        c.SignInfo.UID,
-			Expiration: time.Unix(body.Exp, 0).Sub(time.Now()),
-			Desc:       body.Desc,
-			IsAPIKey:   true,
-		})
+		body.Payload = c.SignInfo.Payload
+		body.UID = c.SignInfo.UID
+		body.SubDocID = c.SignInfo.SubDocID
+		body.IsAPIKey = true
+		secretData, err := GenToken(body)
 		if err != nil {
 			c.STDErr("令牌签发失败", err)
 			return
