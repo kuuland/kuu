@@ -1,6 +1,7 @@
 <img src="/docs/logo.png" alt="Modular Go Web Framework"/>
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
+[![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
 
 Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gin](https://github.com/gin-gonic/gin).
 
