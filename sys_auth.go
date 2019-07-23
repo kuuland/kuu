@@ -169,12 +169,12 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	}
 
 	// 从缓存取
-	if desc = GetPrisCache(sign); desc != nil {
-		LoginOrgFilter(desc, sign)
-		desc.SignOrgID = sign.OrgID
-		desc.SignInfo = sign
-		return
-	}
+	// if desc = GetPrisCache(sign); desc != nil {
+	// 	LoginOrgFilter(desc, sign)
+	// 	desc.SignOrgID = sign.OrgID
+	// 	desc.SignInfo = sign
+	// 	return
+	// }
 	// 重新计算
 	user, err := GetUserWithRoles(sign.UID)
 	if err != nil {
@@ -281,7 +281,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	desc.WritableOrgIDs = keys(writableOrgIDs)
 
 	// 添加缓存
-	SetPrisCache(sign, desc, roleIDs)
+	// SetPrisCache(sign, desc, roleIDs)
 	LoginOrgFilter(desc, sign)
 	desc.SignOrgID = sign.OrgID
 	desc.SignInfo = sign
