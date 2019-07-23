@@ -256,12 +256,12 @@ func validateCallback(scope *gorm.Scope) {
 
 // AddDataScopeReadableSQL
 func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	//addDataScopeSQL(scope, desc, desc.ReadableOrgIDs)
+	addDataScopeSQL(scope, desc, desc.ReadableOrgIDs)
 }
 
 // AddDataScopeWritableSQL
 func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	//addDataScopeSQL(scope, desc, desc.WritableOrgIDs)
+	addDataScopeSQL(scope, desc, desc.WritableOrgIDs)
 }
 
 func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
