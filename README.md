@@ -1,4 +1,4 @@
-<img src="/docs/logo.png" alt="Modular Go Web Framework"/>
+<img src="docs/logo.png" alt="Modular Go Web Framework"/>
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 [![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
@@ -981,7 +981,7 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 #### Security framework
 
-<img src="/docs/kuu_security_framework.png" alt="Kuu Security framework"/>
+<img src="docs/kuu_security_framework.png" alt="Kuu Security framework"/>
 
 ## FAQ
 
@@ -989,7 +989,7 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 > [Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino)
 
-<img src="/docs/kuu_and_shino.png" alt="Kuu and Shino"/>
+<img src="docs/kuu_and_shino.png" alt="Kuu and Shino"/>
 
 ## License
  
