@@ -73,7 +73,8 @@ func Default() (e *Engine) {
 	e = &Engine{Engine: gin.Default()}
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
-			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), RunTime.Format("2006-01-02 15:04:05"))
+			msg := L("kuu_up", "{{time}}", gin.H{"time": RunTime.Format("2006-01-02 15:04:05")})
+			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), msg)
 		})
 	}
 	onInit(e)

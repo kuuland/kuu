@@ -133,30 +133,6 @@ func (desc *PrivilegesDesc) NotRootUser() bool {
 	return desc.IsValid() && desc.UID != RootUID()
 }
 
-// LoginOrgFilter
-func LoginOrgFilter(desc *PrivilegesDesc, sign *SignContext) {
-	if desc == nil || sign == nil || sign.OrgID == 0 {
-		return
-	}
-
-	if C().DefaultGetBool("login:org:filter", true) {
-		readableOrgIDs := make([]uint, 0)
-		for _, item := range desc.ReadableOrgIDs {
-			if item == sign.OrgID {
-				readableOrgIDs = append(readableOrgIDs, item)
-			}
-		}
-		writableOrgIDs := make([]uint, 0)
-		for _, item := range desc.WritableOrgIDs {
-			if item == sign.OrgID {
-				writableOrgIDs = append(writableOrgIDs, item)
-			}
-		}
-		desc.ReadableOrgIDs = readableOrgIDs
-		desc.WritableOrgIDs = writableOrgIDs
-	}
-}
-
 // GetPrivilegesDesc
 func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	if c == nil {
@@ -167,14 +143,6 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	if sign == nil {
 		return
 	}
-
-	// 从缓存取
-	// if desc = GetPrisCache(sign); desc != nil {
-	// 	LoginOrgFilter(desc, sign)
-	// 	desc.SignOrgID = sign.OrgID
-	// 	desc.SignInfo = sign
-	// 	return
-	// }
 	// 重新计算
 	user, err := GetUserWithRoles(sign.UID)
 	if err != nil {
@@ -250,7 +218,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		} else if vmap[orgRange.readable] == 3 {
 			for _, child := range orgList {
 				if strings.HasPrefix(child.FullPid, org.FullPid) {
-					readableOrgIDs[orgID] = true
+					readableOrgIDs[child.ID] = true
 				}
 			}
 		}
@@ -260,7 +228,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		} else if vmap[orgRange.writable] == 3 {
 			for _, child := range orgList {
 				if strings.HasPrefix(child.FullPid, org.FullPid) {
-					writableOrgIDs[orgID] = true
+					writableOrgIDs[child.ID] = true
 				}
 			}
 		}
@@ -280,9 +248,6 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	desc.WritableOrgIDMap = writableOrgIDs
 	desc.WritableOrgIDs = keys(writableOrgIDs)
 
-	// 添加缓存
-	// SetPrisCache(sign, desc, roleIDs)
-	LoginOrgFilter(desc, sign)
 	desc.SignOrgID = sign.OrgID
 	desc.SignInfo = sign
 	return

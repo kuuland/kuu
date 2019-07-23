@@ -72,6 +72,7 @@ type User struct {
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   NullBool     `name:"是否内置"`
 	SubDocID    uint         `name:"扩展档案ID"`
+	Lang        string       `name:"最近使用语言"`
 }
 
 // BeforeSave
@@ -114,38 +115,36 @@ func FillOrgFullInfo(list []Org) []Org {
 		fullName string
 	}
 	var (
-		infoMap     = make(map[uint]info)
 		childrenMap = make(map[uint][]Org)
-		fall        func([]Org, string, string)
+		fullPidMap  = make(map[uint]string)
+		fullNameMap = make(map[uint]string)
+		fall        func([]Org, uint)
 	)
 	for _, org := range list {
-		childrenMap[org.Pid] = append(childrenMap[org.Pid], org)
+		if org.Pid != org.ID {
+			childrenMap[org.Pid] = append(childrenMap[org.Pid], org)
+		}
 	}
-	fall = func(values []Org, pid, pname string) {
+	fall = func(values []Org, pid uint) {
 		for _, item := range values {
-			if pid != "" {
-				item.FullPid = fmt.Sprintf("%s,%d", pid, item.ID)
-				item.FullName = fmt.Sprintf("%s,%s", pname, item.Name)
+			if _, exists := fullPidMap[pid]; exists {
+				fullPidMap[item.ID] = fmt.Sprintf("%s,%d", fullPidMap[pid], item.ID)
+				fullNameMap[item.ID] = fmt.Sprintf("%s,%s", fullNameMap[pid], item.Name)
 			} else {
-				item.FullPid = fmt.Sprintf("%d", item.ID)
-				item.FullName = fmt.Sprintf("%s", item.Name)
-			}
-			if _, has := infoMap[item.ID]; !has {
-				infoMap[item.ID] = info{
-					fullPid:  item.FullPid,
-					fullName: item.FullName,
-				}
+				fullPidMap[item.ID] = fmt.Sprintf("%d", item.ID)
+				fullNameMap[item.ID] = fmt.Sprintf("%s", item.Name)
 			}
 			children := childrenMap[item.ID]
 			if len(children) > 0 {
-				fall(children, item.FullPid, item.FullName)
+				fall(children, item.ID)
 			}
 		}
 	}
-	fall(list, "", "")
+	fall(childrenMap[0], 0)
 	for index, item := range list {
-		list[index].FullPid = infoMap[item.ID].fullPid
-		list[index].FullName = infoMap[item.ID].fullName
+		item.FullPid = fullPidMap[item.ID]
+		item.FullName = fullNameMap[item.ID]
+		list[index] = item
 	}
 	return list
 }
@@ -235,6 +234,7 @@ type Menu struct {
 	IsBuiltIn     NullBool `name:"是否内置"`
 	IsDefaultOpen NullBool `name:"是否默认打开"`
 	Closeable     NullBool `name:"是否可关闭"`
+	LocaleKey     string   `name:"国际化语言键"`
 	IsVirtual     NullBool
 	Type          string
 }
@@ -286,26 +286,6 @@ func (m *Menu) AfterSave(db *gorm.DB) {
 // AfterDelete
 func (m *Menu) AfterDelete(db *gorm.DB) {
 	updatePresetRolePrivileges(db, true, true)
-}
-
-// Dict
-type Dict struct {
-	Model `rest:"*"`
-	ExtendField
-	Code      string `gorm:"not null"`
-	Name      string `gorm:"not null"`
-	Values    []DictValue
-	IsBuiltIn NullBool
-}
-
-// DictValue
-type DictValue struct {
-	Model
-	ExtendField
-	DictID uint
-	Label  string
-	Value  string
-	Sort   int
 }
 
 // File

@@ -15,13 +15,8 @@ type Context struct {
 }
 
 // L
-func (c *Context) L(defaultValue string, args ...interface{}) string {
-	return L(c.Context, defaultValue, args...)
-}
-
-// Lang
-func (c *Context) Lang(key string, defaultValue string, args interface{}) string {
-	return Lang(c.Context, key, defaultValue, args)
+func (c *Context) L(key string, defaultMessage string, formattedContext ...interface{}) *LangMessage {
+	return L(key, defaultMessage, formattedContext...)
 }
 
 // DB
@@ -35,22 +30,22 @@ func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
 }
 
 // STD
-func (c *Context) STD(data interface{}, msg ...string) *STDRender {
+func (c *Context) STD(data interface{}, msg ...*LangMessage) *STDRender {
 	return STD(c.Context, data, msg...)
 }
 
 // STDErr
-func (c *Context) STDErr(msg string, err ...interface{}) *STDRender {
+func (c *Context) STDErr(msg *LangMessage, err ...interface{}) *STDRender {
 	return STDErr(c.Context, msg, err...)
 }
 
 // STDHold
-func (c *Context) STDHold(data interface{}, msg ...string) *STDRender {
+func (c *Context) STDHold(data interface{}, msg ...*LangMessage) *STDRender {
 	return STDHold(c.Context, data, msg...)
 }
 
 // STDErrHold
-func (c *Context) STDErrHold(msg string, err ...interface{}) *STDRender {
+func (c *Context) STDErrHold(msg *LangMessage, err ...interface{}) *STDRender {
 	return STDErrHold(c.Context, msg, err...)
 }
 

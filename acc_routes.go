@@ -44,11 +44,11 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		return
 	}
 	// 缓存secret至redis
-	key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
-	value := Stringify(&secretData)
-	if err := RedisClient.SetNX(key, value, time.Unix(desc.Exp, 0).Sub(time.Now())).Err(); err != nil {
-		ERROR("令牌缓存到Redis失败：%s", err.Error())
-	}
+	//key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
+	//value := Stringify(&secretData)
+	//if err := RedisClient.SetNX(key, value, time.Unix(desc.Exp, 0).Sub(time.Now())).Err(); err != nil {
+	//	ERROR("令牌缓存到Redis失败：%s", err.Error())
+	//}
 	// 保存登入历史
 	saveHistory(secretData)
 	return
@@ -63,10 +63,8 @@ var LoginRoute = RouteInfo{
 		if loginHandler == nil {
 			PANIC("login handler not configured")
 		}
-		payload, uid, err := loginHandler(c)
-		if err != nil {
-			// Note: 登录处理器错误直接返回错误信息
-			c.STDErr(err.Error())
+		payload, uid := loginHandler(c)
+		if uid == 0 || len(payload) == 0 {
 			return
 		}
 		// 调用令牌签发
@@ -76,7 +74,7 @@ var LoginRoute = RouteInfo{
 			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
 		})
 		if err != nil {
-			c.STDErr("令牌签发失败", err)
+			c.STDErr(L("acc_token_failed", "Token signing failed"), err)
 			return
 		}
 		// 设置到上下文中
@@ -104,14 +102,15 @@ var LogoutRoute = RouteInfo{
 			)
 			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
-				if errs := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).GetErrors(); len(errs) > 0 {
-					c.STDErr("退出登录失败", errs)
+				if err := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).Error; err != nil {
+					c.STDErr(L("acc_logout_failed", "Logout failed"), err)
 					return
 				}
 				// 保存登出历史
 				saveHistory(&secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
+				c.SetCookie(RequestLangKey, "", -1, "/", "", false, true)
 			}
 		}
 		c.STD("退出成功")
@@ -127,7 +126,7 @@ var ValidRoute = RouteInfo{
 			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
 			c.STD(c.SignInfo.Payload)
 		} else {
-			c.STDErrHold("令牌已过期").Code(555).Render()
+			c.STDErrHold(L("acc_token_expired", "Token has expired")).Code(555).Render()
 		}
 	},
 }
@@ -135,11 +134,12 @@ var ValidRoute = RouteInfo{
 // APIKeyRoute
 var APIKeyRoute = RouteInfo{
 	Method: "POST",
-	Path:   "/apikey",
+	Path:   "/apikeys",
 	HandlerFunc: func(c *Context) {
 		var body GenTokenDesc
+		failedMessage := L("apikeys_failed", "Create API & Keys failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr("解析请求体失败", err)
+			c.STDErr(failedMessage, err)
 			return
 		}
 		body.Payload = c.SignInfo.Payload
@@ -148,7 +148,7 @@ var APIKeyRoute = RouteInfo{
 		body.IsAPIKey = true
 		secretData, err := GenToken(body)
 		if err != nil {
-			c.STDErr("令牌签发失败", err)
+			c.STDErr(failedMessage, err)
 			return
 		}
 		c.STD(secretData.Token)

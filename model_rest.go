@@ -125,17 +125,17 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		err = c.WithTransaction(func(tx *gorm.DB) error {
 			var params BizUpdateParams
 			if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-				return errors.New("解析请求体失败")
+				return err
 			}
 			if IsBlank(params.Cond) || IsBlank(params.Doc) {
-				return errors.New("更新条件和内容不能为空")
+				return errors.New("'cond' and 'doc' are required")
 			}
 			var multi bool
 			if params.Multi || params.All {
 				multi = true
 			}
 			if IsBlank(params.Cond) && !multi {
-				return errors.New("必须指定批量更新标记")
+				return errors.New("'multi' is required")
 			}
 			// 处理更新条件
 			queryDB := tx.New()
@@ -195,7 +195,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr("修改失败", err)
+			c.STDErr(L("rest_update_failed", "Update failed"), err)
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -263,7 +263,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 					if field, ok := ms.FieldByName(key); ok {
 						db = db.Where(fmt.Sprintf("%s = ?", field.DBName), val)
 					} else {
-						ERROR("字段不存在：%s", key)
+						ERROR("field does not exist: %s", key)
 					}
 				}
 			}
@@ -350,7 +350,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		bizScope.QueryResult = ret
 		bizScope.callCallbacks(BizQueryKind)
 		if bizScope.HasError() {
-			c.STDErr("查询失败", bizScope.DB.Error)
+			c.STDErr(L("rest_query_failed", "Query failed"), bizScope.DB.Error)
 			return
 		}
 		c.STD(ret)
@@ -384,11 +384,11 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 				}
 			} else {
 				if err := c.ShouldBindBodyWith(&params, binding.JSON); err != nil {
-					return errors.New("解析请求体失败")
+					return err
 				}
 			}
 			if IsBlank(params.Cond) {
-				return errors.New("删除条件不能为空")
+				return errors.New("'cond' is required")
 			}
 			var multi bool
 			if params.Multi || params.All {
@@ -445,7 +445,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr("删除失败", err)
+			c.STDErr(L("rest_delete_failed", "Delete failed"), err)
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -464,7 +464,7 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		err = c.WithTransaction(func(tx *gorm.DB) error {
 			var body interface{}
 			if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-				return errors.New("解析请求体失败")
+				return err
 			}
 			indirectScopeValue := indirect(reflect.ValueOf(body))
 			if indirectScopeValue.Kind() == reflect.Slice {
@@ -494,7 +494,7 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr("新增失败", err)
+			c.STDErr(L("rest_create_failed", "Create failed"), err)
 		} else {
 			if multi {
 				c.STD(docs)

@@ -19,19 +19,20 @@ var (
 
 // STDRender
 type STDRender struct {
-	c        *gin.Context
-	httpCode int
-	action   string
-	data     interface{}
-	code     int32
-	message  string
+	c           *gin.Context
+	httpCode    int
+	action      string
+	data        interface{}
+	code        int32
+	message     string
+	langMessage *LangMessage
 }
 
-func std(renderNow bool, c *gin.Context, data interface{}, msg ...string) *STDRender {
+func std(renderNow bool, c *gin.Context, data interface{}, msg ...*LangMessage) *STDRender {
 	std := &STDRender{c: c}
 	std.data = data
 	if len(msg) > 0 {
-		std.message = msg[0]
+		std.langMessage = msg[0]
 	}
 	if renderNow {
 		std.Render()
@@ -39,9 +40,9 @@ func std(renderNow bool, c *gin.Context, data interface{}, msg ...string) *STDRe
 	return std
 }
 
-func stdErr(renderNow bool, c *gin.Context, msg string, err ...interface{}) *STDRender {
+func stdErr(renderNow bool, c *gin.Context, msg *LangMessage, err ...interface{}) *STDRender {
 	std := &STDRender{c: c, code: -1}
-	std.message = msg
+	std.langMessage = msg
 	if len(err) > 0 {
 		std.data = err[0]
 	}
@@ -52,22 +53,22 @@ func stdErr(renderNow bool, c *gin.Context, msg string, err ...interface{}) *STD
 }
 
 // STD
-func STD(c *gin.Context, data interface{}, msg ...string) *STDRender {
+func STD(c *gin.Context, data interface{}, msg ...*LangMessage) *STDRender {
 	return std(true, c, data, msg...)
 }
 
 // STDErr
-func STDErr(c *gin.Context, msg string, err ...interface{}) *STDRender {
+func STDErr(c *gin.Context, msg *LangMessage, err ...interface{}) *STDRender {
 	return stdErr(true, c, msg, err...)
 }
 
 // STDHold
-func STDHold(c *gin.Context, data interface{}, msg ...string) *STDRender {
+func STDHold(c *gin.Context, data interface{}, msg ...*LangMessage) *STDRender {
 	return std(false, c, data, msg...)
 }
 
 // STDErrHold
-func STDErrHold(c *gin.Context, msg string, err ...interface{}) *STDRender {
+func STDErrHold(c *gin.Context, msg *LangMessage, err ...interface{}) *STDRender {
 	return stdErr(false, c, msg, err...)
 }
 
@@ -95,8 +96,8 @@ func (r *STDRender) Code(code int32) *STDRender {
 }
 
 // Message
-func (r *STDRender) Message(message string) *STDRender {
-	r.message = message
+func (r *STDRender) Message(message *LangMessage) *STDRender {
+	r.langMessage = message
 	return r
 }
 
@@ -145,8 +146,9 @@ func (r *STDRender) Render() {
 		}
 	}
 	r.action = strings.TrimSpace(strings.ToUpper(r.action))
-	r.message = L(r.Context, r.message)
-
+	if r.langMessage != nil && r.message == "" {
+		r.message = r.langMessage.Render()
+	}
 	ret := make(map[string]interface{})
 	ret["code"] = r.code
 	if !IsBlank(r.data) {

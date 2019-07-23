@@ -1,79 +1,180 @@
 package kuu
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
 	"strings"
-	"time"
 )
 
-// Language
-type Language struct {
-	gorm.Model `rest:"*" displayName:"国际化"`
-	Code       string `name:"语言编码"`
-	Name       string `name:"语言名称"`
-	Key        string `name:"翻译键"`
-	Value      string `name:"翻译值"`
+var (
+	// LangMessagesCache
+	langMessagesCache = map[string]LangMessagesMap{}
+	// LangMessagesRegister
+	langMessagesRegister = map[string]int{}
+	// RequestLangKey
+	RequestLangKey = "Lang"
+)
+
+// 需求点：
+// 1.缓存LanguageMessage到内存中，每次修改后更新缓存
+// 2.保存用户的上一次语言设置，根据请求中的Lang参数自动切换语言
+
+type LangMessagesMap map[string]LangMessage
+
+// LangMessage
+type LangMessage struct {
+	ModelExOrg       `rest:"*" displayName:"国际化语言条目"`
+	LangCode         string      `name:"语言编码"`
+	LangName         string      `name:"语言名称"`
+	Key              string      `name:"消息键"`
+	Value            string      `name:"翻译值"`
+	DefaultMessage   string      `name:"默认消息" json:"-,omitempty"`
+	FormattedContext interface{} `name:"格式化上下文" json:"-,omitempty" gorm:"-"`
+	Group            string      `name:"分组"`
+	Sort             int         `name:"排序值"`
 }
 
-// LocaleMessage
-type LocaleMessage struct {
-	Key              string
-	DefaultMessage   string
-	FormattedContext interface{}
+// Render
+func (m *LangMessage) Render() string {
+	messages := GetUserLangMessages()
+	var template string
+	if v, has := messages[m.Key]; has {
+		template = v.Value
+	} else {
+		return m.DefaultMessage
+	}
+	return mustache.Render(template, m.FormattedContext)
+}
+
+// LangRegister
+type LangRegister struct {
+	DB  *gorm.DB
+	Key string
+}
+
+// NewLangRegister
+func NewLangRegister(db *gorm.DB, key ...string) *LangRegister {
+	r := &LangRegister{DB: db}
+	if len(key) > 0 {
+		r.Key = key[0]
+	}
+	return r
+}
+
+// SetKey
+func (r *LangRegister) SetKey(key string) *LangRegister {
+	r.Key = key
+	return r
+}
+
+// SetDB
+func (r *LangRegister) SetDB(db *gorm.DB) *LangRegister {
+	r.DB = db
+	return r
+}
+
+// Add
+func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister {
+	r.DB.Create(&LangMessage{
+		LangCode: "en_US",
+		LangName: "English",
+		Key:      r.Key,
+		Value:    enUS,
+	})
+	r.DB.Create(&LangMessage{
+		LangCode: "zh_CN",
+		LangName: "简体中文",
+		Key:      r.Key,
+		Value:    zhCN,
+	})
+	r.DB.Create(&LangMessage{
+		LangCode: "zh_TW",
+		LangName: "繁体中文",
+		Key:      r.Key,
+		Value:    zhTW,
+	})
+	return r
 }
 
 // L
-func L(langOrContext interface{}, defaultValue string, args ...interface{}) string {
-	if len(args) > 0 {
-		return Lang(langOrContext, "", defaultValue, args[0])
-	} else {
-		return Lang(langOrContext, "", defaultValue, nil)
+func L(key string, defaultMessage string, formattedContext ...interface{}) *LangMessage {
+	if key == "" || defaultMessage == "" {
+		PANIC("i18n message key and default message are required: %s, %s", key, defaultMessage)
+	}
+	langMessagesRegister[key] = langMessagesRegister[key] + 1
+	msg := &LangMessage{Key: key, DefaultMessage: defaultMessage}
+	if len(formattedContext) > 0 {
+		msg.FormattedContext = formattedContext[0]
+	}
+	return msg
+}
+
+// RefreshLangMessagesCache
+func RefreshLangMessagesCache() {
+	var list []LangMessage
+	if err := DB().Find(&list).Error; err != nil {
+		ERROR("Refreshing i18n cache failed: %s", err.Error())
+		return
+	}
+	langMessagesCache = map[string]LangMessagesMap{}
+	for _, item := range list {
+		langMessagesCache[item.LangCode][item.Key] = item
 	}
 }
 
-// Lang
-func Lang(langOrContext interface{}, key string, defaultValue string, args interface{}) string {
-	if defaultValue == "" {
-		return defaultValue
+// GetUserLangMessages
+func GetUserLangMessages() LangMessagesMap {
+	var messages LangMessagesMap
+	if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
+		if len(langMessagesCache) == 0 {
+			RefreshLangMessagesCache()
+		}
+		messages = langMessagesCache[desc.SignInfo.Lang]
 	}
-	lang := parseLang(langOrContext)
-	if lang == "" {
-		lang = "zh-CN"
-	}
-	if key == "" {
-		key = strings.Replace(defaultValue, "{", "", -1)
-		key = strings.Replace(defaultValue, "}", "", -1)
-		key = strings.Replace(defaultValue, "{", "", -1)
-		key = strings.Replace(defaultValue, "}", "", -1)
-		key = strings.Replace(defaultValue, " ", "_", -1)
-		key = strings.TrimSpace(key)
-		key = strings.ToLower(key)
-	}
-	return renderMessage(lang, key, defaultValue, args)
+	return messages
 }
 
-func parseLang(langOrContext interface{}) (lang string) {
+// ParseLang
+var ParseLang = func(langOrContext interface{}) string {
+	if v, ok := langOrContext.(string); ok {
+		return v
+	}
+
+	var lang string
 	if c, ok := langOrContext.(*gin.Context); ok {
-		lang = parseKuuLang(c)
+		keys := []string{"Lang", "lang", "klang", "l"}
+		// querystring > header > cookie
+		for _, key := range keys {
+			if val := c.Query(key); val != "" {
+				lang = val
+				break
+			}
+		}
+		if lang == "" {
+			for _, key := range keys {
+				if val := c.GetHeader(key); val != "" {
+					lang = val
+					break
+				}
+			}
+		}
+		if lang == "" {
+			for _, key := range keys {
+				if val := c.GetHeader(key); val != "" {
+					lang = val
+					break
+				}
+			}
+		}
 		if lang == "" {
 			lang = parseAcceptLanguage(c)
 		}
-	} else if v, ok := langOrContext.(string); ok {
-		lang = v
 	}
-	return
-}
-
-func parseKuuLang(c *gin.Context) (lang string) {
-	for _, key := range []string{"KuuLang", "Kuu-Lang", "Kuu_Lang", "Lang"} {
-		if lang = c.GetHeader(key); lang != "" {
-			return
-		}
+	if lang == "" {
+		lang = "en-US"
 	}
-	return
+	return lang
 }
 
 func parseAcceptLanguage(c *gin.Context) (lang string) {
@@ -86,44 +187,4 @@ func parseAcceptLanguage(c *gin.Context) (lang string) {
 		return s
 	}
 	return
-}
-
-func renderMessage(code string, name string, defaultValue string, args interface{}) string {
-	key := strings.ToLower(fmt.Sprintf("%s_i18n_%s", RedisPrefix, code))
-	// 如果该语言没有缓存，则查询数据库并缓存至redis
-	if v := RedisClient.Exists(key).Val(); v == 0 {
-		list := make([]Language, 0)
-		DB().Where(&Language{Code: code}).Find(&list)
-		fields := make(map[string]interface{})
-		for _, item := range list {
-			item.Key = strings.TrimSpace(item.Key)
-			item.Value = strings.TrimSpace(item.Value)
-			fields[item.Key] = item.Value
-		}
-		if len(fields) == 0 {
-			fields["hello_kuu_i18n"] = "Hello Kuu"
-		}
-		if _, err := RedisClient.HMSet(key, fields).Result(); err != nil {
-			ERROR(err)
-		} else {
-			if _, err := RedisClient.Expire(key, 24*time.Hour).Result(); err != nil {
-				ERROR(err)
-			}
-		}
-	}
-	// 如果该语言下不存在指定键，则新增键到数据库并缓存至redis
-	var template string
-	if exists := RedisClient.HExists(key, name).Val(); exists {
-		template = RedisClient.HGet(key, name).Val()
-		if template == "" {
-			template = defaultValue
-		}
-	} else {
-		doc := Language{Code: code, Key: name, Value: defaultValue}
-		DB().Create(&doc)
-		if RedisClient.HSet(key, doc.Key, doc.Value).Val() {
-			template = defaultValue
-		}
-	}
-	return mustache.Render(template, args)
 }

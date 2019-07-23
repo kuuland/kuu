@@ -12,7 +12,7 @@ var (
 func initRedis() {
 	rawConfig, exists := C().Get("redis")
 	if !exists {
-		PANIC(`Redis config is required:
+		PANIC(`redis config is required:
 {
   "redis": {
 	"addr": "localhost:6379",

@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,7 @@ import (
 )
 
 // LoginHandlerFunc
-type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint, error)
+type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint)
 
 var (
 	TokenKey  = "Token"
@@ -21,6 +20,8 @@ var (
 		"POST /login",
 		"GET /enum",
 		"GET /meta",
+		"GET /language/messages",
+		"GET /language/translated",
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400
@@ -115,9 +116,9 @@ var ParseToken = func(c *gin.Context) string {
 func DecodedContext(c *gin.Context) (*SignContext, error) {
 	token := ParseToken(c)
 	if token == "" {
-		return nil, errors.New("请正确提供有效令牌")
+		return nil, ErrTokenNotFound
 	}
-	data := SignContext{Token: token, Lang: parseLang(c)}
+	data := &SignContext{Token: token, Lang: ParseLang(c)}
 	// 解析UID
 	var secret SignSecret
 	if v, err := RedisClient.Get(RedisKeyBuilder(RedisSecretKey, token)).Result(); err == nil {
@@ -136,18 +137,18 @@ func DecodedContext(c *gin.Context) (*SignContext, error) {
 	data.OrgID = org.OrgID
 	// 验证令牌
 	if secret.Secret == "" {
-		return nil, errors.New(Lang(c, "secret_invalid", "Secret is invalid: {{uid}} {{token}}", gin.H{"uid": data.UID, "token": token}))
+		return data, ErrSecretNotFound
 	}
 	if secret.Method == "LOGOUT" {
-		return nil, errors.New(Lang(c, "token_expired", "Token has expired: '{{token}}'", gin.H{"token": token}))
+		return data, ErrInvalidToken
 	}
 	data.Secret = &secret
 	data.Payload = DecodedToken(token, secret.Secret)
 	data.SubDocID = secret.SubDocID
 	if data.IsValid() {
-		c.Set(SignContextKey, &data)
+		c.Set(SignContextKey, data)
 	}
-	return &data, nil
+	return data, nil
 }
 
 // EncodedToken
@@ -164,7 +165,7 @@ func EncodedToken(claims jwt.MapClaims, secret string) (signed string, err error
 func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(secret), nil
 	})
