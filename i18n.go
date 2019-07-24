@@ -8,10 +8,8 @@ import (
 )
 
 var (
-	// LangMessagesCache
-	langMessagesCache = map[string]LangMessagesMap{}
-	// LangMessagesRegister
-	langMessagesRegister = map[string]int{}
+	// LanguageMessagesCache
+	languageMessagesCache = map[string]LanguageMessagesMap{}
 	// RequestLangKey
 	RequestLangKey = "Lang"
 )
@@ -20,13 +18,19 @@ var (
 // 1.缓存LanguageMessage到内存中，每次修改后更新缓存
 // 2.保存用户的上一次语言设置，根据请求中的Lang参数自动切换语言
 
-type LangMessagesMap map[string]LangMessage
+type LanguageMessagesMap map[string]LanguageMessage
 
-// LangMessage
-type LangMessage struct {
+// Language
+type Language struct {
+	ModelExOrg `rest:"*" displayName:"国际化语言列表"`
+	LangCode   string `name:"语言编码"`
+	LangName   string `name:"语言名称"`
+}
+
+// LanguageMessage
+type LanguageMessage struct {
 	ModelExOrg       `rest:"*" displayName:"国际化语言条目"`
 	LangCode         string      `name:"语言编码"`
-	LangName         string      `name:"语言名称"`
 	Key              string      `name:"消息键"`
 	Value            string      `name:"翻译值"`
 	DefaultMessage   string      `name:"默认消息" json:"-,omitempty"`
@@ -36,8 +40,8 @@ type LangMessage struct {
 }
 
 // Render
-func (m *LangMessage) Render() string {
-	messages := GetUserLangMessages()
+func (m *LanguageMessage) Render() string {
+	messages := GetUserLanguageMessages()
 	var template string
 	if v, has := messages[m.Key]; has {
 		template = v.Value
@@ -76,21 +80,18 @@ func (r *LangRegister) SetDB(db *gorm.DB) *LangRegister {
 
 // Add
 func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister {
-	r.DB.Create(&LangMessage{
-		LangCode: "en_US",
-		LangName: "English",
+	r.DB.Create(&LanguageMessage{
+		LangCode: "en-US",
 		Key:      r.Key,
 		Value:    enUS,
 	})
-	r.DB.Create(&LangMessage{
-		LangCode: "zh_CN",
-		LangName: "简体中文",
+	r.DB.Create(&LanguageMessage{
+		LangCode: "zh-CN",
 		Key:      r.Key,
 		Value:    zhCN,
 	})
-	r.DB.Create(&LangMessage{
-		LangCode: "zh_TW",
-		LangName: "繁体中文",
+	r.DB.Create(&LanguageMessage{
+		LangCode: "zh-TW",
 		Key:      r.Key,
 		Value:    zhTW,
 	})
@@ -98,39 +99,41 @@ func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister 
 }
 
 // L
-func L(key string, defaultMessage string, formattedContext ...interface{}) *LangMessage {
+func L(key string, defaultMessage string, formattedContext ...interface{}) *LanguageMessage {
 	if key == "" || defaultMessage == "" {
 		PANIC("i18n message key and default message are required: %s, %s", key, defaultMessage)
 	}
-	langMessagesRegister[key] = langMessagesRegister[key] + 1
-	msg := &LangMessage{Key: key, DefaultMessage: defaultMessage}
+	msg := &LanguageMessage{Key: key, DefaultMessage: defaultMessage}
 	if len(formattedContext) > 0 {
 		msg.FormattedContext = formattedContext[0]
 	}
 	return msg
 }
 
-// RefreshLangMessagesCache
-func RefreshLangMessagesCache() {
-	var list []LangMessage
+// RefreshLanguageMessagesCache
+func RefreshLanguageMessagesCache() {
+	var list []LanguageMessage
 	if err := DB().Find(&list).Error; err != nil {
 		ERROR("Refreshing i18n cache failed: %s", err.Error())
 		return
 	}
-	langMessagesCache = map[string]LangMessagesMap{}
+	languageMessagesCache = map[string]LanguageMessagesMap{}
 	for _, item := range list {
-		langMessagesCache[item.LangCode][item.Key] = item
+		if languageMessagesCache[item.LangCode] == nil {
+			languageMessagesCache[item.LangCode] = make(LanguageMessagesMap)
+		}
+		languageMessagesCache[item.LangCode][item.Key] = item
 	}
 }
 
-// GetUserLangMessages
-func GetUserLangMessages() LangMessagesMap {
-	var messages LangMessagesMap
+// GetUserLanguageMessages
+func GetUserLanguageMessages() LanguageMessagesMap {
+	var messages LanguageMessagesMap
 	if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
-		if len(langMessagesCache) == 0 {
-			RefreshLangMessagesCache()
+		if len(languageMessagesCache) == 0 {
+			RefreshLanguageMessagesCache()
 		}
-		messages = langMessagesCache[desc.SignInfo.Lang]
+		messages = languageMessagesCache[desc.SignInfo.Lang]
 	}
 	return messages
 }
@@ -161,7 +164,7 @@ var ParseLang = func(langOrContext interface{}) string {
 		}
 		if lang == "" {
 			for _, key := range keys {
-				if val := c.GetHeader(key); val != "" {
+				if val, _ := c.Cookie(key); val != "" {
 					lang = val
 					break
 				}

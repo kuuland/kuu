@@ -148,6 +148,12 @@ var UserMenusRoute = RouteInfo{
 			return result
 		}
 		menus = fall(menus)
+		for index, item := range menus {
+			if item.LocaleKey != "" {
+				item.Name = L(item.LocaleKey, item.Name).Render()
+			}
+			menus[index] = item
+		}
 		c.STD(menus)
 	},
 }
@@ -793,46 +799,13 @@ var ModelDocsRoute = RouteInfo{
 	},
 }
 
-// LanguageSwitchRoute
-var LanguageSwitchRoute = RouteInfo{
-	Method: "POST",
-	Path:   "/language/switch",
-	HandlerFunc: func(c *Context) {
-		var body struct {
-			Lang string `binding:"required"`
-		}
-		failedMessage := L("lang_switch_failed", "Switching language failed")
-		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		if body.Lang == "" {
-			c.STDErr(failedMessage, errors.New("'lang' is required"))
-			return
-		}
-
-		db := c.DB().Model(&User{}).Where("id = ?", c.SignInfo.UID).Update("lang", body.Lang)
-		if db.Error != nil {
-			c.STDErr(failedMessage, db.Error)
-			return
-		}
-		c.SetCookie(RequestLangKey, body.Lang, 0, "/", "", false, true)
-		c.STD(body)
-	},
-}
-
-// LanguageMessagesRoute
-var LanguageMessagesRoute = RouteInfo{
+// LangmsgsRoute
+var LangmsgsRoute = RouteInfo{
 	Method: "GET",
-	Path:   "/language/messages",
+	Path:   "/langmsgs",
 	HandlerFunc: func(c *Context) {
-		var defaultLang string
-		if c.SignInfo.IsValid() {
-			defaultLang = c.SignInfo.Lang
-		}
-		lang := c.DefaultQuery("lang", defaultLang)
+		lang := ParseLang(c.Context)
 		group := c.Query("group")
-		simple := c.Query("simple")
 		db := c.DB()
 		if lang != "" && lang != "*" {
 			db = db.Where("lang_code = ?", lang)
@@ -840,58 +813,22 @@ var LanguageMessagesRoute = RouteInfo{
 		if group != "" {
 			db = db.Where("group = ?", group)
 		}
-		var list []LangMessage
+		var list []LanguageMessage
 		failedMessage := L("lang_msgs_failed", "Query i18n messages failed")
 		if err := db.Find(&list).Order("sort").Error; err != nil {
 			c.STDErr(failedMessage, err)
 			return
 		}
-		ret := make(map[string]string)
-		if simple != "" {
-			for _, item := range list {
-				if item.LangCode == "" {
-					continue
-				}
-				if v, exists := ret[item.LangCode]; !exists || v == "" {
-					ret[item.LangCode] = item.LangName
-				}
+		ret := make(map[string]map[string]string)
+		for _, item := range list {
+			if item.LangCode == "" || item.Key == "" {
+				continue
 			}
-		} else {
-			for _, item := range list {
-				if item.Key == "" {
-					continue
-				}
-				ret[item.Key] = item.Value
+			if ret[item.LangCode] == nil {
+				ret[item.LangCode] = make(map[string]string)
 			}
+			ret[item.LangCode][item.Key] = item.Value
 		}
 		c.STD(ret)
-	},
-}
-
-// LanguageTranslatedRoute
-var LanguageTranslatedRoute = RouteInfo{
-	Method: "GET",
-	Path:   "/language/translated",
-	HandlerFunc: func(c *Context) {
-		failedMessage := L("lang_translated_failed", "Query translated list failed")
-		var list []LangMessage
-		if err := c.DB().Find(&list).Order("sort").Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		keysMap := make(map[string]string)
-		for _, item := range list {
-			if item.Key == "" {
-				continue
-			}
-			keysMap[item.Key] = item.Value
-		}
-		for key, _ := range langMessagesRegister {
-			if _, exists := keysMap[key]; exists {
-				continue
-			}
-			list = append(list, LangMessage{Key: key})
-		}
-		c.STD(list)
 	},
 }

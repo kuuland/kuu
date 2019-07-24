@@ -20,8 +20,8 @@ var (
 		"POST /login",
 		"GET /enum",
 		"GET /meta",
-		"GET /language/messages",
-		"GET /language/translated",
+		"GET /language",
+		"GET /langmsgs",
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400

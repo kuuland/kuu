@@ -15,7 +15,7 @@ type Context struct {
 }
 
 // L
-func (c *Context) L(key string, defaultMessage string, formattedContext ...interface{}) *LangMessage {
+func (c *Context) L(key string, defaultMessage string, formattedContext ...interface{}) *LanguageMessage {
 	return L(key, defaultMessage, formattedContext...)
 }
 
@@ -30,22 +30,22 @@ func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
 }
 
 // STD
-func (c *Context) STD(data interface{}, msg ...*LangMessage) *STDRender {
+func (c *Context) STD(data interface{}, msg ...*LanguageMessage) *STDRender {
 	return STD(c.Context, data, msg...)
 }
 
 // STDErr
-func (c *Context) STDErr(msg *LangMessage, err ...interface{}) *STDRender {
+func (c *Context) STDErr(msg *LanguageMessage, err ...interface{}) *STDRender {
 	return STDErr(c.Context, msg, err...)
 }
 
 // STDHold
-func (c *Context) STDHold(data interface{}, msg ...*LangMessage) *STDRender {
+func (c *Context) STDHold(data interface{}, msg ...*LanguageMessage) *STDRender {
 	return STDHold(c.Context, data, msg...)
 }
 
 // STDErrHold
-func (c *Context) STDErrHold(msg *LangMessage, err ...interface{}) *STDRender {
+func (c *Context) STDErrHold(msg *LanguageMessage, err ...interface{}) *STDRender {
 	return STDErrHold(c.Context, msg, err...)
 }
 

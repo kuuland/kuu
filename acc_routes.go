@@ -124,6 +124,12 @@ var ValidRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		if c.SignInfo != nil && c.SignInfo.IsValid() {
 			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
+			var user User
+			c.DB().Select("lang").First(&user, "id = ?", c.SignInfo.UID)
+			if user.Lang != "" {
+				c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
+				c.SignInfo.Payload["Lang"] = user.Lang
+			}
 			c.STD(c.SignInfo.Payload)
 		} else {
 			c.STDErrHold(L("acc_token_expired", "Token has expired")).Code(555).Render()

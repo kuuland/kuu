@@ -91,7 +91,7 @@ func initSys() {
 		// 初始化预置用户权限
 		createRootPrivileges(tx)
 		// 初始化国际化配置
-		createPresetLangMessages(tx)
+		createPresetLanguageMessages(tx)
 		// 保存初始化标记
 		param := Param{
 			Model: Model{
@@ -180,7 +180,21 @@ func createRootPrivileges(tx *gorm.DB) {
 	})
 }
 
-func createPresetLangMessages(tx *gorm.DB) {
+func createPresetLanguageMessages(tx *gorm.DB) {
+	// 注册国际化语言
+	tx.Create(&Language{
+		LangCode: "en-US",
+		LangName: "English",
+	})
+	tx.Create(&Language{
+		LangCode: "zh-CN",
+		LangName: "简体中文",
+	})
+	tx.Create(&Language{
+		LangCode: "zh-TW",
+		LangName: "繁體中文",
+	})
+	// 注册国际化消息条目
 	register := NewLangRegister(tx)
 	// 接口
 	register.SetKey("acc_token_failed").Add("Token signing failed", "令牌签发失败", "令牌簽發失敗")
@@ -206,7 +220,6 @@ func createPresetLangMessages(tx *gorm.DB) {
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
 	register.SetKey("rest_delete_failed").Add("Delete failed", "删除失败", "刪除失敗")
 	register.SetKey("rest_create_failed").Add("Create failed", "新增失败", "新增失敗")
-
 	// 菜单
 	register.SetKey("menu_default").Add("Default", "默认菜单", "默認菜單")
 	register.SetKey("menu_sys_mgr").Add("System Management", "系统管理", "系統管理")
@@ -222,6 +235,60 @@ func createPresetLangMessages(tx *gorm.DB) {
 	register.SetKey("menu_file_doc").Add("File", "文件", "文件")
 	register.SetKey("menu_i18n").Add("Internationalization", "国际化", "國際化")
 	register.SetKey("menu_message").Add("Message", "消息", "消息")
+	// Fano
+	register.SetKey("fano_table_actions_add").Add("Add", "新增", "新增")
+	register.SetKey("fano_table_actions_del").Add("Del", "新增", "新增")
+	register.SetKey("fano_table_actions_cols").Add("Columns", "新增", "新增")
+	register.SetKey("fano_table_actions_filter").Add("Filter", "过滤", "過濾")
+	register.SetKey("fano_table_actions_sort").Add("Sort", "排序", "排序")
+	register.SetKey("fano_table_actions_export").Add("Export", "导出", "導出")
+	register.SetKey("fano_table_actions_refresh").Add("Refresh", "刷新", "刷新")
+	register.SetKey("fano_table_actions_expand").Add("Expand All", "全部展开", "全部展開")
+	register.SetKey("fano_table_actions_collapse").Add("Collapse All", "全部折叠", "全部折疊")
+	register.SetKey("fano_table_tabs_form").Add("Form", "表单详情", "表單詳情")
+	register.SetKey("fano_table_tabs_fullscreen").Add("Full Screen", "全屏", "全屏")
+	register.SetKey("fano_table_tabs_close").Add("Close", "关闭", "關閉")
+	register.SetKey("fano_table_total").Add("Total {{total}} items", "{{total}} 条记录", "{{total}} 條記錄")
+	register.SetKey("fano_table_save_failed").Add("Save failed", "保存失败", "保存失敗")
+	register.SetKey("fano_table_save_success").Add("Successfully saved", "保存成功", "保存成功")
+	register.SetKey("fano_table_fill_form").Add("Please fill the form", "请填表单信息", "請填寫表單信息")
+	register.SetKey("fano_table_del_selectrows").Add("Please select the rows you want to delete", "请先选择需要删除的行", "請先選擇需要刪除的行")
+	register.SetKey("fano_table_del_popconfirm").Add("Are you sure to delete?", "确认删除吗？", "確認刪除嗎？")
+	register.SetKey("fano_table_row_action_edit").Add("Edit this row", "编辑行", "編輯行")
+	register.SetKey("fano_table_row_action_del").Add("Delete this row", "删除行", "刪除行")
+	register.SetKey("fano_table_cols_actions").Add("Actions", "操作", "操作")
+	register.SetKey("fano_table_filter_condtype_before").Add("Query data that meets", "筛选出符合下面", "篩選出符合下面")
+	register.SetKey("fano_table_filter_condtype_all").Add("ALL", "所有", "所有")
+	register.SetKey("fano_table_filter_condtype_one").Add("ONE", "任一", "任一")
+	register.SetKey("fano_table_filter_condtype_after").Add("of the following rules", "条件的数据", "條件的數據")
+	register.SetKey("fano_table_filter_addrule").Add("Add rule", "添加条件", "添加條件")
+	register.SetKey("fano_table_filter_delrule").Add("Delete this rule", "删除条件", "刪除條件")
+	register.SetKey("fano_table_filter_operators_eq").Add("Equal", "等于", "等於")
+	register.SetKey("fano_table_filter_operators_ne").Add("NOT Equal", "不等于", "不等於")
+	register.SetKey("fano_table_filter_operators_gt").Add("Greater Than", "大于", "大於")
+	register.SetKey("fano_table_filter_operators_gte").Add("Greater Than or Equal", "大于等于", "大於等於")
+	register.SetKey("fano_table_filter_operators_lt").Add("Less Than", "小于", "小於")
+	register.SetKey("fano_table_filter_operators_lte").Add("Less Than or Equal", "小于等于", "小於等於")
+	register.SetKey("fano_table_filter_operators_like").Add("Contains", "包含", "包含")
+	register.SetKey("fano_table_filter_operators_null").Add("IS NULL", "为空", "為空")
+	register.SetKey("fano_table_filter_operators_notnull").Add("IS NOT NULL", "非空", "非空")
+	register.SetKey("fano_table_filter_submit").Add("Filter now", "筛选", "篩選")
+	register.SetKey("fano_table_sort_addrule").Add("Add rule", "添加条件", "添加條件")
+	register.SetKey("fano_table_sort_delrule").Add("Delete this rule", "删除条件", "刪除條件")
+	register.SetKey("fano_table_sort_asc").Add("Ascending", "升序", "升序")
+	register.SetKey("fano_table_sort_desc").Add("Descending", "降序", "降序")
+	register.SetKey("fano_table_sort_submit").Add("Sort now", "排序", "排序")
+	register.SetKey("fano_placeholder_choose").Add("Please choose {{name}}", "请选择{{name}}", "請選擇{{name}}")
+	register.SetKey("fano_placeholder_input").Add("Please input {{name}}", "请输入{{name}}", "請輸入{{name}}")
+	register.SetKey("fano_placeholder_keyword").Add("Please enter a keyword", "请输入关键字", "請輸入關鍵字")
+	register.SetKey("fano_form_btnsubmit").Add("Submit", "提交", "提交")
+	register.SetKey("fano_form_btncancel").Add("Cancel", "取消", "取消")
+	// Kuu UI
+	register.SetKey("kuu_navbar_profile").Add("Profile", "个人中心", "個人中心")
+	register.SetKey("kuu_navbar_changepass").Add("Change password", "修改密码", "修改密碼")
+	register.SetKey("kuu_navbar_languages").Add("Languages", "语言切换", "語言切換")
+	register.SetKey("kuu_navbar_apikeys").Add("API & Keys", "API & Keys", "API & Keys")
+	register.SetKey("kuu_navbar_logout").Add("Logout", "退出登录", "退出登錄")
 }
 
 func createPresetMenus(tx *gorm.DB) {
@@ -563,6 +630,7 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 		"Sex":       user.Sex,
 		"Mobile":    user.Mobile,
 		"Email":     user.Email,
+		"Lang":      user.Lang,
 		"IsBuiltIn": user.IsBuiltIn,
 		"CreatedAt": user.CreatedAt,
 		"UpdatedAt": user.UpdatedAt,
@@ -596,7 +664,8 @@ func Sys() *Mod {
 			&Metadata{},
 			&MetadataField{},
 			&Route{},
-			&LangMessage{},
+			&Language{},
+			&LanguageMessage{},
 		},
 		Middlewares: gin.HandlersChain{
 			OrgMiddleware,
@@ -612,9 +681,7 @@ func Sys() *Mod {
 			MetaRoute,
 			EnumRoute,
 			ModelDocsRoute,
-			LanguageSwitchRoute,
-			LanguageMessagesRoute,
-			LanguageTranslatedRoute,
+			LangmsgsRoute,
 		},
 		AfterImport: initSys,
 	}

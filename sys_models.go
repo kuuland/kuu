@@ -67,7 +67,6 @@ type User struct {
 	Sex         int          `name:"性别"`
 	Mobile      string       `name:"手机号"`
 	Email       string       `name:"邮箱地址"`
-	Language    string       `name:"语言"`
 	Disable     NullBool     `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   NullBool     `name:"是否内置"`
