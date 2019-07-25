@@ -637,6 +637,9 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 	}
 	payload = SetPayloadAttrs(payload, &user)
 	uid = user.ID
+	if user.Lang == "" {
+		user.Lang = ParseLang(c.Context)
+	}
 	c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
 	return
 }
