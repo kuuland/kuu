@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -13,6 +14,8 @@ import (
 	"net/http"
 	"path"
 	"reflect"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -830,5 +833,174 @@ var LangmsgsRoute = RouteInfo{
 			ret[item.LangCode][item.Key] = item.Value
 		}
 		c.STD(ret)
+	},
+}
+
+// LangtransGetRoute
+var LangtransGetRoute = RouteInfo{
+	Method: "GET",
+	Path:   "/langtrans",
+	HandlerFunc: func(c *Context) {
+		failedMessage := L("lang_trans_query_failed", "Query translation list failed")
+		var (
+			languages []Language
+			messages  []LanguageMessage
+		)
+
+		if err := c.DB().Order("lang_code").Find(&languages).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		if err := c.DB().Order("key").Find(&messages).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+
+		keysSort := make(map[string]int)
+		keysMap := make(map[string]LanguageMessagesMap)
+		for index, item := range messages {
+			if keysMap[item.Key] == nil {
+				keysMap[item.Key] = make(LanguageMessagesMap)
+			}
+			keysMap[item.Key][item.LangCode] = item
+			if _, exists := keysSort[item.Key]; !exists {
+				keysSort[item.Key] = index
+			}
+		}
+		var list TranslatedList
+		for key, translated := range keysMap {
+			item := map[string]interface{}{"Key": key, "Sort": keysSort[key]}
+			for _, lang := range languages {
+				var (
+					langMsgValue string
+					langMsgID    uint
+				)
+				if translated != nil {
+					if v, ok := translated[lang.LangCode]; ok {
+						langMsgValue = v.Value
+						langMsgID = v.ID
+					}
+				}
+				item[fmt.Sprintf("Lang_%s_ID", lang.LangCode)] = langMsgID
+				item[fmt.Sprintf("Lang_%s_Value", lang.LangCode)] = langMsgValue
+				item[fmt.Sprintf("Lang_%s_LangName", lang.LangCode)] = lang.LangName
+			}
+			list = append(list, item)
+		}
+		sort.Sort(list)
+		c.STD(list)
+	},
+}
+
+// LangtransPostRoute
+var LangtransPostRoute = RouteInfo{
+	Method: "POST",
+	Path:   "/langtrans",
+	HandlerFunc: func(c *Context) {
+		var body gin.H
+		failedMessage := L("lang_trans_save_failed", "Save locale messages failed")
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		err := c.WithTransaction(func(tx *gorm.DB) error {
+			regVal := regexp.MustCompile("Lang_(.*)_Value")
+			for key, val := range body {
+				value, ok := val.(string)
+				if !regVal.MatchString(key) || !ok || value == "" {
+					continue
+				}
+				langCode := regVal.ReplaceAllString(key, "$1")
+				if langCode != "" {
+					var (
+						err error
+						id  uint
+					)
+					langID := body[fmt.Sprintf("Lang_%s_ID", langCode)]
+					switch langID.(type) {
+					case float32:
+						id = uint(langID.(float32))
+					case float64:
+						id = uint(langID.(float64))
+					case int:
+						id = uint(langID.(int))
+					case int32:
+						id = uint(langID.(int32))
+					case int64:
+						id = uint(langID.(int64))
+					}
+					if id != 0 {
+						// 修改
+						err = tx.Model(&LanguageMessage{}).Where("id = ?", id).Update("value", value).Error
+					} else {
+						// 新增
+						err = tx.Create(&LanguageMessage{
+							LangCode: langCode,
+							Key:      body["Key"].(string),
+							Value:    value,
+						}).Error
+					}
+					if err != nil {
+						return err
+					}
+				}
+			}
+			return tx.Error
+		})
+		if err != nil {
+			c.STDErr(failedMessage, err)
+		} else {
+			c.STD("ok")
+		}
+	},
+}
+
+// LanglistPostRoute
+var LanglistPostRoute = RouteInfo{
+	Method: "POST",
+	Path:   "/langlist",
+	HandlerFunc: func(c *Context) {
+		var body []Language
+		failedMessage := L("lang_list_save_failed", "Save languages failed")
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		var languages []Language
+		c.DB().Select("id").Find(&languages)
+		err := c.WithTransaction(func(tx *gorm.DB) error {
+			existsIDs := make(map[uint]bool)
+			for _, item := range body {
+				if item.ID > 0 {
+					existsIDs[item.ID] = true
+					if err := tx.Model(&item).Updates(map[string]interface{}{"lang_code": item.LangCode, "lang_name": item.LangName}).Error; err != nil {
+						return err
+					}
+				} else {
+					if err := tx.Create(&item).Error; err != nil {
+						return err
+					}
+				}
+			}
+			// 删除不存在的
+			var deletedIDs []uint
+			for _, item := range languages {
+				if _, exists := existsIDs[item.ID]; !exists {
+					deletedIDs = append(deletedIDs, item.ID)
+				}
+			}
+			if len(deletedIDs) > 0 {
+				err := tx.Where("id IN (?)", deletedIDs).Delete(&Language{}).Error
+				if err != nil {
+					return err
+				}
+			}
+			return tx.Error
+		})
+		if err != nil {
+			c.STDErr(failedMessage, err)
+		} else {
+			c.STD("ok")
+		}
 	},
 }

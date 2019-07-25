@@ -98,6 +98,24 @@ func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister 
 	return r
 }
 
+// TranslatedList
+type TranslatedList []map[string]interface{}
+
+// Len
+func (l TranslatedList) Len() int {
+	return len(l)
+}
+
+// Less
+func (l TranslatedList) Less(i, j int) bool {
+	return l[i]["Sort"].(int) < l[j]["Sort"].(int)
+}
+
+// Swap
+func (l TranslatedList) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
 // L
 func L(key string, defaultMessage string, formattedContext ...interface{}) *LanguageMessage {
 	if key == "" || defaultMessage == "" {

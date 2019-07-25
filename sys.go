@@ -214,7 +214,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("model_docs_failed").Add("Model document query failed", "默认接口文档查询失败", "默認接口文檔查詢失敗")
 	register.SetKey("lang_switch_failed").Add("Language switching failed", "语言切换失败", "語言切換失敗")
 	register.SetKey("lang_msgs_failed").Add("Query messages failed", "查询国际化配置失败", "查詢國際化配置失敗")
-	register.SetKey("lang_translated_failed").Add("Query translated list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
+	register.SetKey("lang_trans_query_failed").Add("Query translation list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
+	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
 	register.SetKey("login_failed").Add("Login failed", "登录失败", "登錄失敗")
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
@@ -237,8 +238,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("menu_message").Add("Message", "消息", "消息")
 	// Fano
 	register.SetKey("fano_table_actions_add").Add("Add", "新增", "新增")
-	register.SetKey("fano_table_actions_del").Add("Del", "新增", "新增")
-	register.SetKey("fano_table_actions_cols").Add("Columns", "新增", "新增")
+	register.SetKey("fano_table_actions_del").Add("Del", "删除", "刪除")
+	register.SetKey("fano_table_actions_cols").Add("Columns", "隐藏列", "隱藏列")
 	register.SetKey("fano_table_actions_filter").Add("Filter", "过滤", "過濾")
 	register.SetKey("fano_table_actions_sort").Add("Sort", "排序", "排序")
 	register.SetKey("fano_table_actions_export").Add("Export", "导出", "導出")
@@ -289,6 +290,12 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_navbar_languages").Add("Languages", "语言切换", "語言切換")
 	register.SetKey("kuu_navbar_apikeys").Add("API & Keys", "API & Keys", "API & Keys")
 	register.SetKey("kuu_navbar_logout").Add("Logout", "退出登录", "退出登錄")
+	register.SetKey("kuu_i18n_key").Add("Key", "国际化键", "國際化鍵")
+	register.SetKey("kuu_i18n_keyword_placeholder").Add("Search keywords", "输入关键字", "輸入關鍵字")
+	register.SetKey("kuu_i18n_actions_languages").Add("Languages", "语言管理", "語言管理")
+	register.SetKey("kuu_i18n_languages_langcode").Add("Language code", "语言管理", "語言管理")
+	register.SetKey("kuu_i18n_languages_langname").Add("Language name", "语言管理", "語言管理")
+	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
 }
 
 func createPresetMenus(tx *gorm.DB) {
@@ -685,6 +692,9 @@ func Sys() *Mod {
 			EnumRoute,
 			ModelDocsRoute,
 			LangmsgsRoute,
+			LangtransGetRoute,
+			LangtransPostRoute,
+			LanglistPostRoute,
 		},
 		AfterImport: initSys,
 	}
