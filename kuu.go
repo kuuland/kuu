@@ -195,7 +195,12 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 			glsVals[GLSPrisDescKey] = kc.PrisDesc
 			glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
 			glsVals[GLSRequestContextKey] = kc
-			SetGLSValues(glsVals, func() { handler(kc) })
+			SetGLSValues(glsVals, func() {
+				if InWhitelist(c) {
+					IgnoreAuth()
+				}
+				handler(kc)
+			})
 		}
 	}
 	return
