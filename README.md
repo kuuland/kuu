@@ -908,12 +908,12 @@ func main() {
 func main() {
 	r := kuu.Default()
 	r.GET("/ping", func(c *kuu.Context) {
-        c.STD("hello")                      // response: {"data":"hello","code":0}
-        c.STD("hello", "Success")           // response: {"data":"hello","code":0,"msg":"Success"}
-        c.STD(200)                          // response: {"data":200,"code":0}
-        c.STDErr("New record failed")       // response: {"code":-1,"msg":"New record failed"}
-        c.STDErr("New record failed", err)  // response: {"code":-1,"msg":"New record failed","data":"错误详细描述信息，对应err.Error()"}
-        c.STDErrHold("Token decoding failed", err).Code(555).Render()  // response: {"code":555,"msg":"Token decoding failed","data":"错误详细描述信息，对应err.Error()"}
+        c.STD("hello")                                  // response: {"data":"hello","code":0}
+        c.STD("hello", c.L("ping_success", "Success"))  // response: {"data":"hello","code":0,"msg":"Success"}
+        c.STD(1800)                                     // response: {"data":1800,"code":0}
+        c.STDErr(c.L("ping_failed_new", "New record failed"))       // response: {"code":-1,"msg":"New record failed"}
+        c.STDErr(c.L("ping_failed_new", "New record failed"), err)  // response: {"code":-1,"msg":"New record failed","data":"错误详细描述信息，对应err.Error()"}
+        c.STDErrHold(c.L("ping_failed_token", "Token decoding failed"), errors.New("token not found")).Code(555).Render() // response: {"code":555,"msg":"Token decoding failed","data":"token not found"}
     })
 }
 ```
