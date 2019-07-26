@@ -123,7 +123,7 @@ func deleteCallback(scope *gorm.Scope) {
 
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		var desc *PrivilegesDesc
-		if desc = GetRoutinePrivilegesDesc(); desc != nil {
+		if desc = GetRoutinePrivilegesDesc(); desc.IsValid() {
 			AddDataScopeWritableSQL(scope, desc)
 		}
 
@@ -172,7 +172,7 @@ func deleteCallback(scope *gorm.Scope) {
 
 func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if desc := GetRoutinePrivilegesDesc(); desc != nil {
+		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
 			// 添加可写权限控制
 			AddDataScopeWritableSQL(scope, desc)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
@@ -193,34 +193,9 @@ func afterSaveCallback(scope *gorm.Scope) {
 
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		desc := GetRoutinePrivilegesDesc()
-		if desc == nil {
-			// 无登录登录态时
-			return
+		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
+			AddDataScopeReadableSQL(scope, desc)
 		}
-
-		caches := GetRoutineCaches()
-		if caches != nil {
-			// 有忽略标记时
-			if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-				return
-			}
-			// 查询用户菜单时
-			if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
-				if desc.NotRootUser() {
-					_, hasCodeField := scope.FieldByName("Code")
-					_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-					if hasCodeField && hasCreatedByIDField {
-						// 菜单数据权限控制与组织无关，且只有两种情况：
-						// 1.自己创建的，一定看得到
-						// 2.别人创建的，必须通过分配操作权限才能看到
-						scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
-					}
-				}
-				return
-			}
-		}
-		AddDataScopeReadableSQL(scope, desc)
 	}
 }
 
@@ -256,11 +231,43 @@ func validateCallback(scope *gorm.Scope) {
 
 // AddDataScopeReadableSQL
 func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	if !desc.IsValid() {
+		return
+	}
+
+	caches := GetRoutineCaches()
+	if caches != nil {
+		// 有忽略标记时
+		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
+			return
+		}
+		// 查询用户菜单时
+		if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
+			if desc.NotRootUser() {
+				_, hasCodeField := scope.FieldByName("Code")
+				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+				if hasCodeField && hasCreatedByIDField {
+					// 菜单数据权限控制与组织无关，且只有两种情况：
+					// 1.自己创建的，一定看得到
+					// 2.别人创建的，必须通过分配操作权限才能看到
+					scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
+				}
+			}
+			return
+		}
+	}
 	addDataScopeSQL(scope, desc, desc.ReadableOrgIDs)
 }
 
 // AddDataScopeWritableSQL
 func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
+	caches := GetRoutineCaches()
+	if caches != nil {
+		// 有忽略标记时
+		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
+			return
+		}
+	}
 	addDataScopeSQL(scope, desc, desc.WritableOrgIDs)
 }
 
@@ -273,7 +280,7 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 		attrs    []interface{}
 		hasOrgID bool
 	)
-	if f, ok := scope.FieldByName("OrgID"); ok {
+	if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
 		sqls = append(sqls, "("+f.DBName+" in (?))")
 		attrs = append(attrs, orgIDs)
 		hasOrgID = ok

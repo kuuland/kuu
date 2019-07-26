@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -897,7 +896,7 @@ var LangtransPostRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
-		var body gin.H
+		var body M
 		failedMessage := L("lang_trans_save_failed", "Save locale messages failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
 			c.STDErr(failedMessage, err)

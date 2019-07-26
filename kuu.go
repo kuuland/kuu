@@ -34,6 +34,9 @@ var (
 	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_ENV") == "prod"
 )
 
+// M is a shortcut for map[string]interface{}
+type M map[string]interface{}
+
 // HandlerFunc defines the handler used by ok middleware as return value.
 type HandlerFunc func(*Context)
 
@@ -73,7 +76,7 @@ func Default() (e *Engine) {
 	e = &Engine{Engine: gin.Default()}
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
-			msg := L("kuu_up", "{{time}}", gin.H{"time": RunTime.Format("2006-01-02 15:04:05")})
+			msg := L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})
 			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), msg)
 		})
 	}

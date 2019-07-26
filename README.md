@@ -37,6 +37,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Get login context](#get-login-context)
     - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
+    - [i18n](#i18n)
     - [Preset modules](#preset-modules)
         - [Security framework](#security-framework)
 - [FAQ](#faq)
@@ -972,6 +973,40 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 ```
 
 > Notes: Whitelist also matches paths with global `prefix`. If you don't want this feature, please set `"whitelist:prefix":false`.
+
+### i18n
+
+```go
+L(key string, defaultMessage string, formattedContext ...interface{})
+
+kuu.L("acc_logout_failed", "Logout failed").Render()                                // => Logout failed
+kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render()    // => Total 500 items
+```
+
+```go
+func handlerFunc(c *kuu.Context) {
+    var (
+        body          kuu.M
+        books         []Book
+        failedMessage = c.L("book_private_failed", "Querying books failed") // c.L is a shortcut for kuu.L
+    )
+
+    if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+        c.STDErr(failedMessage, err)
+        return
+    }
+
+    if err := c.DB().Where(body).Find(&books).Error; err != nil {
+        c.STDErr(failedMessage, err)
+        return
+    }
+    c.STD(books)
+}
+```
+Notes: 
+
+- Use a unique `key`
+- Default message is required
 
 ### Preset modules
 
