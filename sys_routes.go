@@ -840,6 +840,7 @@ var LangtransGetRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
+		c.IgnoreAuth()
 		failedMessage := L("lang_trans_query_failed", "Query translation list failed")
 		var (
 			languages []Language

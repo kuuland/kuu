@@ -276,16 +276,14 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 		return
 	}
 	var (
-		sqls     []string
-		attrs    []interface{}
-		hasOrgID bool
+		sqls  []string
+		attrs []interface{}
 	)
 	if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
 		sqls = append(sqls, "("+f.DBName+" in (?))")
 		attrs = append(attrs, orgIDs)
-		hasOrgID = ok
 	}
-	if f, ok := scope.FieldByName("CreatedByID"); ok && hasOrgID {
+	if f, ok := scope.FieldByName("CreatedByID"); ok {
 		sqls = append(sqls, "("+f.DBName+" = ?)")
 		attrs = append(attrs, desc.UID)
 	}

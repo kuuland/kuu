@@ -117,6 +117,9 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 
 func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
+		if InWhitelist(c.Context) {
+			c.IgnoreAuth()
+		}
 		var (
 			result interface{}
 			err    error
@@ -205,6 +208,9 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 
 func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
+		if InWhitelist(c.Context) {
+			c.IgnoreAuth()
+		}
 		ret := new(BizQueryResult)
 		scope := DB().NewScope(reflect.New(reflectType).Interface())
 		// 处理cond
@@ -359,6 +365,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 
 func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
+		if InWhitelist(c.Context) {
+			c.IgnoreAuth()
+		}
 		var (
 			result interface{}
 			err    error
@@ -455,6 +464,9 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 
 func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
+		if InWhitelist(c.Context) {
+			c.IgnoreAuth()
+		}
 		var (
 			docs  []interface{}
 			multi bool

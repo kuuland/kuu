@@ -184,11 +184,10 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 			kc := &Context{
 				Context:       c,
 				RoutineCaches: make(RoutineCaches),
+				SignInfo:      GetSignContext(c),
 			}
-			if !InWhitelist(c) {
-				sign := GetSignContext(c)
+			if kc.SignInfo.IsValid() {
 				desc := GetPrivilegesDesc(c)
-				kc.SignInfo = sign
 				kc.PrisDesc = desc
 			}
 			glsVals := make(gls.Values)
