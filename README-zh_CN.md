@@ -3,9 +3,9 @@
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 [![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
 
-English | [简体中文](./README-zh_CN.md)
+[English](./README.md) | 简体中文
 
-Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gin](https://github.com/gin-gonic/gin).
+基于 [GORM](https://github.com/jinzhu/gorm) 和 [Gin](https://github.com/gin-gonic/gin) 的模块化Web开发框架。
 
 ## Contents
 
