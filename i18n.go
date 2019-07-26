@@ -46,7 +46,7 @@ func (m *LanguageMessage) Render() string {
 	if v, has := messages[m.Key]; has {
 		template = v.Value
 	} else {
-		return m.DefaultMessage
+		template = m.DefaultMessage
 	}
 	return mustache.Render(template, m.FormattedContext)
 }
