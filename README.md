@@ -979,8 +979,8 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 ```go
 L(key string, defaultMessage string, formattedContext ...interface{})
 
-kuu.L("acc_logout_failed", "Logout failed").Render()                                // => Logout failed
-kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render()    // => Total 500 items
+kuu.L("acc_logout_failed", "Logout failed").Render()                             // => Logout failed
+kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render() // => Total 500 items
 ```
 
 ```go
@@ -988,7 +988,7 @@ func handlerFunc(c *kuu.Context) {
     var (
         body          kuu.M
         books         []Book
-        failedMessage = c.L("book_private_failed", "Querying books failed") // c.L is a shortcut for kuu.L
+        failedMessage = c.L("book_private_failed", "Querying books failed")
     )
 
     if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
