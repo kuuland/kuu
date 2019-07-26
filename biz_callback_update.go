@@ -23,7 +23,7 @@ func bizUpdateCallback(scope *Scope) {
 				}
 			} else {
 				itemScope := tx.NewScope(item)
-				if field, ok := itemScope.FieldByName("DeletedAt"); ok {
+				if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
 					if err := itemScope.SetColumn(field.DBName, nil); err != nil {
 						ERROR("清空 DeletedAt 字段失败：%s", err.Error())
 					}
@@ -54,7 +54,7 @@ func bizUpdateCallback(scope *Scope) {
 				}
 			}
 		}
-		if err := scope.DB.Model(scope.UpdateCond).Updates(scope.Value).Error; err != nil {
+		if err := scope.DB.Model(scope.UpdateCond).Set("gorm:association_autoupdate", false).Updates(scope.Value).Error; err != nil {
 			_ = scope.Err(err)
 		}
 	}

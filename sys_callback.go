@@ -127,7 +127,7 @@ func deleteCallback(scope *gorm.Scope) {
 			AddDataScopeWritableSQL(scope, desc)
 		}
 
-		if !scope.Search.Unscoped && hasDeletedAtField {
+		if !scope.Search.Unscoped && hasDeletedAtField && !deletedAtField.IsBlank {
 			var sql string
 			if desc != nil {
 				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
