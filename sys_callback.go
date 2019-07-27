@@ -107,7 +107,7 @@ func createCallback(scope *gorm.Scope) {
 					return
 				}
 			} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
-				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中对 %v 无可写权限", desc.UID, orgID, scope.Value))
+				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
 				return
 			}
 		}
