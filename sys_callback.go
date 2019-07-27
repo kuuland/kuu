@@ -76,16 +76,6 @@ func createCallback(scope *gorm.Scope) {
 				hasCreatedByIDField bool = false
 				createdByID         uint
 			)
-			if field, ok := scope.FieldByName("OrgID"); ok {
-				if field.IsBlank {
-					if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
-						_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
-						return
-					}
-				}
-				hasOrgIDField = ok
-				orgID = field.Field.Interface().(uint)
-			}
 			if field, ok := scope.FieldByName("CreatedByID"); ok {
 				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
 					_ = scope.Err(fmt.Errorf("自动设置创建人ID失败：%s", err.Error()))
@@ -100,15 +90,34 @@ func createCallback(scope *gorm.Scope) {
 					return
 				}
 			}
-			// 写权限判断
-			if orgID == 0 {
+
+			if desc.SignInfo.SubDocID != 0 {
+				// 基于扩展档案ID的数据权限
 				if hasCreatedByIDField && createdByID != desc.UID {
 					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
 					return
 				}
-			} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
-				_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
-				return
+			} else {
+				// 基于组织的数据权限
+				if field, ok := scope.FieldByName("OrgID"); ok {
+					if field.IsBlank {
+						if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
+							_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
+							return
+						}
+					}
+					hasOrgIDField = ok
+					orgID = field.Field.Interface().(uint)
+				}
+				if orgID == 0 {
+					if hasCreatedByIDField && createdByID != desc.UID {
+						_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
+						return
+					}
+				} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
+					_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
+					return
+				}
 			}
 		}
 	}
@@ -279,12 +288,14 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 		sqls  []string
 		attrs []interface{}
 	)
-	if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
+	if desc.SignInfo.SubDocID != 0 {
 		// 基于扩展档案ID的数据权限
-		for _, name := range names {
-			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "("+f.DBName+" = ?)")
-				attrs = append(attrs, desc.SignInfo.SubDocID)
+		if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
+			for _, name := range names {
+				if f, ok := scope.FieldByName(name); ok {
+					sqls = append(sqls, "("+f.DBName+" = ?)")
+					attrs = append(attrs, desc.SignInfo.SubDocID)
+				}
 			}
 		}
 	} else {
