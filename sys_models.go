@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"gopkg.in/guregu/null.v3"
 	"strings"
 	"time"
 )
@@ -67,9 +68,9 @@ type User struct {
 	Sex         int          `name:"性别"`
 	Mobile      string       `name:"手机号"`
 	Email       string       `name:"邮箱地址"`
-	Disable     NullBool     `name:"是否禁用"`
+	Disable     null.Bool    `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
-	IsBuiltIn   NullBool     `name:"是否内置"`
+	IsBuiltIn   null.Bool    `name:"是否内置"`
 	SubDocID    uint         `name:"扩展档案ID"`
 	Lang        string       `name:"最近使用语言"`
 }
@@ -186,7 +187,7 @@ type Role struct {
 	Name                string                `name:"角色名称" gorm:"not null"`
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
-	IsBuiltIn           NullBool              `name:"是否内置"`
+	IsBuiltIn           null.Bool             `name:"是否内置"`
 }
 
 // AfterSave
@@ -221,20 +222,20 @@ type DataPrivileges struct {
 type Menu struct {
 	ModelExOrg `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string   `name:"菜单编码"`
-	Name          string   `name:"菜单名称" gorm:"not null"`
-	URI           string   `name:"菜单地址"`
-	Icon          string   `name:"菜单图标"`
-	Pid           uint     `name:"父菜单ID"`
-	Group         string   `name:"菜单分组名"`
-	Disable       NullBool `name:"是否禁用"`
-	IsLink        NullBool `name:"是否外链"`
-	Sort          int      `name:"排序值"`
-	IsBuiltIn     NullBool `name:"是否内置"`
-	IsDefaultOpen NullBool `name:"是否默认打开"`
-	Closeable     NullBool `name:"是否可关闭"`
-	LocaleKey     string   `name:"国际化语言键"`
-	IsVirtual     NullBool
+	Code          string    `name:"菜单编码"`
+	Name          string    `name:"菜单名称" gorm:"not null"`
+	URI           string    `name:"菜单地址"`
+	Icon          string    `name:"菜单图标"`
+	Pid           uint      `name:"父菜单ID"`
+	Group         string    `name:"菜单分组名"`
+	Disable       null.Bool `name:"是否禁用"`
+	IsLink        null.Bool `name:"是否外链"`
+	Sort          int       `name:"排序值"`
+	IsBuiltIn     null.Bool `name:"是否内置"`
+	IsDefaultOpen null.Bool `name:"是否默认打开"`
+	Closeable     null.Bool `name:"是否可关闭"`
+	LocaleKey     string    `name:"国际化语言键"`
+	IsVirtual     null.Bool
 	Type          string
 }
 
@@ -322,8 +323,8 @@ func (o *SignOrg) IsValid() bool {
 type Param struct {
 	Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string   `name:"参数编码" gorm:"not null"`
-	Name      string   `name:"参数名称" gorm:"not null"`
-	Value     string   `name:"参数值"`
-	IsBuiltIn NullBool `name:"是否预置"`
+	Code      string    `name:"参数编码" gorm:"not null"`
+	Name      string    `name:"参数名称" gorm:"not null"`
+	Value     string    `name:"参数值"`
+	IsBuiltIn null.Bool `name:"是否预置"`
 }

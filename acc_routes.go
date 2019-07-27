@@ -3,6 +3,7 @@ package kuu
 import (
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v3"
 	"regexp"
 	"time"
 )
@@ -31,7 +32,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Method:   "LOGIN",
 		SubDocID: desc.SubDocID,
 		Desc:     desc.Desc,
-		IsAPIKey: NewNullBool(desc.IsAPIKey),
+		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
 	}
 	// 签发令牌
 	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {

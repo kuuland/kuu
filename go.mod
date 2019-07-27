@@ -17,5 +17,6 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
+	gopkg.in/guregu/null.v3 v3.4.0
 	gopkg.in/yaml.v2 v2.2.2
 )

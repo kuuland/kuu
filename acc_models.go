@@ -3,6 +3,7 @@ package kuu
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
+	"gopkg.in/guregu/null.v3"
 	"strings"
 )
 
@@ -18,15 +19,15 @@ type SignHistory struct {
 // SignSecret
 type SignSecret struct {
 	gorm.Model `rest:"*" displayName:"令牌密钥"`
-	UID        uint     `name:"用户ID"`
-	SubDocID   uint     `name:"扩展档案ID"`
-	Desc       string   `name:"令牌描述"`
-	Secret     string   `name:"令牌密钥"`
-	Token      string   `name:"令牌" gorm:"size:4096"`
-	Iat        int64    `name:"令牌签发时间戳"`
-	Exp        int64    `name:"令牌过期时间戳"`
-	Method     string   `name:"登录/登出"`
-	IsAPIKey   NullBool `name:"是否API Key"`
+	UID        uint      `name:"用户ID"`
+	SubDocID   uint      `name:"扩展档案ID"`
+	Desc       string    `name:"令牌描述"`
+	Secret     string    `name:"令牌密钥"`
+	Token      string    `name:"令牌" gorm:"size:4096"`
+	Iat        int64     `name:"令牌签发时间戳"`
+	Exp        int64     `name:"令牌过期时间戳"`
+	Method     string    `name:"登录/登出"`
+	IsAPIKey   null.Bool `name:"是否API Key"`
 }
 
 // AfterSave
