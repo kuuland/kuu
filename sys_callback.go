@@ -75,6 +75,7 @@ func createCallback(scope *gorm.Scope) {
 				orgID               uint
 				hasCreatedByIDField bool = false
 				createdByID         uint
+				subDocIDNames       = Meta(scope.Value).SubDocIDNames
 			)
 			if field, ok := scope.FieldByName("CreatedByID"); ok {
 				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
@@ -91,7 +92,7 @@ func createCallback(scope *gorm.Scope) {
 				}
 			}
 
-			if desc.SignInfo.SubDocID != 0 {
+			if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 				// 基于扩展档案ID的数据权限
 				if hasCreatedByIDField && createdByID != desc.UID {
 					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
@@ -285,17 +286,17 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 		return
 	}
 	var (
-		sqls  []string
-		attrs []interface{}
+		sqls          []string
+		attrs         []interface{}
+		subDocIDNames = Meta(scope.Value).SubDocIDNames
 	)
-	if desc.SignInfo.SubDocID != 0 {
+
+	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 		// 基于扩展档案ID的数据权限
-		if names := Meta(scope.Value).SubDocIDNames(); len(names) > 0 {
-			for _, name := range names {
-				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, "("+f.DBName+" = ?)")
-					attrs = append(attrs, desc.SignInfo.SubDocID)
-				}
+		for _, name := range subDocIDNames {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.SignInfo.SubDocID)
 			}
 		}
 	} else {
@@ -308,7 +309,7 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 			sqls = append(sqls, "("+f.DBName+" = ?)")
 			attrs = append(attrs, desc.UID)
 		}
-		if names := Meta(scope.Value).OrgIDNames(); len(names) > 0 {
+		if names := Meta(scope.Value).OrgIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, "("+f.DBName+" in (?))")
@@ -316,7 +317,7 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 				}
 			}
 		}
-		if names := Meta(scope.Value).UIDNames(); len(names) > 0 {
+		if names := Meta(scope.Value).UIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, "("+f.DBName+" = ?)")

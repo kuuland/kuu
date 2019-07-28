@@ -16,12 +16,15 @@ var (
 
 // Metadata
 type Metadata struct {
-	Name        string
-	DisplayName string
-	FullName    string
-	Fields      []MetadataField
-	RestDesc    *RestDesc    `json:"-"`
-	reflectType reflect.Type `json:"-"`
+	Name          string
+	DisplayName   string
+	FullName      string
+	Fields        []MetadataField
+	RestDesc      *RestDesc    `json:"-"`
+	reflectType   reflect.Type `json:"-"`
+	SubDocIDNames []string
+	UIDNames      []string
+	OrgIDNames    []string
 }
 
 // MetadataField
@@ -34,9 +37,6 @@ type MetadataField struct {
 	Enum       string
 	IsRef      bool
 	IsPassword bool
-	IsUID      bool
-	IsSubDocID bool
-	IsOrgID    bool
 	IsArray    bool
 }
 
@@ -85,42 +85,6 @@ func (m *Metadata) OmitPassword(data interface{}) interface{} {
 		execOmit(indirectValue)
 	}
 	return data
-}
-
-// UIDNames
-func (m *Metadata) UIDNames() (names []string) {
-	if m != nil {
-		for _, field := range m.Fields {
-			if field.IsUID {
-				names = append(names, field.Code)
-			}
-		}
-	}
-	return
-}
-
-// SubDocIDNames
-func (m *Metadata) SubDocIDNames() (names []string) {
-	if m != nil {
-		for _, field := range m.Fields {
-			if field.IsSubDocID {
-				names = append(names, field.Code)
-			}
-		}
-	}
-	return
-}
-
-// OrgIDNames
-func (m *Metadata) OrgIDNames() (names []string) {
-	if m != nil {
-		for _, field := range m.Fields {
-			if field.IsOrgID {
-				names = append(names, field.Code)
-			}
-		}
-	}
-	return
 }
 
 func parseMetadata(value interface{}) (m *Metadata) {
@@ -189,18 +153,19 @@ func parseMetadata(value interface{}) (m *Metadata) {
 				}
 			}
 		}
-		if kuu := fieldStruct.Tag.Get("kuu"); kuu != "" {
-			if strings.Contains(kuu, "password") {
+		tagSettings := parseTagSetting(fieldStruct.Tag, "kuu")
+		if len(tagSettings) > 0 {
+			if _, exists := tagSettings["password"]; exists {
 				field.IsPassword = true
 			}
-			if strings.Contains(kuu, "uid") {
-				field.IsUID = true
+			if v, exists := tagSettings["uids"]; exists {
+				m.UIDNames = strings.Split(v, ",")
 			}
-			if strings.Contains(kuu, "subid") {
-				field.IsSubDocID = true
+			if v, exists := tagSettings["sub_ids"]; exists {
+				m.SubDocIDNames = strings.Split(v, ",")
 			}
-			if strings.Contains(kuu, "orgid") {
-				field.IsOrgID = true
+			if v, exists := tagSettings["org_ids"]; exists {
+				m.OrgIDNames = strings.Split(v, ",")
 			}
 		}
 

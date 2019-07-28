@@ -73,6 +73,7 @@ type User struct {
 	IsBuiltIn   null.Bool    `name:"是否内置"`
 	SubDocID    uint         `name:"扩展档案ID"`
 	Lang        string       `name:"最近使用语言"`
+	AllowLogin  bool         `name:"允许登录"`
 }
 
 // BeforeSave
