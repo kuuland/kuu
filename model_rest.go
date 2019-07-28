@@ -614,6 +614,9 @@ func parseTagSetting(tags reflect.StructTag, tagKey string) map[string]string {
 	str := tags.Get(tagKey)
 	split := strings.Split(str, ";")
 	for _, value := range split {
+		if value == "" {
+			continue
+		}
 		v := strings.Split(value, ":")
 		k := strings.TrimSpace(strings.ToUpper(v[0]))
 		if len(v) >= 2 {

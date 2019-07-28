@@ -69,6 +69,7 @@ func (e *Engine) Import(mods ...*Mod) {
 			desc := RESTful(e, model)
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
+				meta.ModCode = mod.Code
 				defaultTableName := gorm.ToTableName(meta.Name)
 				pluralTableName := inflection.Plural(defaultTableName)
 

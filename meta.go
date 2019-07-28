@@ -16,6 +16,7 @@ var (
 
 // Metadata
 type Metadata struct {
+	ModCode       string
 	Name          string
 	DisplayName   string
 	FullName      string
@@ -155,16 +156,16 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		tagSettings := parseTagSetting(fieldStruct.Tag, "kuu")
 		if len(tagSettings) > 0 {
-			if _, exists := tagSettings["password"]; exists {
+			if _, exists := tagSettings["PASSWORD"]; exists {
 				field.IsPassword = true
 			}
-			if v, exists := tagSettings["uids"]; exists {
+			if v, exists := tagSettings["UIDS"]; exists {
 				m.UIDNames = strings.Split(v, ",")
 			}
-			if v, exists := tagSettings["sub_ids"]; exists {
+			if v, exists := tagSettings["SUB_IDS"]; exists {
 				m.SubDocIDNames = strings.Split(v, ",")
 			}
-			if v, exists := tagSettings["org_ids"]; exists {
+			if v, exists := tagSettings["ORG_IDS"]; exists {
 				m.OrgIDNames = strings.Split(v, ",")
 			}
 		}
