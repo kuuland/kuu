@@ -91,6 +91,23 @@ func createCallback(scope *gorm.Scope) {
 					return
 				}
 			}
+			if field, ok := scope.FieldByName("OrgID"); ok {
+				if field.IsBlank {
+					if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
+						_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
+						return
+					}
+				}
+				hasOrgIDField = ok
+				orgID = field.Field.Interface().(uint)
+			}
+
+			// 有忽略标记时
+			if caches := GetRoutineCaches(); caches != nil {
+				if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
+					return
+				}
+			}
 
 			if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 				// 基于扩展档案ID的数据权限
@@ -100,16 +117,6 @@ func createCallback(scope *gorm.Scope) {
 				}
 			} else {
 				// 基于组织的数据权限
-				if field, ok := scope.FieldByName("OrgID"); ok {
-					if field.IsBlank {
-						if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
-							_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
-							return
-						}
-					}
-					hasOrgIDField = ok
-					orgID = field.Field.Interface().(uint)
-				}
 				if orgID == 0 {
 					if hasCreatedByIDField && createdByID != desc.UID {
 						_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
