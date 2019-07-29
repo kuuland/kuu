@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -181,7 +180,7 @@ func deleteCallback(scope *gorm.Scope) {
 			)).Exec()
 		}
 		if scope.DB().RowsAffected < 1 {
-			_ = scope.Err(errors.New("未删除任何记录，请检查更新条件或数据权限"))
+			_ = scope.Err(ErrAffectedDeleteToken)
 			return
 		}
 	}
@@ -202,7 +201,7 @@ func updateCallback(scope *gorm.Scope) {
 func afterSaveCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if scope.DB().RowsAffected < 1 {
-			_ = scope.Err(errors.New("未新增或修改任何记录，请检查更新条件或数据权限"))
+			_ = scope.Err(ErrAffectedSaveToken)
 			return
 		}
 	}

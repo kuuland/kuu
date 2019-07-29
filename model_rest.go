@@ -158,12 +158,14 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 			// 先查询更新前的数据
 			if multi {
 				result = reflect.New(reflect.SliceOf(reflectType)).Interface()
-				queryDB.Find(result)
+				queryDB = queryDB.Find(result)
 			} else {
 				result = reflect.New(reflectType).Interface()
-				queryDB.First(result)
+				queryDB = queryDB.First(result)
 			}
-
+			if queryDB.RowsAffected < 1 {
+				return ErrAffectedSaveToken
+			}
 			updateFields := func(val interface{}) error {
 				doc := reflect.New(reflectType).Interface()
 				if err := Copy(params.Doc, doc); err != nil {
@@ -421,6 +423,9 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 			if multi {
 				result = reflect.New(reflect.SliceOf(reflectType)).Interface()
 				tx = tx.Find(result)
+				if tx.RowsAffected < 1 {
+					return ErrAffectedDeleteToken
+				}
 				if params.UnSoft {
 					tx = tx.Unscoped()
 				}
@@ -434,6 +439,9 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 			} else {
 				result = reflect.New(reflectType).Elem().Addr().Interface()
 				tx = tx.First(result)
+				if tx.RowsAffected < 1 {
+					return ErrAffectedDeleteToken
+				}
 				if params.UnSoft {
 					tx = tx.Unscoped()
 				}

@@ -197,12 +197,12 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	})
 	// 注册国际化消息条目
 	register := NewLangRegister(tx)
+	register.SetKey("kuu_up").Add("{{time}}", "{{time}}", "{{time}}")
 	// 接口
 	register.SetKey("acc_token_failed").Add("Token signing failed", "令牌签发失败", "令牌簽發失敗")
 	register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
 	register.SetKey("acc_token_expired").Add("Token has expired", "令牌已过期", "令牌已過期")
 	register.SetKey("apikeys_failed").Add("Create Access Key failed", "创建访问密钥失败", "創建訪問密鑰失敗")
-	register.SetKey("kuu_up").Add("{{time}}", "{{time}}", "{{time}}")
 	register.SetKey("acc_please_login").Add("Please login", "请登录", "請登錄")
 	register.SetKey("acc_session_expired").Add("Login session has expired", "登录会话已过期", "登錄會話已過期")
 	register.SetKey("org_login_failed").Add("Organization login failed", "组织登入失败", "組織登入失敗")
@@ -299,7 +299,6 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_i18n_languages_langcode").Add("Language code", "语言编码", "語言編碼")
 	register.SetKey("kuu_i18n_languages_langname").Add("Language name", "语言名称", "語言名稱")
 	// Kuu Login
-	register.SetKey("kuu_login_unorganized").Add("You are unorganized", "语言名称", "語言名稱")
 	register.SetKey("kuu_login_username_required").Add("Please enter your username", "请输入登录账号", "請輸入登錄賬號")
 	register.SetKey("kuu_login_username_placeholder").Add("Username", "账号", "賬號")
 	register.SetKey("kuu_login_password_required").Add("Please enter your password", "请输入登录密码", "請輸入登錄密碼")
@@ -307,6 +306,21 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_login_password_forgot").Add("Forgot your password?", "忘记密码？", "忘記密碼？")
 	register.SetKey("kuu_login_remember").Add("Remember", "记住我", "記住我")
 	register.SetKey("kuu_login_btn_submit").Add("Login", "登录", "登錄")
+	// Kuu Layout Tabs
+	register.SetKey("kuu_layout_tabs_refresh").Add("Refresh", "刷新", "刷新")
+	register.SetKey("kuu_layout_tabs_close_others").Add("Close Others", "关闭其他", "關閉其他")
+	register.SetKey("kuu_layout_tabs_close_left").Add("Close All to the Left", "关闭左侧", "關閉左側")
+	register.SetKey("kuu_layout_tabs_close_right").Add("Close All to the Right", "关闭右侧", "關閉右側")
+	// Kuu Exception
+	register.SetKey("kuu_exception_403").Add("Sorry, you don't have access to this page.", "抱歉，您无权访问此页面。", "抱歉，您無權訪問此頁面。")
+	register.SetKey("kuu_exception_404").Add("Sorry, the page you visited does not exist.", "抱歉，您访问的页面不存在。", "抱歉，您訪問的頁面不存在。")
+	register.SetKey("kuu_exception_500").Add("Sorry, the server is reporting an error.", "抱歉，服务器报告错误。", "抱歉，服務器報告錯誤。")
+	register.SetKey("kuu_exception_btn_back").Add("back to home", "回到主页", "回到主頁")
+	// Kuu Org
+	register.SetKey("kuu_org_unorganized").Add("You have not assigned any organization", "您尚未分配任何组织", "您尚未分配任何組織")
+	register.SetKey("kuu_org_select_login").Add("Please select a login organization", "请选择登录组织", "請選擇登入組織")
+	register.SetKey("kuu_org_btn_login").Add("Login", "登录", "登錄")
+
 }
 
 func createPresetMenus(tx *gorm.DB) {
