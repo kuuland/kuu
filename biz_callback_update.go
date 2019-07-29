@@ -54,7 +54,10 @@ func bizUpdateCallback(scope *Scope) {
 				}
 			}
 		}
-		if err := scope.DB.Model(scope.UpdateCond).Set("gorm:association_autoupdate", false).Updates(scope.Value).Error; err != nil {
+		scope.DB = scope.DB.Model(scope.UpdateCond).
+			Set("gorm:association_autoupdate", false).
+			Updates(scope.Value)
+		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)
 		} else if scope.DB.RowsAffected < 1 {
 			_ = scope.Err(ErrAffectedSaveToken)
