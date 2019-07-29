@@ -150,12 +150,6 @@ var UserMenusRoute = RouteInfo{
 			return result
 		}
 		menus = fall(menus)
-		for index, item := range menus {
-			if item.LocaleKey != "" {
-				item.Name = L(item.LocaleKey, item.Name).Render()
-			}
-			menus[index] = item
-		}
 		c.STD(menus)
 	},
 }

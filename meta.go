@@ -23,9 +23,9 @@ type Metadata struct {
 	Fields        []MetadataField
 	RestDesc      *RestDesc    `json:"-"`
 	reflectType   reflect.Type `json:"-"`
-	SubDocIDNames []string
-	UIDNames      []string
-	OrgIDNames    []string
+	SubDocIDNames []string     `json:"-" gorm:"-"`
+	UIDNames      []string     `json:"-" gorm:"-"`
+	OrgIDNames    []string     `json:"-" gorm:"-"`
 }
 
 // MetadataField

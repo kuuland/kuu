@@ -217,6 +217,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("lang_msgs_failed").Add("Query messages failed", "查询国际化配置失败", "查詢國際化配置失敗")
 	register.SetKey("lang_trans_query_failed").Add("Query translation list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
 	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
+	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
 	register.SetKey("login_failed").Add("Login failed", "登录失败", "登錄失敗")
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
@@ -285,18 +286,27 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("fano_placeholder_keyword").Add("Please enter a keyword", "请输入关键字", "請輸入關鍵字")
 	register.SetKey("fano_form_btnsubmit").Add("Submit", "提交", "提交")
 	register.SetKey("fano_form_btncancel").Add("Cancel", "取消", "取消")
-	// Kuu UI
+	// Kuu Navbar
 	register.SetKey("kuu_navbar_profile").Add("Profile", "个人中心", "個人中心")
 	register.SetKey("kuu_navbar_changepass").Add("Change password", "修改密码", "修改密碼")
 	register.SetKey("kuu_navbar_languages").Add("Languages", "语言切换", "語言切換")
 	register.SetKey("kuu_navbar_apikeys").Add("API & Keys", "API & Keys", "API & Keys")
 	register.SetKey("kuu_navbar_logout").Add("Logout", "退出登录", "退出登錄")
+	// Kuu i18n
 	register.SetKey("kuu_i18n_key").Add("Key", "国际化键", "國際化鍵")
 	register.SetKey("kuu_i18n_keyword_placeholder").Add("Search keywords", "输入关键字", "輸入關鍵字")
 	register.SetKey("kuu_i18n_actions_languages").Add("Languages", "语言管理", "語言管理")
-	register.SetKey("kuu_i18n_languages_langcode").Add("Language code", "语言管理", "語言管理")
-	register.SetKey("kuu_i18n_languages_langname").Add("Language name", "语言管理", "語言管理")
-	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
+	register.SetKey("kuu_i18n_languages_langcode").Add("Language code", "语言编码", "語言編碼")
+	register.SetKey("kuu_i18n_languages_langname").Add("Language name", "语言名称", "語言名稱")
+	// Kuu Login
+	register.SetKey("kuu_login_unorganized").Add("You are unorganized", "语言名称", "語言名稱")
+	register.SetKey("kuu_login_username_required").Add("Please enter your username", "请输入登录账号", "請輸入登錄賬號")
+	register.SetKey("kuu_login_username_placeholder").Add("Username", "账号", "賬號")
+	register.SetKey("kuu_login_password_required").Add("Please enter your password", "请输入登录密码", "請輸入登錄密碼")
+	register.SetKey("kuu_login_password_placeholder").Add("Password", "密码", "密碼")
+	register.SetKey("kuu_login_password_forgot").Add("Forgot your password?", "忘记密码？", "忘記密碼？")
+	register.SetKey("kuu_login_remember").Add("Remember", "记住我", "記住我")
+	register.SetKey("kuu_login_btn_submit").Add("Login", "登录", "登錄")
 }
 
 func createPresetMenus(tx *gorm.DB) {
