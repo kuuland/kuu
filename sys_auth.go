@@ -111,6 +111,7 @@ type PrivilegesDesc struct {
 	Valid            bool
 	SignOrgID        uint
 	SignInfo         *SignContext
+	RolesCode        []string
 }
 
 // IsWritableOrgID
@@ -169,6 +170,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		if assign.Role == nil {
 			continue
 		}
+		desc.RolesCode = append(desc.RolesCode, assign.Role.Code)
 		roleIDs = append(roleIDs, strconv.Itoa(int(assign.Role.ID)))
 		for _, op := range assign.Role.OperationPrivileges {
 			if op.MenuCode != "" {
