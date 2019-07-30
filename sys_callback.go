@@ -140,7 +140,7 @@ func deleteCallback(scope *gorm.Scope) {
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		var desc *PrivilegesDesc
 		if desc = GetRoutinePrivilegesDesc(); desc.IsValid() {
-			AddDataScopeWritableSQL(scope, desc)
+			addSearchWheres(scope, desc, desc.WritableOrgIDs)
 		}
 
 		if !scope.Search.Unscoped && hasDeletedAtField && !deletedAtField.IsBlank {
@@ -190,7 +190,7 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
 			// 添加可写权限控制
-			AddDataScopeWritableSQL(scope, desc)
+			addSearchWheres(scope, desc, desc.WritableOrgIDs)
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
@@ -210,7 +210,7 @@ func afterSaveCallback(scope *gorm.Scope) {
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
-			AddDataScopeReadableSQL(scope, desc)
+			addSearchWheres(scope, desc, desc.ReadableOrgIDs)
 		}
 	}
 }
@@ -245,9 +245,15 @@ func validateCallback(scope *gorm.Scope) {
 	}
 }
 
-// AddDataScopeReadableSQL
-func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	if !desc.IsValid() {
+func addSearchWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
+	sqls, attrs := GetDataScopeWheres(scope, desc, orgIDs)
+	if len(sqls) > 0 {
+		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
+	}
+}
+
+func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
+	if scope.Value == nil || !desc.IsValid() {
 		return
 	}
 
@@ -272,31 +278,8 @@ func AddDataScopeReadableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
 			return
 		}
 	}
-	addDataScopeSQL(scope, desc, desc.ReadableOrgIDs)
-}
 
-// AddDataScopeWritableSQL
-func AddDataScopeWritableSQL(scope *gorm.Scope, desc *PrivilegesDesc) {
-	caches := GetRoutineCaches()
-	if caches != nil {
-		// 有忽略标记时
-		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-			return
-		}
-	}
-	addDataScopeSQL(scope, desc, desc.WritableOrgIDs)
-}
-
-func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
-	if scope.Value == nil {
-		return
-	}
-	var (
-		sqls          []string
-		attrs         []interface{}
-		subDocIDNames = Meta(scope.Value).SubDocIDNames
-	)
-
+	subDocIDNames := Meta(scope.Value).SubDocIDNames
 	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 		// 基于扩展档案ID的数据权限
 		for _, name := range subDocIDNames {
@@ -332,9 +315,21 @@ func addDataScopeSQL(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 			}
 		}
 	}
+	return
+}
+
+// CountWheres
+func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
+	var (
+		meta  = Meta(valueOrName)
+		scope = db.NewScope(meta.NewValue())
+		desc  = GetRoutinePrivilegesDesc()
+	)
+	sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
 	if len(sqls) > 0 {
-		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
+		db = db.Where(strings.Join(sqls, " OR "), attrs...)
 	}
+	return db
 }
 
 // AddExtraSpaceIfExist

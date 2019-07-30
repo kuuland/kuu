@@ -25,6 +25,7 @@ func bizQueryCallback(scope *Scope) {
 		scope.QueryResult.List = Meta(reflect.New(scope.ReflectType).Interface()).OmitPassword(scope.QueryResult.List)
 		// 处理totalrecords、totalpages
 		var totalRecords int
+		scope.DB = CountWheres(scope.Value, scope.DB)
 		if err := scope.DB.Offset(-1).Limit(-1).Count(&totalRecords).Error; err != nil {
 			_ = scope.Err(err)
 			return

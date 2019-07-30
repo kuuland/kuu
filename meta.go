@@ -185,11 +185,11 @@ func parseMetadata(value interface{}) (m *Metadata) {
 }
 
 // Meta
-func Meta(value interface{}) (m *Metadata) {
-	if v, ok := value.(string); ok {
+func Meta(valueOrName interface{}) (m *Metadata) {
+	if v, ok := valueOrName.(string); ok {
 		return metadataMap[v]
 	} else {
-		return parseMetadata(value)
+		return parseMetadata(valueOrName)
 	}
 }
 

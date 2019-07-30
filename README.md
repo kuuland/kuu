@@ -801,6 +801,15 @@ kuu.ValidateCallback = func(scope *gorm.Scope) {
 }
 ```
 
+Because `db.Count` does not call any callbacks, you must call `kuu.CountWheres` to wrap your `db`:
+
+```go
+// use model name
+db = CountWheres("Address", db)
+// use model value
+db = CountWheres(&Address{}, db)
+```
+
 ### Struct validation
 
 base on [govalidator](https://github.com/asaskevich/govalidator):
