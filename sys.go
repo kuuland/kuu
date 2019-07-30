@@ -238,6 +238,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("menu_file_doc").Add("File", "文件", "文件")
 	register.SetKey("menu_i18n").Add("Internationalization", "国际化", "國際化")
 	register.SetKey("menu_message").Add("Message", "消息", "消息")
+	register.SetKey("menu_metadata").Add("Metadata", "元数据", "元數據")
 	// Fano
 	register.SetKey("fano_table_actions_add").Add("Add", "新增", "新增")
 	register.SetKey("fano_table_actions_del").Add("Del", "删除", "刪除")
@@ -396,6 +397,17 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_user_role_assigns").Add("Role Assignments", "角色分配", "角色分配")
 	register.SetKey("kuu_user_titles_notassigned").Add("Not Assigned", "未分配角色", "未分配角色")
 	register.SetKey("kuu_user_titles_assigned").Add("Assigned", "已分配角色", "已分配角色")
+	// Kuu Metadata
+	register.SetKey("kuu_meta_code").Add("Module", "所属模块", "所屬模塊")
+	register.SetKey("kuu_meta_name").Add("Name", "名称", "名稱")
+	register.SetKey("kuu_meta_displayname").Add("Display Name", "显示名", "顯示名")
+	register.SetKey("kuu_meta_fields_code").Add("Field Code", "字段编码", "字段編碼")
+	register.SetKey("kuu_meta_fields_name").Add("Field Name", "字段名称", "字段名稱")
+	register.SetKey("kuu_meta_fields_kind").Add("Kind", "字段类型", "字段類型")
+	register.SetKey("kuu_meta_fields_enum").Add("Enum", "关联枚举", "關聯枚舉")
+	register.SetKey("kuu_meta_fields_isref").Add("Is Ref", "是否引用", "是否引用")
+	register.SetKey("kuu_meta_fields_ispassword").Add("Is Password", "是否密码", "是否密碼")
+	register.SetKey("kuu_meta_fields_isarray").Add("Is Array", "是否数组", "是否數組")
 }
 
 func createPresetMenus(tx *gorm.DB) {
@@ -433,7 +445,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Pid:       sysMenu.ID,
 		Name:      "Organization Management",
 		LocaleKey: "menu_org_mgr",
-		Icon:      "appstore",
+		Icon:      "apartment",
 		Sort:      100,
 		Type:      "menu",
 		IsBuiltIn: null.NewBool(true, true),
@@ -611,6 +623,22 @@ func createPresetMenus(tx *gorm.DB) {
 		Closeable: null.NewBool(true, true),
 	}
 	tx.Create(&messageMenu)
+	metadataMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
+		Pid:       settingMenu.ID,
+		Name:      "Metadata",
+		LocaleKey: "menu_metadata",
+		Icon:      "appstore",
+		URI:       "/sys/metadata",
+		Sort:      700,
+		Type:      "menu",
+		IsBuiltIn: null.NewBool(true, true),
+		Closeable: null.NewBool(true, true),
+	}
+	tx.Create(&metadataMenu)
 }
 
 // GetSignContext
