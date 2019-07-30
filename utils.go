@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"math/rand"
 	"net/http"
 	"os"
 	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 var goSrcRegexp = regexp.MustCompile(`kuuland/kuu(@.*)?/.*.go`)
@@ -150,4 +153,18 @@ func Copy(src interface{}, dest interface{}) (err error) {
 		ERROR(err)
 	}
 	return
+}
+
+// GenerateRandomCode
+func GenerateRandomCode(size ...int) string {
+	length := 8
+	if len(size) > 0 {
+		length = size[0]
+	}
+	str := strings.ReplaceAll(uuid.NewV4().String(), "-", "")[:length]
+	for i := 0; i < 4; i++ {
+		idx := rand.Intn(len(str))
+		str = strings.Replace(str, str[idx:idx+1], strings.ToUpper(str[idx:idx+1]), 1)
+	}
+	return str
 }

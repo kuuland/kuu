@@ -164,8 +164,8 @@ func (o *Org) AfterDelete() {
 type RoleAssign struct {
 	Model `rest:"*" displayName:"用户角色分配"`
 	ExtendField
-	UserID     uint `name:"用户ID"`
-	RoleID     uint `name:"角色ID"`
+	UserID     uint `name:"用户ID" gorm:"not null"`
+	RoleID     uint `name:"角色ID" gorm:"not null"`
 	Role       *Role
 	ExpireUnix int64
 }
@@ -223,7 +223,7 @@ type DataPrivileges struct {
 type Menu struct {
 	ModelExOrg `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string    `name:"菜单编码"`
+	Code          string    `name:"菜单编码" gorm:"not null"`
 	Name          string    `name:"菜单名称" gorm:"not null"`
 	URI           string    `name:"菜单地址"`
 	Icon          string    `name:"菜单图标"`
@@ -275,6 +275,8 @@ func (m *Menu) BeforeSave() {
 			}
 			code = strings.ReplaceAll(code, "/", ":")
 			m.Code = code
+		} else {
+			m.Code = GenerateRandomCode()
 		}
 	}
 }

@@ -1010,6 +1010,16 @@ Notes:
 - Use a unique `key`
 - Default message is required
 
+Manually register i18n language keys:
+
+```go
+register := kuu.NewLangRegister(kuu.DB())
+register.SetKey("acc_please_login").Add("Please login", "请登录", "請登錄")
+register.SetKey("auth_failed").Add("Authentication failed", "鉴权失败", "鑒權失敗")
+register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
+register.SetKey("kuu_welcome").Add("Welcome {{name}}", "欢迎{{name}}", "歡迎{{name}}")
+```
+
 ### Preset modules
 
 - [Accounts module](https://github.com/kuuland/kuu/blob/master/acc.go#L153) - JWT-based token issuance, login authentication, etc.
