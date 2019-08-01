@@ -141,7 +141,7 @@ func RefreshLanguageMessagesCache() {
 		ERROR("Refreshing i18n cache failed: %s", err.Error())
 		return
 	}
-	languageMessagesCache = map[string]LanguageMessagesMap{}
+	languageMessagesCache = make(map[string]LanguageMessagesMap)
 	for _, item := range list {
 		if languageMessagesCache[item.LangCode] == nil {
 			languageMessagesCache[item.LangCode] = make(LanguageMessagesMap)
@@ -178,9 +178,9 @@ var ParseLang = func(langOrContext interface{}) string {
 		lang string
 		c    *gin.Context
 	)
-	if v, ok := langOrContext.(*gin.Context); ok {
+	if v, ok := langOrContext.(*gin.Context); ok && v != nil {
 		c = v
-	} else if v, ok := langOrContext.(*Context); ok {
+	} else if v, ok := langOrContext.(*Context); ok && v != nil {
 		c = v.Context
 	}
 
