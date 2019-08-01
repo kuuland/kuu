@@ -30,6 +30,7 @@ type Language struct {
 
 // LanguageMessage
 type LanguageMessage struct {
+	c                *Context
 	ModelExOrg       `rest:"*" displayName:"国际化语言条目"`
 	LangCode         string      `name:"语言编码"`
 	Key              string      `name:"消息键"`
@@ -43,7 +44,7 @@ type LanguageMessage struct {
 
 // Render
 func (m *LanguageMessage) Render() string {
-	messages := GetUserLanguageMessages()
+	messages := GetUserLanguageMessages(m.c)
 	var template string
 	if v, has := messages[m.Key]; has {
 		template = v.Value
@@ -150,14 +151,20 @@ func RefreshLanguageMessagesCache() {
 }
 
 // GetUserLanguageMessages
-func GetUserLanguageMessages() LanguageMessagesMap {
-	var messages LanguageMessagesMap
-	if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
-		if len(languageMessagesCache) == 0 {
-			RefreshLanguageMessagesCache()
-		}
-		messages = languageMessagesCache[desc.SignInfo.Lang]
+func GetUserLanguageMessages(c *Context) LanguageMessagesMap {
+	if len(languageMessagesCache) == 0 {
+		RefreshLanguageMessagesCache()
 	}
+	var (
+		messages LanguageMessagesMap
+		lang     string
+	)
+	if desc := GetRoutinePrivilegesDesc(); desc.IsValid() && desc.SignInfo.Lang != "" {
+		lang = desc.SignInfo.Lang
+	} else {
+		lang = ParseLang(c)
+	}
+	messages = languageMessagesCache[lang]
 	return messages
 }
 
@@ -167,8 +174,17 @@ var ParseLang = func(langOrContext interface{}) string {
 		return v
 	}
 
-	var lang string
-	if c, ok := langOrContext.(*gin.Context); ok {
+	var (
+		lang string
+		c    *gin.Context
+	)
+	if v, ok := langOrContext.(*gin.Context); ok {
+		c = v
+	} else if v, ok := langOrContext.(*Context); ok {
+		c = v.Context
+	}
+
+	if c != nil {
 		keys := []string{"Lang", "lang", "klang", "l"}
 		// querystring > header > cookie
 		for _, key := range keys {

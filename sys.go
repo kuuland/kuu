@@ -293,6 +293,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_navbar_languages").Add("Languages", "语言切换", "語言切換")
 	register.SetKey("kuu_navbar_apikeys").Add("API & Keys", "API & Keys", "API & Keys")
 	register.SetKey("kuu_navbar_logout").Add("Logout", "退出登录", "退出登錄")
+	register.SetKey("kuu_navbar_apiendpoint").Add("API Endpoint", "API服务器", "API服務器")
+	register.SetKey("kuu_navbar_apiendpoint_placeholder").Add("Optional: e.g. https://kuu.example.com/api", "例如：https://kuu.example.com/api", "例如：https://kuu.example.com/api")
 	// Kuu i18n
 	register.SetKey("kuu_i18n_key").Add("Key", "国际化键", "國際化鍵")
 	register.SetKey("kuu_i18n_keyword_placeholder").Add("Search keywords", "输入关键字", "輸入關鍵字")

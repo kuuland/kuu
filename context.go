@@ -16,7 +16,9 @@ type Context struct {
 
 // L
 func (c *Context) L(key string, defaultMessage string, formattedContext ...interface{}) *LanguageMessage {
-	return L(key, defaultMessage, formattedContext...)
+	msg := L(key, defaultMessage, formattedContext...)
+	msg.c = c
+	return msg
 }
 
 // DB
