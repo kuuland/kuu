@@ -985,7 +985,6 @@ kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render()
 
 - Use a unique `key`
 - Always set `defaultMessage`
-- Always set `defaultMessage`
 
 In handlers:
 ```go
