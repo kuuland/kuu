@@ -989,22 +989,7 @@ kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render()
 
 #### Best Practices
 ```go
-// bad
-func badHandler(c *kuu.Context) {
-	file, _ := c.FormFile("file")
-	if file == nil {
-		c.STDErr(c.L("import_parse_failed", "no 'file' key in form-data"))
-		return
-	}
-	src, err := file.Open()
-	if err != nil {
-		c.STDErr(c.L("import_open_failed", "file open error"))
-		return
-	}
-	defer src.Close()
-}
-
-// good
+// good 👍👍👍
 func singleMessage(c *kuu.Context) {
 	failedMessage := c.L("import_failed", "Import failed")
 	file, _ := c.FormFile("file")
@@ -1033,6 +1018,21 @@ func multiMessage(c *kuu.Context) {
 		return
 	}
 	c.STD(...)
+}
+
+// bad 👎👎👎
+func badHandler(c *kuu.Context) {
+	file, _ := c.FormFile("file")
+	if file == nil {
+		c.STDErr(c.L("import_parse_failed", "no 'file' key in form-data"))
+		return
+	}
+	src, err := file.Open()
+	if err != nil {
+		c.STDErr(c.L("import_open_failed", "file open error"))
+		return
+	}
+	defer src.Close()
 }
 ```
 #### Manual Registration
