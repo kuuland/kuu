@@ -3,7 +3,7 @@
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 [![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
 
-English | [简体中文](./README-zh_CN.md)
+<!--English | [简体中文](./README-zh_CN.md)-->
 
 Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gin](https://github.com/gin-gonic/gin).
 
@@ -35,11 +35,11 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
     - [Standard response format](#standard-response-format)
-    - [Common functions](#common-functions)
     - [Get login context](#get-login-context)
     - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
     - [i18n](#i18n)
+    - [Common utils](#common-utils)
     - [Preset modules](#preset-modules)
         - [Security framework](#security-framework)
 - [FAQ](#faq)
@@ -349,6 +349,7 @@ curl -X GET \
 | sort | order fields | - | `sort=id,-user` |
 | project | select fields | - | `project=user,pass` |
 | preload | preload fields | - | `preload=CreditCards,UserAddresses` |
+| export | export data | - | `export=true` |
 | page | current page(required in `PAGE` mode) | 1 | `page=2` |
 | size | record size per page(required in `PAGE` mode) | 30 | `size=100` |
 
@@ -599,9 +600,9 @@ curl -X GET \
 
 ```go
 type User struct {
-	Model   `rest:"*" displayName:"用户"`
+	Model   `rest:"*" displayName:"用户" kuu:"password"`
 	Username    string  `name:"账号"`
-	Password    string  `name:"密码" kuu:"password"`
+	Password    string  `name:"密码"`
 }
 
 users := []User{
@@ -934,19 +935,6 @@ func main() {
 - If `data == error`, Kuu will call `ERROR(data)` to output the log.
 - All message will call `kuu.L(c, msg)` for i18n before the response.
 
-### Common functions
-
-```go
-func main() {
-	r := kuu.Default()
-	// Parse JSON from string
-	var params map[string]string
-	kuu.Parse(`{"user":"kuu","pass":"123"}`, &params)
-	// Formatted as JSON
-	kuu.Stringify(&params)
-}
-```
-
 ### Get login context
 
 ```go
@@ -987,39 +975,68 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 ### i18n
 
+Usage:
 ```go
-L(key string, defaultMessage string, formattedContext ...interface{})
-
 kuu.L("acc_logout_failed", "Logout failed").Render()                             // => Logout failed
 kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render() // => Total 500 items
 ```
 
-```go
-func handlerFunc(c *kuu.Context) {
-    var (
-        body          kuu.M
-        books         []Book
-        failedMessage = c.L("book_private_failed", "Querying books failed")
-    )
-
-    if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-        c.STDErr(failedMessage, err)
-        return
-    }
-
-    if err := c.DB().Where(body).Find(&books).Error; err != nil {
-        c.STDErr(failedMessage, err)
-        return
-    }
-    c.STD(books)
-}
-```
-Notes: 
+**Notes:** 
 
 - Use a unique `key`
-- Default message is required
+- Always set `defaultMessage`
+- Always set `defaultMessage`
 
-Manually register i18n language keys:
+In handlers:
+```go
+// bad
+func badHandler(c *kuu.Context) {
+	file, _ := c.FormFile("file")
+	if file == nil {
+		c.STDErr(c.L("import_parse_failed", "no 'file' key in form-data"))
+		return
+	}
+	src, err := file.Open()
+	if err != nil {
+		c.STDErr(c.L("import_open_failed", "file open error"))
+		return
+	}
+	defer src.Close()
+}
+
+// good
+func singleMessage(c *kuu.Context) {
+	failedMessage := c.L("import_failed", "Import failed")
+	file, _ := c.FormFile("file")
+	if file == nil {
+		c.STDErr(failedMessage, errors.New("no 'file' key in form-data"))
+		return
+	}
+	src, err := file.Open()
+	if err != nil {
+		c.STDErr(failedMessage, err)
+		return
+	}
+	defer src.Close()
+}
+func multiMessage(c *kuu.Context) {
+	var (
+		phoneIncorrect = c.L("phone_incorrect", "Phone number is incorrect")
+		passwordIncorrect = c.L("password_incorrect", "The password is incorrect")
+	)
+	if err := checkPhoneNumber(...); err != nil {
+		c.STDErr(phoneIncorrect, err)
+		return
+	}
+	if err := checkPassword(...); err != nil {
+		c.STDErr(passwordIncorrect, err)
+		return
+	}
+	c.STD(...)
+}
+```
+
+Manually register keys:
 
 ```go
 register := kuu.NewLangRegister(kuu.DB())
@@ -1028,6 +1045,27 @@ register.SetKey("auth_failed").Add("Authentication failed", "鉴权失败", "鑒
 register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
 register.SetKey("kuu_welcome").Add("Welcome {{name}}", "欢迎{{name}}", "歡迎{{name}}")
 ```
+
+### Common utils
+
+```go
+func main() {
+	r := kuu.Default()
+	// Parse JSON from string
+	var params map[string]string
+	kuu.Parse(`{"user":"kuu","pass":"123"}`, &params)
+	// Formatted as JSON
+	kuu.Stringify(&params)
+}
+```
+- `IsBlank` - Check if value is empty
+- `Capitalize` - Capitalize first letter
+- `Stringify` - Converts value to a JSON string 
+- `Parse` - Parses a JSON string to the value
+- `EnsureDir` - Ensures that the directory exists
+- `Copy` - Copy values
+- `RandCode` - Generate random code
+- `If` - Conditional expression
 
 ### Preset modules
 

@@ -155,8 +155,8 @@ func Copy(src interface{}, dest interface{}) (err error) {
 	return
 }
 
-// GenerateRandomCode
-func GenerateRandomCode(size ...int) string {
+// RandCode
+func RandCode(size ...int) string {
 	length := 8
 	if len(size) > 0 {
 		length = size[0]
@@ -167,4 +167,12 @@ func GenerateRandomCode(size ...int) string {
 		str = strings.Replace(str, str[idx:idx+1], strings.ToUpper(str[idx:idx+1]), 1)
 	}
 	return str
+}
+
+// If
+func If(condition bool, trueVal, falseVal interface{}) interface{} {
+	if condition {
+		return trueVal
+	}
+	return falseVal
 }

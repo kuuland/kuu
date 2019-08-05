@@ -17,6 +17,7 @@ type RestDesc struct {
 	Delete bool
 	Query  bool
 	Update bool
+	Import bool
 }
 
 // IsValid
@@ -57,6 +58,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 			}
 			var (
 				createMethod = "POST"
+				importMethod = "POST"
 				deleteMethod = "DELETE"
 				queryMethod  = "GET"
 				updateMethod = "PUT"
@@ -73,6 +75,8 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 					queryMethod = val
 				case "U", "UPDATE":
 					updateMethod = val
+				case "IMP", "IMPORT":
+					importMethod = val
 				}
 			}
 
@@ -81,6 +85,7 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 				deleteMethod = "-"
 				queryMethod = "-"
 				updateMethod = "-"
+				importMethod = "-"
 			}
 
 			// Method conflict
@@ -107,6 +112,10 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 				if updateMethod != "-" {
 					desc.Update = true
 					r.Handle(updateMethod, routePath, restUpdateHandler(reflectType))
+				}
+				if importMethod != "-" {
+					desc.Import = true
+					r.Handle(importMethod, fmt.Sprintf("%s/import", routePath), restImportHandler(reflectType))
 				}
 			}
 			break
@@ -181,7 +190,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 				}
 				return tx.Error
 			}
-			if indirectScopeValue := indirect(reflect.ValueOf(result)); indirectScopeValue.Kind() == reflect.Slice {
+			if indirectScopeValue := indirectValue(result); indirectScopeValue.Kind() == reflect.Slice {
 				for i := 0; i < indirectScopeValue.Len(); i++ {
 					item := indirectScopeValue.Index(i).Interface()
 					if err := updateFields(item); err != nil {
@@ -355,6 +364,18 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			c.STDErr(L("rest_query_failed", "Query failed"), bizScope.DB.Error)
 			return
 		}
+		if v := c.Query("export"); v != "" {
+			if v == "true" {
+				v = "excel"
+			}
+			switch v {
+			case "excel":
+				ExcelExport(c, ret, reflectType)
+			default:
+				c.STDErr(L("rest_query_failed", "Query failed"), fmt.Errorf("unsupported export type: %s", v))
+			}
+			return
+		}
 		c.STD(ret)
 	}
 }
@@ -429,7 +450,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 				if params.UnSoft {
 					tx = tx.Unscoped()
 				}
-				indirectValue := indirect(reflect.ValueOf(result))
+				indirectValue := indirectValue(result)
 				for index := 0; index < indirectValue.Len(); index++ {
 					doc := indirectValue.Index(index).Addr().Interface()
 					if err := execDelete(doc); err != nil {
@@ -474,7 +495,7 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 			if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 				return err
 			}
-			indirectScopeValue := indirect(reflect.ValueOf(body))
+			indirectScopeValue := indirectValue(body)
 			if indirectScopeValue.Kind() == reflect.Slice {
 				multi = true
 				for i := 0; i < indirectScopeValue.Len(); i++ {
@@ -510,6 +531,12 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 				c.STD(docs[0])
 			}
 		}
+	}
+}
+
+func restImportHandler(reflectType reflect.Type) func(c *Context) {
+	return func(c *Context) {
+		ExcelImport(c, reflectType)
 	}
 }
 
@@ -593,13 +620,6 @@ func fieldQuery(m map[string]interface{}, key string) (query string, args []inte
 	return
 }
 
-func indirect(reflectValue reflect.Value) reflect.Value {
-	for reflectValue.Kind() == reflect.Ptr {
-		reflectValue = reflectValue.Elem()
-	}
-	return reflectValue
-}
-
 func methodConflict(arr []string) bool {
 	for i, s := range arr {
 		if s == "-" {
@@ -615,23 +635,4 @@ func methodConflict(arr []string) bool {
 		}
 	}
 	return false
-}
-
-func parseTagSetting(tags reflect.StructTag, tagKey string) map[string]string {
-	setting := map[string]string{}
-	str := tags.Get(tagKey)
-	split := strings.Split(str, ";")
-	for _, value := range split {
-		if value == "" {
-			continue
-		}
-		v := strings.Split(value, ":")
-		k := strings.TrimSpace(strings.ToUpper(v[0]))
-		if len(v) >= 2 {
-			setting[k] = strings.Join(v[1:], ":")
-		} else {
-			setting[k] = k
-		}
-	}
-	return setting
 }

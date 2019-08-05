@@ -10,19 +10,82 @@ import (
 
 // Model
 type Model struct {
-	ID          uint       `gorm:"primary_key"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
-	Remark      string
+	ID          uint               `gorm:"primary_key"`
+	CreatedAt   time.Time          `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time          `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time         `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	OrgID       uint               `name:"所属组织ID（默认字段）"`
+	CreatedByID uint               `name:"创建人ID（默认字段）"`
+	UpdatedByID uint               `name:"修改人ID（默认字段）"`
+	DeletedByID uint               `name:"删除人ID（默认字段）"`
+	Remark      string             `name:"备注"`
+	Org         *Org               `gorm:"foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User              `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User              `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User              `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	ExAttrs     map[string]*ExAttr `gorm:"-"`
+}
+
+// GetAttrBool
+func (model *Model) HasAttr(name string) (has bool) {
+	_, has = model.ExAttrs[name]
+	return
+}
+
+// GetAttrBool
+func (model *Model) GetAttrBool(name string) (v bool) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetBool()
+	}
+	return
+}
+
+// GetAttrFloat64
+func (model *Model) GetAttrFloat64(name string) (v float64) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetFloat64()
+	}
+	return
+}
+
+// GetAttrString
+func (model *Model) GetAttrString(name string) (v string) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetString()
+	}
+	return
+}
+
+// GetAttrInt64
+func (model *Model) GetAttrInt64(name string) (v int64) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetInt64()
+	}
+	return
+}
+
+// GetAttrInt
+func (model *Model) GetAttrInt(name string) (v int) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetInt()
+	}
+	return
+}
+
+// GetAttrUint
+func (model *Model) GetAttrUint(name string) (v uint) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetUint()
+	}
+	return
+}
+
+// GetAttrUint
+func (model *Model) GetAttrTime(name string) (v time.Time) {
+	if model.HasAttr(name) {
+		v = model.ExAttrs[name].GetTime()
+	}
+	return
 }
 
 // ModelExOrg
@@ -49,6 +112,55 @@ type ExtendField struct {
 	Def5 string `name:"扩展字段5（默认字段）"`
 }
 
+// ExAttr
+type ExAttr struct {
+	gorm.Model
+	Meta   string
+	RowID  uint
+	Name   string
+	Kind   string
+	Bool   null.Bool
+	Float  null.Float
+	String null.String
+	Int    null.Int
+	Time   null.Time
+}
+
+// GetBool
+func (ex *ExAttr) GetBool() bool {
+	return ex.Bool.Bool
+}
+
+// GetFloat64
+func (ex *ExAttr) GetFloat64() float64 {
+	return ex.Float.Float64
+}
+
+// GetString
+func (ex *ExAttr) GetString() string {
+	return ex.String.String
+}
+
+// GetInt64
+func (ex *ExAttr) GetInt64() int64 {
+	return ex.Int.Int64
+}
+
+// GetInt
+func (ex *ExAttr) GetInt() int {
+	return int(ex.GetInt())
+}
+
+// GetUint
+func (ex *ExAttr) GetUint() uint {
+	return uint(ex.GetInt())
+}
+
+// GetTime
+func (ex *ExAttr) GetTime() time.Time {
+	return ex.Time.Time
+}
+
 // Routes
 type Route struct {
 	Model `rest:"*"`
@@ -59,10 +171,10 @@ type Route struct {
 
 // User
 type User struct {
-	Model `rest:"*" displayName:"用户"`
+	Model `rest:"*" displayName:"用户" kuu:"password"`
 	ExtendField
 	Username    string       `name:"账号" gorm:"not null"`
-	Password    string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
+	Password    string       `name:"密码" gorm:"not null" json:",omitempty"`
 	Name        string       `name:"姓名"`
 	Avatar      string       `name:"头像"`
 	Sex         int          `name:"性别"`
@@ -276,7 +388,7 @@ func (m *Menu) BeforeSave() {
 			code = strings.ReplaceAll(code, "/", ":")
 			m.Code = code
 		} else {
-			m.Code = GenerateRandomCode()
+			m.Code = RandCode()
 		}
 	}
 }

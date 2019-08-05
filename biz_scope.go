@@ -59,7 +59,7 @@ func NewBizScope(c *Context, value interface{}, db *gorm.DB) *Scope {
 
 // IndirectValue
 func (scope *Scope) IndirectValue() reflect.Value {
-	return indirect(reflect.ValueOf(scope.Value))
+	return indirectValue(scope.Value)
 }
 
 // SkipLeft skip remaining callbacks

@@ -16,29 +16,32 @@ var (
 
 // Metadata
 type Metadata struct {
-	ModCode       string
-	Name          string
-	DisplayName   string
-	FullName      string
-	Fields        []MetadataField
-	RestDesc      *RestDesc    `json:"-"`
-	reflectType   reflect.Type `json:"-"`
-	SubDocIDNames []string     `json:"-" gorm:"-"`
-	UIDNames      []string     `json:"-" gorm:"-"`
-	OrgIDNames    []string     `json:"-" gorm:"-"`
+	ModCode              string
+	Name                 string
+	DisplayName          string
+	DisplayNameLocaleKey string
+	FullName             string
+	Fields               []MetadataField
+	RestDesc             *RestDesc         `json:"-"`
+	reflectType          reflect.Type      `json:"-"`
+	SubDocIDNames        []string          `json:"-" gorm:"-"`
+	UIDNames             []string          `json:"-" gorm:"-"`
+	OrgIDNames           []string          `json:"-" gorm:"-"`
+	TagSettings          map[string]string `json:"-" gorm:"-"`
 }
 
 // MetadataField
 type MetadataField struct {
-	Code       string
-	Name       string
-	Kind       string
-	Type       string
-	Value      interface{} `json:"-" gorm:"-"`
-	Enum       string
-	IsRef      bool
-	IsPassword bool
-	IsArray    bool
+	Code          string
+	Name          string
+	NameLocaleKey string
+	Kind          string
+	Type          string
+	Enum          string
+	IsRef         bool
+	IsPassword    bool
+	IsArray       bool
+	Value         interface{} `json:"-" gorm:"-"`
 }
 
 // NewValue
@@ -78,7 +81,7 @@ func (m *Metadata) OmitPassword(data interface{}) interface{} {
 			}
 		}
 	}
-	if indirectValue := indirect(reflect.ValueOf(data)); indirectValue.Kind() == reflect.Slice {
+	if indirectValue := indirectValue(data); indirectValue.Kind() == reflect.Slice {
 		for i := 0; i < indirectValue.Len(); i++ {
 			execOmit(indirectValue.Index(i))
 		}
@@ -116,15 +119,20 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		if m.DisplayName == "" && displayName != "" {
 			m.DisplayName = displayName
 		}
+		displayNameLocale := fieldStruct.Tag.Get("display_locale")
+		if m.DisplayNameLocaleKey == "" && displayNameLocale != "" {
+			m.DisplayNameLocaleKey = displayNameLocale
+		}
 		indirectType := fieldStruct.Type
 		for indirectType.Kind() == reflect.Ptr {
 			indirectType = indirectType.Elem()
 		}
 		fieldValue := reflect.New(indirectType).Interface()
 		field := MetadataField{
-			Code: fieldStruct.Name,
-			Kind: fieldStruct.Type.Kind().String(),
-			Enum: fieldStruct.Tag.Get("enum"),
+			Code:          fieldStruct.Name,
+			Kind:          fieldStruct.Type.Kind().String(),
+			Enum:          fieldStruct.Tag.Get("enum"),
+			NameLocaleKey: fieldStruct.Tag.Get("name_locale"),
 		}
 		switch field.Kind {
 		case "bool":
@@ -156,6 +164,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		tagSettings := parseTagSetting(fieldStruct.Tag, "kuu")
 		if len(tagSettings) > 0 {
+			m.TagSettings = tagSettings
 			if _, exists := tagSettings["PASSWORD"]; exists {
 				field.IsPassword = true
 			}
@@ -215,4 +224,23 @@ func RegisterMeta() {
 			ERROR(err)
 		}
 	}
+}
+
+func parseTagSetting(tags reflect.StructTag, tagKey string) map[string]string {
+	setting := map[string]string{}
+	str := tags.Get(tagKey)
+	split := strings.Split(str, ";")
+	for _, value := range split {
+		if value == "" {
+			continue
+		}
+		v := strings.Split(value, ":")
+		k := strings.TrimSpace(strings.ToUpper(v[0]))
+		if len(v) >= 2 {
+			setting[k] = strings.Join(v[1:], ":")
+		} else {
+			setting[k] = k
+		}
+	}
+	return setting
 }

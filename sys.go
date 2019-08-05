@@ -219,10 +219,13 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
 	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
 	register.SetKey("login_failed").Add("Login failed", "登录失败", "登錄失敗")
+	// Model RESTful
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
 	register.SetKey("rest_delete_failed").Add("Delete failed", "删除失败", "刪除失敗")
 	register.SetKey("rest_create_failed").Add("Create failed", "新增失败", "新增失敗")
+	register.SetKey("rest_import_failed").Add("Import failed", "导入失败", "導入失敗")
+	register.SetKey("rest_export_failed").Add("Export failed", "导出失败", "導出失敗")
 	// 菜单
 	register.SetKey("menu_default").Add("Default", "默认菜单", "默認菜單")
 	register.SetKey("menu_sys_mgr").Add("System Management", "系统管理", "系統管理")
@@ -410,6 +413,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_meta_fields_isref").Add("Is Ref", "是否引用", "是否引用")
 	register.SetKey("kuu_meta_fields_ispassword").Add("Is Password", "是否密码", "是否密碼")
 	register.SetKey("kuu_meta_fields_isarray").Add("Is Array", "是否数组", "是否數組")
+
 }
 
 func createPresetMenus(tx *gorm.DB) {
@@ -791,6 +795,8 @@ func Sys() *Mod {
 	return &Mod{
 		Code: "sys",
 		Models: []interface{}{
+			&ExAttr{},
+			&ExcelTemplate{},
 			&User{},
 			&Org{},
 			&RoleAssign{},
