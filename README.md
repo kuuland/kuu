@@ -39,6 +39,9 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
     - [i18n](#i18n)
+        - [Usage](#usage)
+        - [Best Practices](#best-practices)
+        - [Manual Registration](#manual-registration)
     - [Common utils](#common-utils)
     - [Preset modules](#preset-modules)
         - [Security framework](#security-framework)
@@ -975,18 +978,16 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 ### i18n
 
-Usage:
+#### Usage
 ```go
 kuu.L("acc_logout_failed", "Logout failed").Render()                             // => Logout failed
 kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render() // => Total 500 items
 ```
 
-**Notes:** 
-
 - Use a unique `key`
 - Always set `defaultMessage`
 
-In handlers:
+#### Best Practices
 ```go
 // bad
 func badHandler(c *kuu.Context) {
@@ -1034,8 +1035,7 @@ func multiMessage(c *kuu.Context) {
 	c.STD(...)
 }
 ```
-
-Manually register keys:
+#### Manual Registration
 
 ```go
 register := kuu.NewLangRegister(kuu.DB())
