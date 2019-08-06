@@ -1,5 +1,7 @@
 package kuu
 
+import "reflect"
+
 func init() {
 	DefaultCallback.Update().Register("kuu:biz_before_update", bizBeforeUpdateCallback)
 	DefaultCallback.Update().Register("kuu:biz_update", bizUpdateCallback)
@@ -51,17 +53,25 @@ func bizUpdateCallback(scope *Scope) {
 					case "has_one", "belongs_to":
 						createOrUpdateItem(field.Field.Addr().Interface())
 					}
+					delete(scope.UpdateParams.Doc, key)
 				}
 			}
 		}
-		scope.DB = scope.DB.Model(scope.UpdateCond).
-			Set("gorm:association_autoupdate", false).
-			Updates(scope.Value)
-		if err := scope.DB.Error; err != nil {
-			_ = scope.Err(err)
-		} else if scope.DB.RowsAffected < 1 {
-			_ = scope.Err(ErrAffectedSaveToken)
-			return
+		if len(scope.UpdateParams.Doc) > 0 {
+			scope.Value = reflect.New(scope.ReflectType).Interface()
+			if err := Copy(scope.UpdateParams.Doc, scope.Value); err != nil {
+				_ = scope.Err(err)
+				return
+			}
+			scope.DB = scope.DB.Model(scope.UpdateCond).
+				Set("gorm:association_autoupdate", false).
+				Updates(scope.Value)
+			if err := scope.DB.Error; err != nil {
+				_ = scope.Err(err)
+			} else if scope.DB.RowsAffected < 1 {
+				_ = scope.Err(ErrAffectedSaveToken)
+				return
+			}
 		}
 	}
 }
