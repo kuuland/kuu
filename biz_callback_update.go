@@ -1,6 +1,9 @@
 package kuu
 
-import "reflect"
+import (
+	"reflect"
+	"time"
+)
 
 func init() {
 	DefaultCallback.Update().Register("kuu:biz_before_update", bizBeforeUpdateCallback)
