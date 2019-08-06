@@ -54,6 +54,7 @@ func bizUpdateCallback(scope *Scope) {
 						createOrUpdateItem(field.Field.Addr().Interface())
 					}
 					delete(scope.UpdateParams.Doc, key)
+					scope.UpdateParams.Doc["UpdatedAt"] = time.Now()
 				}
 			}
 		}
