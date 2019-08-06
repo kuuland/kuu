@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"reflect"
 	"time"
 )
 
@@ -56,26 +55,18 @@ func bizUpdateCallback(scope *Scope) {
 					case "has_one", "belongs_to":
 						createOrUpdateItem(field.Field.Addr().Interface())
 					}
-					delete(scope.UpdateParams.Doc, key)
-					scope.UpdateParams.Doc["UpdatedAt"] = time.Now()
+					dbScope.SetColumn("UpdatedAt", time.Now())
 				}
 			}
 		}
-		if len(scope.UpdateParams.Doc) > 0 {
-			scope.Value = reflect.New(scope.ReflectType).Interface()
-			if err := Copy(scope.UpdateParams.Doc, scope.Value); err != nil {
-				_ = scope.Err(err)
-				return
-			}
-			scope.DB = scope.DB.Model(scope.UpdateCond).
-				Set("gorm:association_autoupdate", false).
-				Updates(scope.Value)
-			if err := scope.DB.Error; err != nil {
-				_ = scope.Err(err)
-			} else if scope.DB.RowsAffected < 1 {
-				_ = scope.Err(ErrAffectedSaveToken)
-				return
-			}
+		scope.DB = scope.DB.Model(scope.UpdateCond).
+			Set("gorm:association_autoupdate", false).
+			Updates(scope.Value)
+		if err := scope.DB.Error; err != nil {
+			_ = scope.Err(err)
+		} else if scope.DB.RowsAffected < 1 {
+			_ = scope.Err(ErrAffectedSaveToken)
+			return
 		}
 	}
 }
