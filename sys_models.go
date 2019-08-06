@@ -171,10 +171,10 @@ type Route struct {
 
 // User
 type User struct {
-	Model `rest:"*" displayName:"用户" kuu:"password"`
+	Model `rest:"*" displayName:"用户"`
 	ExtendField
 	Username    string       `name:"账号" gorm:"not null"`
-	Password    string       `name:"密码" gorm:"not null" json:",omitempty"`
+	Password    string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
 	Name        string       `name:"姓名"`
 	Avatar      string       `name:"头像"`
 	Sex         int          `name:"性别"`
