@@ -436,10 +436,51 @@ func (o *SignOrg) IsValid() bool {
 
 // Param
 type Param struct {
-	Model `rest:"*" displayName:"参数"`
+	Model `rest:"*" displayName:"参数" displayLocale:"menu_param_doc"`
 	ExtendField
-	Code      string    `name:"参数编码" gorm:"not null"`
-	Name      string    `name:"参数名称" gorm:"not null"`
-	Value     string    `name:"参数值"`
-	IsBuiltIn null.Bool `name:"是否预置"`
+	Code      string    `name:"参数编码" gorm:"not null" locale:""`
+	Name      string    `name:"参数名称" gorm:"not null" locale:""`
+	Value     string    `name:"参数值" locale:""`
+	IsBuiltIn null.Bool `name:"是否预置" locale:""`
+}
+
+func (p *Param) ExcelTemplate() ExcelTemplate {
+	return ExcelTemplate{
+		Headers: []ExcelTemplateHeader{
+			{
+				Header: "参数编码",
+				Key:    "Code",
+			},
+			{
+				Header: "参数名称",
+				Key:    "Name",
+			},
+			{
+				Header: "参数值",
+				Key:    "Value",
+			},
+			{
+				Header:    "是否预置",
+				Key:       "IsBuiltIn",
+				LocaleKey: "kuu_param_builtin",
+			},
+		},
+	}
+}
+
+// ExcelRowParse
+func (p *Param) ExcelRowParse(row []string, template ExcelTemplate) (err error) {
+	p.Code = row[0]
+	p.Name = row[1]
+	p.Value = row[2]
+	return
+}
+
+// ExcelRowFormat
+func (p *Param) ExcelRowFormat(template ExcelTemplate) (values map[string]interface{}) {
+	values = make(map[string]interface{})
+	values["Code"] = p.Code
+	values["Name"] = p.Name
+	values["IsBuiltIn"] = If(p.IsBuiltIn.Valid, "真", "-")
+	return
 }

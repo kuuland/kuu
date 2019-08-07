@@ -18,7 +18,9 @@ var (
 )
 
 func init() {
-
+	if C().GetString("env") == "prod" {
+		IsProduction = true
+	}
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
 	if IsProduction {

@@ -15,7 +15,9 @@ func init() {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		v, ok := tableNames[defaultTableName]
 		if !ok || v == "" {
-			WARN("自定义表名：%s", defaultTableName)
+			if defaultTableName != "" {
+				WARN("自定义表名：%s", defaultTableName)
+			}
 			return defaultTableName
 		}
 		return v

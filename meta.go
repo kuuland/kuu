@@ -16,32 +16,32 @@ var (
 
 // Metadata
 type Metadata struct {
-	ModCode              string
-	Name                 string
-	DisplayName          string
-	DisplayNameLocaleKey string
-	FullName             string
-	Fields               []MetadataField
-	RestDesc             *RestDesc         `json:"-"`
-	reflectType          reflect.Type      `json:"-"`
-	SubDocIDNames        []string          `json:"-" gorm:"-"`
-	UIDNames             []string          `json:"-" gorm:"-"`
-	OrgIDNames           []string          `json:"-" gorm:"-"`
-	TagSettings          map[string]string `json:"-" gorm:"-"`
+	ModCode       string
+	Name          string
+	DisplayName   string
+	LocaleKey     string
+	FullName      string
+	Fields        []MetadataField
+	RestDesc      *RestDesc         `json:"-"`
+	reflectType   reflect.Type      `json:"-"`
+	SubDocIDNames []string          `json:"-" gorm:"-"`
+	UIDNames      []string          `json:"-" gorm:"-"`
+	OrgIDNames    []string          `json:"-" gorm:"-"`
+	TagSettings   map[string]string `json:"-" gorm:"-"`
 }
 
 // MetadataField
 type MetadataField struct {
-	Code          string
-	Name          string
-	NameLocaleKey string
-	Kind          string
-	Type          string
-	Enum          string
-	IsRef         bool
-	IsPassword    bool
-	IsArray       bool
-	Value         interface{} `json:"-" gorm:"-"`
+	Code       string
+	Name       string
+	LocaleKey  string
+	Kind       string
+	Type       string
+	Enum       string
+	IsRef      bool
+	IsPassword bool
+	IsArray    bool
+	Value      interface{} `json:"-" gorm:"-"`
 }
 
 // NewValue
@@ -118,10 +118,9 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		displayName := fieldStruct.Tag.Get("displayName")
 		if m.DisplayName == "" && displayName != "" {
 			m.DisplayName = displayName
-		}
-		displayNameLocale := fieldStruct.Tag.Get("display_locale")
-		if m.DisplayNameLocaleKey == "" && displayNameLocale != "" {
-			m.DisplayNameLocaleKey = displayNameLocale
+			if v := fieldStruct.Tag.Get("locale"); m.LocaleKey == "" && v != "" {
+				m.LocaleKey = v
+			}
 		}
 		indirectType := fieldStruct.Type
 		for indirectType.Kind() == reflect.Ptr {
@@ -129,10 +128,10 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		fieldValue := reflect.New(indirectType).Interface()
 		field := MetadataField{
-			Code:          fieldStruct.Name,
-			Kind:          fieldStruct.Type.Kind().String(),
-			Enum:          fieldStruct.Tag.Get("enum"),
-			NameLocaleKey: fieldStruct.Tag.Get("name_locale"),
+			Code:      fieldStruct.Name,
+			Kind:      fieldStruct.Type.Kind().String(),
+			Enum:      fieldStruct.Tag.Get("enum"),
+			LocaleKey: fieldStruct.Tag.Get("locale"),
 		}
 		switch field.Kind {
 		case "bool":

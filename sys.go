@@ -77,41 +77,39 @@ func preflight() bool {
 }
 
 func initSys() {
-	if preflight() {
-		return
-	}
-	IgnoreAuth()
-	// 初始化预置数据
-	err := WithTransaction(func(tx *gorm.DB) error {
-		// 初始化预置用户
-		createRootUser(tx)
-		// 初始化预置组织
-		createRootOrg(tx)
-		// 初始化字典、菜单
-		createPresetMenus(tx)
-		// 初始化预置用户权限
-		createRootPrivileges(tx)
-		// 初始化国际化配置
-		createPresetLanguageMessages(tx)
-		// 保存初始化标记
-		param := Param{
-			Model: Model{
-				CreatedByID: RootUID(),
-				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
-			},
-			Code:      initCode,
-			IsBuiltIn: null.NewBool(true, true),
-			Name:      "System initialization label",
-			Value:     "ok",
+	if !preflight() {
+		// 初始化预置数据
+		err := WithTransaction(func(tx *gorm.DB) error {
+			// 初始化预置用户
+			createRootUser(tx)
+			// 初始化预置组织
+			createRootOrg(tx)
+			// 初始化字典、菜单
+			createPresetMenus(tx)
+			// 初始化预置用户权限
+			createRootPrivileges(tx)
+			// 初始化国际化配置
+			createPresetLanguageMessages(tx)
+			// 保存初始化标记
+			param := Param{
+				Model: Model{
+					CreatedByID: RootUID(),
+					UpdatedByID: RootUID(),
+					OrgID:       RootOrgID(),
+				},
+				Code:      initCode,
+				IsBuiltIn: null.NewBool(true, true),
+				Name:      "System initialization label",
+				Value:     "ok",
+			}
+			tx.Create(&param)
+			return tx.Error
+		})
+		if err != nil {
+			PANIC("failed to initialize preset data: %s", err.Error())
 		}
-		tx.Create(&param)
-		return tx.Error
-	})
-	if err != nil {
-		PANIC("failed to initialize preset data: %s", err.Error())
 	}
-	IgnoreAuth(true)
+	RefreshLanguageMessagesCache()
 }
 
 func createRootUser(tx *gorm.DB) {
@@ -413,6 +411,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_meta_fields_isref").Add("Is Ref", "是否引用", "是否引用")
 	register.SetKey("kuu_meta_fields_ispassword").Add("Is Password", "是否密码", "是否密碼")
 	register.SetKey("kuu_meta_fields_isarray").Add("Is Array", "是否数组", "是否數組")
+	register.Exec()
 
 }
 
@@ -797,6 +796,7 @@ func Sys() *Mod {
 		Models: []interface{}{
 			&ExAttr{},
 			&ExcelTemplate{},
+			&ExcelTemplateHeader{},
 			&User{},
 			&Org{},
 			&RoleAssign{},

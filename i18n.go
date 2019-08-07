@@ -1,11 +1,13 @@
 package kuu
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
 	"strings"
+	"time"
 )
 
 var (
@@ -56,8 +58,9 @@ func (m *LanguageMessage) Render() string {
 
 // LangRegister
 type LangRegister struct {
-	DB  *gorm.DB
-	Key string
+	DB   *gorm.DB
+	Key  string
+	list []*LanguageMessage
 }
 
 // NewLangRegister
@@ -83,24 +86,59 @@ func (r *LangRegister) SetDB(db *gorm.DB) *LangRegister {
 
 // Add
 func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister {
-	r.DB.Create(&LanguageMessage{
+	r.list = append(r.list, &LanguageMessage{
 		LangCode:  "en-US",
 		Key:       r.Key,
 		Value:     enUS,
 		IsBuiltIn: null.NewBool(true, true),
 	})
-	r.DB.Create(&LanguageMessage{
+	r.list = append(r.list, &LanguageMessage{
 		LangCode:  "zh-CN",
 		Key:       r.Key,
 		Value:     zhCN,
 		IsBuiltIn: null.NewBool(true, true),
 	})
-	r.DB.Create(&LanguageMessage{
+	r.list = append(r.list, &LanguageMessage{
 		LangCode:  "zh-TW",
 		Key:       r.Key,
 		Value:     zhTW,
 		IsBuiltIn: null.NewBool(true, true),
 	})
+	return r
+}
+
+// Exec
+func (r *LangRegister) Exec(db ...*gorm.DB) *LangRegister {
+	if len(db) > 0 {
+		r.DB = db[0]
+	}
+	if len(r.list) == 0 {
+		return r
+	}
+
+	var (
+		base      = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, created_by_id, updated_by_id, lang_code, key, value, is_built_in) VALUES `
+		now       = time.Now().Format("2006-01-02 15:04:05")
+		batchSize = 200
+		buffer    bytes.Buffer
+		vars      []interface{}
+	)
+	buffer.WriteString(base)
+	for index, item := range r.list {
+		buffer.WriteString("(?, ?, ?, ?, ?, ?, ?, TRUE)")
+		vars = append(vars, now, now, RootUID(), RootUID(), item.LangCode, item.Key, item.Value)
+		if (index+1)%batchSize == 0 || index == len(r.list)-1 {
+			if sql := buffer.String(); sql != "" {
+				r.DB.Exec(sql, vars...)
+				buffer.Reset()
+				buffer.WriteString(base)
+				vars = vars[0:0]
+			}
+		} else {
+			buffer.WriteString(", ")
+		}
+	}
+	r.list = r.list[0:0]
 	return r
 }
 
