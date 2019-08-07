@@ -44,12 +44,6 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	if err = DB().Create(secretData).Error; err != nil {
 		return
 	}
-	// 缓存secret至redis
-	//key := RedisKeyBuilder(RedisSecretKey, secretData.Token)
-	//value := Stringify(&secretData)
-	//if err := RedisClient.SetNX(key, value, time.Unix(desc.Exp, 0).Sub(time.Now())).Err(); err != nil {
-	//	ERROR("令牌缓存到Redis失败：%s", err.Error())
-	//}
 	// 保存登入历史
 	saveHistory(secretData)
 	return
@@ -124,14 +118,22 @@ var ValidRoute = RouteInfo{
 	Path:   "/valid",
 	HandlerFunc: func(c *Context) {
 		if c.SignInfo != nil && c.SignInfo.IsValid() {
-			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
+			// 查询用户
 			var user User
-			c.DB().Select("lang").First(&user, "id = ?", c.SignInfo.UID)
+			if err := c.IgnoreAuth().DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
+				c.STDErr(L("user_query_failed", "Query user failed"), err)
+				return
+			}
+			// 处理Lang参数
 			if user.Lang == "" {
 				user.Lang = ParseLang(c.Context)
 			}
 			c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
 			c.SignInfo.Payload["Lang"] = user.Lang
+			c.SignInfo.Payload["ActOrgID"] = c.PrisDesc.ActOrgID
+			c.SignInfo.Payload["ActOrgCode"] = c.PrisDesc.ActOrgCode
+			c.SignInfo.Payload["ActOrgName"] = c.PrisDesc.ActOrgName
+			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
 			c.STD(c.SignInfo.Payload)
 		} else {
 			c.STDErrHold(L("acc_token_expired", "Token has expired")).Code(555).Render()

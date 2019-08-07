@@ -4,7 +4,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
-	"strings"
 )
 
 // SignHistory
@@ -30,27 +29,12 @@ type SignSecret struct {
 	IsAPIKey   null.Bool `name:"是否API Key"`
 }
 
-// AfterSave
-func (s *SignSecret) AfterSave() {
-	if s != nil && strings.ToUpper(s.Method) == "LOGOUT" {
-		DelAccCache()
-	}
-}
-
-// AfterDelete
-func (s *SignSecret) AfterDelete() {
-	if s != nil && strings.ToUpper(s.Method) == "LOGOUT" {
-		DelAccCache()
-	}
-}
-
 // SignContext
 type SignContext struct {
 	Token    string
 	Lang     string
 	UID      uint
 	SubDocID uint
-	OrgID    uint
 	Payload  jwt.MapClaims
 	Secret   *SignSecret
 }

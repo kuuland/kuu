@@ -186,6 +186,7 @@ type User struct {
 	SubDocID    uint         `name:"扩展档案ID"`
 	Lang        string       `name:"最近使用语言"`
 	AllowLogin  bool         `name:"允许登录"`
+	ActOrgID    uint         `name:"当前组织"`
 }
 
 // BeforeSave
@@ -262,16 +263,6 @@ func FillOrgFullInfo(list []Org) []Org {
 	return list
 }
 
-// AfterSave
-func (o *Org) AfterSave() {
-	DelPrisCache()
-}
-
-// AfterDelete
-func (o *Org) AfterDelete() {
-	DelPrisCache()
-}
-
 // RoleAssign
 type RoleAssign struct {
 	Model `rest:"*" displayName:"用户角色分配"`
@@ -280,16 +271,6 @@ type RoleAssign struct {
 	RoleID     uint `name:"角色ID" gorm:"not null"`
 	Role       *Role
 	ExpireUnix int64
-}
-
-// AfterSave
-func (u *User) AfterSave() {
-	DelPrisCache()
-}
-
-// AfterDelete
-func (u *User) AfterDelete() {
-	DelPrisCache()
 }
 
 // Role
@@ -301,16 +282,6 @@ type Role struct {
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
 	IsBuiltIn           null.Bool             `name:"是否内置"`
-}
-
-// AfterSave
-func (r *Role) AfterSave() {
-	DelPrisCache()
-}
-
-// AfterDelete
-func (r *Role) AfterDelete() {
-	DelPrisCache()
 }
 
 // OperationPrivileges
@@ -416,22 +387,6 @@ type File struct {
 	Status string `name:"文件状态" `
 	URL    string `name:"文件URL" `
 	Path   string `json:"path"`
-}
-
-// SignOrg
-type SignOrg struct {
-	Model
-	ExtendField
-	Token string `gorm:"size:4096"`
-	UID   uint
-}
-
-// IsValid
-func (o *SignOrg) IsValid() bool {
-	if o != nil && o.Org.ID > 0 {
-		return true
-	}
-	return false
 }
 
 // Param

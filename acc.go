@@ -83,15 +83,6 @@ func saveHistory(secretData *SignSecret) {
 	DB().Create(&history)
 }
 
-// GenRedisKey
-func RedisKeyBuilder(keys ...string) string {
-	args := []string{RedisPrefix}
-	for _, k := range keys {
-		args = append(args, k)
-	}
-	return strings.Join(args, "_")
-}
-
 // ParseToken
 var ParseToken = func(c *gin.Context) string {
 	// querystring > header > cookie
@@ -113,42 +104,34 @@ var ParseToken = func(c *gin.Context) string {
 }
 
 // DecodedContext
-func DecodedContext(c *gin.Context) (*SignContext, error) {
+func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 	token := ParseToken(c)
 	if token == "" {
 		return nil, ErrTokenNotFound
 	}
-	data := &SignContext{Token: token, Lang: ParseLang(c)}
+	sign = &SignContext{Token: token, Lang: ParseLang(c)}
 	// 解析UID
 	var secret SignSecret
-	if v, err := RedisClient.Get(RedisKeyBuilder(RedisSecretKey, token)).Result(); err == nil {
-		Parse(v, &secret)
-	} else {
-		DB().Where(&SignSecret{Token: token}).Find(&secret)
+	if err = DB().Where(&SignSecret{Token: token}).Find(&secret).Error; err != nil {
+		return
 	}
-	data.UID = secret.UID
-	// 解析OrgID
-	var org SignOrg
-	if v, err := RedisClient.Get(RedisKeyBuilder(RedisOrgKey, token)).Result(); err == nil {
-		Parse(v, &org)
-	} else {
-		DB().Where(&SignOrg{Token: token}).Find(&org)
-	}
-	data.OrgID = org.OrgID
+	sign.UID = secret.UID
 	// 验证令牌
 	if secret.Secret == "" {
-		return data, ErrSecretNotFound
+		err = ErrSecretNotFound
+		return
 	}
 	if secret.Method == "LOGOUT" {
-		return data, ErrInvalidToken
+		err = ErrInvalidToken
+		return
 	}
-	data.Secret = &secret
-	data.Payload = DecodedToken(token, secret.Secret)
-	data.SubDocID = secret.SubDocID
-	if data.IsValid() {
-		c.Set(SignContextKey, data)
+	sign.Secret = &secret
+	sign.Payload = DecodedToken(token, secret.Secret)
+	sign.SubDocID = secret.SubDocID
+	if sign.IsValid() {
+		c.Set(SignContextKey, sign)
 	}
-	return data, nil
+	return
 }
 
 // EncodedToken
@@ -178,21 +161,6 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 	}
 	ERROR(err)
 	return nil
-}
-
-// DelAccCache
-func DelAccCache() {
-	rawDesc, _ := GetGLSValue(GLSPrisDescKey)
-	if !IsBlank(rawDesc) {
-		desc := rawDesc.(*PrivilegesDesc)
-		if desc.IsValid() && desc.SignInfo.Token != "" {
-			token := desc.SignInfo.Token
-			// 删除redis缓存
-			RedisClient.Del(RedisKeyBuilder(RedisSecretKey, token))
-			RedisClient.Del(RedisKeyBuilder(RedisOrgKey, token))
-			DelPrisCacheBySign(desc.SignInfo)
-		}
-	}
 }
 
 // Acc

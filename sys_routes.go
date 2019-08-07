@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
-	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
@@ -22,30 +21,6 @@ import (
 
 var valueCacheMap sync.Map
 
-// OrgLoginRoute
-var OrgLoginRoute = RouteInfo{
-	Method: "POST",
-	Path:   "/org/login",
-	HandlerFunc: func(c *Context) {
-		sign := c.SignInfo
-		// 查询组织信息
-		body := struct {
-			OrgID uint `json:"org_id" binding:"required"`
-		}{}
-		failedMessage := L("org_login_failed", "Organization login failed")
-		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		c.IgnoreAuth()
-		if data, err := ExecOrgLogin(sign, body.OrgID); err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD(data)
-		}
-	},
-}
-
 // OrgListRoute
 var OrgListRoute = RouteInfo{
 	Method: "GET",
@@ -58,25 +33,6 @@ var OrgListRoute = RouteInfo{
 		} else {
 			c.STD(data)
 		}
-	},
-}
-
-// OrgCurrentRoute
-var OrgCurrentRoute = RouteInfo{
-	Method: "GET",
-	Path:   "/org/current",
-	HandlerFunc: func(c *Context) {
-		c.IgnoreAuth()
-		sign := c.SignInfo
-		var signOrg SignOrg
-		db := DB().Select("org_id").Order("created_at desc").Where(&SignOrg{UID: sign.UID, Token: sign.Token}).Preload("Org").First(&signOrg)
-		if err := db.Error; err != nil && !gorm.IsRecordNotFoundError(err) {
-			c.STDErr(L("org_not_found", "Organization not found"), err)
-			return
-		}
-		var org Org
-		DB().Where("id = ?", signOrg.OrgID).First(&org)
-		c.STD(org)
 	},
 }
 

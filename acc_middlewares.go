@@ -16,14 +16,18 @@ func AuthMiddleware(c *gin.Context) {
 	} else {
 		// 从请求参数中解码令牌
 		sign, err := DecodedContext(c)
+		var (
+			loginMessage   = L("acc_please_login", "Please login").SetContext(c)
+			expiredMessage = L("acc_session_expired", "Login session has expired").SetContext(c)
+		)
 		if err != nil {
-			STDErrHold(c, L("acc_please_login", "Please login"), err).Code(555).Abort()
+			STDErrHold(c, loginMessage, err).Code(555).Abort()
 			return
 		}
 		if sign.IsValid() {
 			c.Next()
 		} else {
-			STDErrHold(c, L("acc_session_expired", "Login session has expired"), err).Code(555).Abort()
+			STDErrHold(c, expiredMessage, err).Code(555).Abort()
 			return
 		}
 	}

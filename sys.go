@@ -109,7 +109,6 @@ func initSys() {
 			PANIC("failed to initialize preset data: %s", err.Error())
 		}
 	}
-	RefreshLanguageMessagesCache()
 }
 
 func createRootUser(tx *gorm.DB) {
@@ -201,7 +200,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
 	register.SetKey("acc_token_expired").Add("Token has expired", "令牌已过期", "令牌已過期")
 	register.SetKey("apikeys_failed").Add("Create Access Key failed", "创建访问密钥失败", "創建訪問密鑰失敗")
-	register.SetKey("acc_please_login").Add("Please login", "请登录", "請登錄")
+	register.SetKey("acc_please_login").Add("Please login", "请重新登录", "請重新登錄")
+	register.SetKey("acc_session_expired").Add("Login session has expired", "登录会话已过期", "登錄會話已過期")
 	register.SetKey("acc_session_expired").Add("Login session has expired", "登录会话已过期", "登錄會話已過期")
 	register.SetKey("org_login_failed").Add("Organization login failed", "组织登入失败", "組織登入失敗")
 	register.SetKey("org_query_failed").Add("Organization query failed", "组织列表查询失败", "組織列表查詢失敗")
@@ -260,7 +260,9 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("fano_table_del_selectrows").Add("Please select the rows you want to delete", "请先选择需要删除的行", "請先選擇需要刪除的行")
 	register.SetKey("fano_table_del_popconfirm").Add("Are you sure to delete?", "确认删除吗？", "確認刪除嗎？")
 	register.SetKey("fano_table_row_action_edit").Add("Edit this row", "编辑行", "編輯行")
+	register.SetKey("fano_table_row_action_edit_text").Add("Edit", "编辑", "編輯")
 	register.SetKey("fano_table_row_action_del").Add("Delete this row", "删除行", "刪除行")
+	register.SetKey("fano_table_row_action_del_text").Add("Delete", "删除", "刪除")
 	register.SetKey("fano_table_cols_actions").Add("Actions", "操作", "操作")
 	register.SetKey("fano_table_filter_condtype_before").Add("Query data that meets", "筛选出符合下面", "篩選出符合下面")
 	register.SetKey("fano_table_filter_condtype_all").Add("ALL", "所有", "所有")
@@ -660,7 +662,7 @@ func GetSignContext(c *gin.Context) (sign *SignContext) {
 }
 
 // GetOrgList
-func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
+func GetOrgList(c *gin.Context, uid uint) ([]Org, error) {
 	var (
 		data []Org
 		db   *gorm.DB
@@ -668,10 +670,26 @@ func GetOrgList(c *gin.Context, uid uint) (*[]Org, error) {
 	if uid == RootUID() {
 		db = DB().Find(&data)
 	} else {
-		desc := GetPrivilegesDesc(c)
-		db = DB().Where("id in (?)", desc.ReadableOrgIDs).Find(&data)
+		if desc := GetPrivilegesDesc(c); desc != nil {
+			db = DB().Where("id in (?)", desc.ReadableOrgIDs).Find(&data)
+		}
 	}
-	return &data, db.Error
+	return data, db.Error
+}
+
+func GetActOrg(c *Context, actOrgID uint) (actOrg Org, err error) {
+	if actOrgID != 0 && c.PrisDesc.IsReadableOrgID(actOrgID) {
+		err = c.IgnoreAuth().DB().First(&actOrg, "id = ?", actOrgID).Error
+	} else {
+		var list []Org
+		if list, err = GetOrgList(c.Context, c.SignInfo.UID); err != nil {
+			return
+		}
+		if len(list) > 0 {
+			actOrg = list[0]
+		}
+	}
+	return
 }
 
 // GetUserWithRoles
@@ -706,32 +724,6 @@ var GetUserWithRoles = func(uid uint) (*User, error) {
 		user.RoleAssigns[index] = assign
 	}
 	return &user, nil
-}
-
-// ExecOrgLogin
-func ExecOrgLogin(sign *SignContext, orgID uint) (*Org, error) {
-	var orgData Org
-	if err := DB().Where("id = ?", orgID).First(&orgData).Error; err != nil {
-		return &orgData, err
-	}
-	// 新增登入记录
-	signOrg := SignOrg{
-		UID:   sign.UID,
-		Token: sign.Token,
-	}
-	signOrg.OrgID = orgData.ID
-	signOrg.CreatedByID = sign.UID
-	signOrg.UpdatedByID = sign.UID
-	if err := DB().Create(&signOrg).Error; err != nil {
-		return &orgData, err
-	}
-	// 缓存secret至redis
-	key := RedisKeyBuilder(RedisOrgKey, signOrg.Token)
-	value := Stringify(&signOrg)
-	if _, err := RedisClient.Set(key, value, time.Second*time.Duration(ExpiresSeconds)).Result(); err != nil {
-		ERROR(err)
-	}
-	return &orgData, nil
 }
 
 func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
@@ -770,17 +762,18 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 		"Sex":       user.Sex,
 		"Mobile":    user.Mobile,
 		"Email":     user.Email,
-		"Lang":      user.Lang,
 		"IsBuiltIn": user.IsBuiltIn,
 		"CreatedAt": user.CreatedAt,
 		"UpdatedAt": user.UpdatedAt,
 	}
 	payload = SetPayloadAttrs(payload, &user)
-	uid = user.ID
+	// 处理Lang参数
 	if user.Lang == "" {
 		user.Lang = ParseLang(c.Context)
 	}
+	payload["Lang"] = user.Lang
 	c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
+	uid = user.ID
 	return
 }
 
@@ -805,7 +798,6 @@ func Sys() *Mod {
 			&DataPrivileges{},
 			&Menu{},
 			&File{},
-			&SignOrg{},
 			&Param{},
 			&Metadata{},
 			&MetadataField{},
@@ -813,13 +805,8 @@ func Sys() *Mod {
 			&Language{},
 			&LanguageMessage{},
 		},
-		Middlewares: gin.HandlersChain{
-			OrgMiddleware,
-		},
 		Routes: RoutesInfo{
-			OrgLoginRoute,
 			OrgListRoute,
-			OrgCurrentRoute,
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,

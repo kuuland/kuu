@@ -32,7 +32,8 @@ type Language struct {
 
 // LanguageMessage
 type LanguageMessage struct {
-	c                *Context
+	c                *gin.Context `json:"-" gorm:"-"`
+	lang             string       `json:"-" gorm:"-"`
 	ModelExOrg       `rest:"*" displayName:"国际化语言条目"`
 	LangCode         string      `name:"语言编码"`
 	Key              string      `name:"消息键"`
@@ -44,9 +45,21 @@ type LanguageMessage struct {
 	IsBuiltIn        null.Bool   `name:"是否预置"`
 }
 
+// SetContext
+func (m *LanguageMessage) SetContext(c *gin.Context) *LanguageMessage {
+	m.c = c
+	return m
+}
+
+// SetLang
+func (m *LanguageMessage) SetLang(lang string) *LanguageMessage {
+	m.lang = lang
+	return m
+}
+
 // Render
 func (m *LanguageMessage) Render() string {
-	messages := GetUserLanguageMessages(m.c)
+	messages := GetUserLanguageMessages(m.c, m.lang)
 	var template string
 	if v, has := messages[m.Key]; has {
 		template = v.Value
@@ -189,7 +202,7 @@ func RefreshLanguageMessagesCache() {
 }
 
 // GetUserLanguageMessages
-func GetUserLanguageMessages(c *Context) LanguageMessagesMap {
+func GetUserLanguageMessages(c *gin.Context, userLang ...string) LanguageMessagesMap {
 	if len(languageMessagesCache) == 0 {
 		RefreshLanguageMessagesCache()
 	}
@@ -197,8 +210,10 @@ func GetUserLanguageMessages(c *Context) LanguageMessagesMap {
 		messages LanguageMessagesMap
 		lang     string
 	)
-	if desc := GetRoutinePrivilegesDesc(); desc.IsValid() && desc.SignInfo.Lang != "" {
-		lang = desc.SignInfo.Lang
+	if len(userLang) > 0 {
+		lang = userLang[0]
+	} else if sign := GetSignContext(c); sign.IsValid() && sign.Lang != "" {
+		lang = sign.Lang
 	} else {
 		lang = ParseLang(c)
 	}

@@ -1,11 +1,9 @@
 package kuu
 
 import (
+	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -21,84 +19,6 @@ func init() {
 		Add(DataScopeCurrentFollowing, "当前及以下组织")
 }
 
-// RedisUserPrisKey
-func RedisUserPrisKey(sign *SignContext, roleIDs string) string {
-	return RedisKeyBuilder("privileges", strconv.Itoa(int(sign.UID)), roleIDs, strconv.Itoa(int(sign.OrgID)))
-}
-
-// RedisUserRolesKey
-func RedisUserRolesKey(sign *SignContext) string {
-	return RedisKeyBuilder("privileges_roles", strconv.Itoa(int(sign.UID)))
-}
-
-// SetPrisCache
-func SetPrisCache(sign *SignContext, desc *PrivilegesDesc, roleIDs []string) {
-	roleIDsStr := strings.Join(roleIDs, ",")
-	value := Stringify(desc)
-	// 添加缓存
-	if err := RedisClient.SetNX(RedisUserRolesKey(sign), roleIDsStr, time.Second*time.Duration(ExpiresSeconds)*7).Err(); err != nil {
-		ERROR("用户角色缓存失败：%s", err.Error())
-	} else {
-		if err := RedisClient.SetNX(RedisUserPrisKey(sign, roleIDsStr), value, time.Second*time.Duration(ExpiresSeconds)*7).Err(); err != nil {
-			ERROR("用户权限缓存失败：%s", err.Error())
-			RedisClient.Del(RedisUserRolesKey(sign))
-		} else {
-			INFO("设置权限缓存：UID=%d", sign.UID)
-		}
-	}
-}
-
-// GetPrisCache
-func GetPrisCache(sign *SignContext) (desc *PrivilegesDesc) {
-	if v := RedisClient.Get(RedisUserRolesKey(sign)).Val(); v != "" {
-		if v := RedisClient.Get(RedisUserPrisKey(sign, v)).Val(); v != "" {
-			Parse(v, &desc)
-			if desc.UID != 0 {
-				INFO("获取权限缓存：UID=%d", sign.UID)
-				return
-			}
-		}
-	}
-	return
-}
-
-// DelPrisCache
-func DelPrisCache() {
-	if v, err := RedisClient.Keys(RedisKeyBuilder("privileges*")).Result(); err == nil {
-		if len(v) > 0 {
-			if err := RedisClient.Del(v...).Err(); err != nil {
-				ERROR(err)
-			} else {
-				INFO("清空权限缓存 ALL")
-			}
-		}
-	}
-}
-
-// DelPrisCacheBySign 清除用户缓存
-func DelPrisCacheBySign(sign *SignContext) {
-	if v := RedisClient.Get(RedisUserRolesKey(sign)).Val(); v != "" {
-		if err := RedisClient.Del(RedisUserPrisKey(sign, v)).Err(); err != nil {
-			ERROR(err)
-		}
-	}
-	if err := RedisClient.Del(RedisUserRolesKey(sign)).Err(); err != nil {
-		ERROR(err)
-	} else {
-		if sign.UID != 0 {
-			INFO("清空权限缓存：UID=%d", sign.UID)
-			return
-		}
-	}
-}
-
-// DelCurPrisCache 清除当前用户缓存
-func DelCurPrisCache() {
-	if v, ok := GetGLSValue(GLSSignInfoKey); ok {
-		DelPrisCacheBySign(v.(*SignContext))
-	}
-}
-
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID              uint
@@ -109,8 +29,10 @@ type PrivilegesDesc struct {
 	WritableOrgIDs   []uint
 	WritableOrgIDMap map[uint]bool
 	Valid            bool
-	SignOrgID        uint
 	SignInfo         *SignContext
+	ActOrgID         uint
+	ActOrgCode       string
+	ActOrgName       string
 	RolesCode        []string
 }
 
@@ -154,6 +76,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		UID:         sign.UID,
 		Permissions: make(map[string]int64),
 		Valid:       true,
+		SignInfo:    sign,
 	}
 	type orange struct {
 		readable string
@@ -249,8 +172,15 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	desc.ReadableOrgIDs = keys(readableOrgIDs)
 	desc.WritableOrgIDMap = writableOrgIDs
 	desc.WritableOrgIDs = keys(writableOrgIDs)
-
-	desc.SignOrgID = sign.OrgID
-	desc.SignInfo = sign
+	// 计算ActOrgID
+	var actOrg Org
+	if user.ActOrgID != 0 && desc.ReadableOrgIDMap[user.ActOrgID] {
+		actOrg = orgMap[user.ActOrgID]
+	} else if len(desc.ReadableOrgIDs) > 0 {
+		actOrg = orgMap[desc.ReadableOrgIDs[0]]
+	}
+	desc.ActOrgID = actOrg.ID
+	desc.ActOrgCode = actOrg.Code
+	desc.ActOrgName = actOrg.Name
 	return
 }

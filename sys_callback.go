@@ -91,8 +91,8 @@ func createCallback(scope *gorm.Scope) {
 				}
 			}
 			if field, ok := scope.FieldByName("OrgID"); ok {
-				if field.IsBlank {
-					if err := scope.SetColumn(field.DBName, desc.SignOrgID); err != nil {
+				if field.IsBlank && desc.ActOrgID != 0 {
+					if err := scope.SetColumn(field.DBName, desc.ActOrgID); err != nil {
 						_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
 						return
 					}
@@ -253,7 +253,8 @@ func addSearchWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
 }
 
 func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
-	if scope.Value == nil || !desc.IsValid() {
+	value := scope.Value
+	if value == nil || !desc.IsValid() {
 		return
 	}
 
@@ -279,7 +280,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		}
 	}
 
-	subDocIDNames := Meta(scope.Value).SubDocIDNames
+	subDocIDNames := Meta(value).SubDocIDNames
 	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 		// 基于扩展档案ID的数据权限
 		for _, name := range subDocIDNames {
@@ -293,10 +294,11 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
 			sqls = append(sqls, "("+f.DBName+" in (?))")
 			attrs = append(attrs, orgIDs)
-		}
-		if f, ok := scope.FieldByName("CreatedByID"); ok {
-			sqls = append(sqls, "("+f.DBName+" = ?)")
-			attrs = append(attrs, desc.UID)
+		} else {
+			if f, ok := scope.FieldByName("CreatedByID"); ok {
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.UID)
+			}
 		}
 		if names := Meta(scope.Value).OrgIDNames; len(names) > 0 {
 			for _, name := range names {
@@ -325,9 +327,11 @@ func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
 		scope = db.NewScope(meta.NewValue())
 		desc  = GetRoutinePrivilegesDesc()
 	)
-	sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
-	if len(sqls) > 0 {
-		db = db.Where(strings.Join(sqls, " OR "), attrs...)
+	if desc != nil {
+		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
+		if len(sqls) > 0 {
+			db = db.Where(strings.Join(sqls, " OR "), attrs...)
+		}
 	}
 	return db
 }
