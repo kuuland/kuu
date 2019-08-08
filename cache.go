@@ -6,7 +6,7 @@ import (
 
 var (
 	defaultCachePrefix = "kuu"
-	redisClient        *redis.Client
+	RedisClient        *redis.Client
 )
 
 func initRedis() {
@@ -49,7 +49,7 @@ NOTE: "pass" and "db" are optional.
 	if addr != "" {
 		if _, err := client.Ping().Result(); err == nil {
 			connectedPrint("Redis", addr)
-			redisClient = client
+			RedisClient = client
 		} else {
 			ERROR(err)
 		}
