@@ -2,11 +2,12 @@ package kuu
 
 import (
 	"fmt"
+	"path"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/jinzhu/inflection"
-	"path"
-	"strings"
 )
 
 var tableNames = make(map[string]string)
@@ -35,56 +36,60 @@ type Mod struct {
 
 // Import
 func (e *Engine) Import(mods ...*Mod) {
-	migrate := C().GetBool("gorm:migrate")
-	for _, mod := range mods {
-		for _, middleware := range mod.Middlewares {
-			if middleware != nil {
-				e.Engine.Use(middleware)
+	if err := CatchError(func() {
+		migrate := C().GetBool("gorm:migrate")
+		for _, mod := range mods {
+			for _, middleware := range mod.Middlewares {
+				if middleware != nil {
+					e.Engine.Use(middleware)
+				}
 			}
 		}
-	}
-	for _, mod := range mods {
-		if mod.Code == "" {
-			PANIC("模块编码不能为空")
-		}
-		mod.Code = strings.ToLower(mod.Code)
-		for _, route := range mod.Routes {
-			if route.Path == "" || route.HandlerFunc == nil {
-				PANIC("Route path and handler can't be nil")
+		for _, mod := range mods {
+			if mod.Code == "" {
+				PANIC("模块编码不能为空")
 			}
-			if route.Method == "" {
-				route.Method = "GET"
+			mod.Code = strings.ToLower(mod.Code)
+			for _, route := range mod.Routes {
+				if route.Path == "" || route.HandlerFunc == nil {
+					PANIC("Route path and handler can't be nil")
+				}
+				if route.Method == "" {
+					route.Method = "GET"
+				}
+				var routePath string
+				if route.IgnorePrefix {
+					routePath = path.Join(route.Path)
+				} else {
+					routePath = path.Join(C().GetString("prefix"), route.Path)
+				}
+				if route.Method == "*" {
+					e.Any(routePath, route.HandlerFunc)
+				} else {
+					e.Handle(route.Method, routePath, route.HandlerFunc)
+				}
 			}
-			var routePath string
-			if route.IgnorePrefix {
-				routePath = path.Join(route.Path)
-			} else {
-				routePath = path.Join(C().GetString("prefix"), route.Path)
-			}
-			if route.Method == "*" {
-				e.Any(routePath, route.HandlerFunc)
-			} else {
-				e.Handle(route.Method, routePath, route.HandlerFunc)
-			}
-		}
-		for _, model := range mod.Models {
-			desc := RESTful(e, model)
-			if meta := parseMetadata(model); meta != nil {
-				meta.RestDesc = desc
-				meta.ModCode = mod.Code
-				defaultTableName := gorm.ToTableName(meta.Name)
-				pluralTableName := inflection.Plural(defaultTableName)
+			for _, model := range mod.Models {
+				desc := RESTful(e, model)
+				if meta := parseMetadata(model); meta != nil {
+					meta.RestDesc = desc
+					meta.ModCode = mod.Code
+					defaultTableName := gorm.ToTableName(meta.Name)
+					pluralTableName := inflection.Plural(defaultTableName)
 
-				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
-				tableNames[defaultTableName] = tableName
-				tableNames[pluralTableName] = tableName
+					tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
+					tableNames[defaultTableName] = tableName
+					tableNames[pluralTableName] = tableName
+				}
+				if migrate {
+					DB().AutoMigrate(model)
+				}
 			}
-			if migrate {
-				DB().AutoMigrate(model)
+			if mod.AfterImport != nil {
+				mod.AfterImport()
 			}
 		}
-		if mod.AfterImport != nil {
-			mod.AfterImport()
-		}
+	}); err != nil {
+		panic(err)
 	}
 }

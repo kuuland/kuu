@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"math/rand"
 	"net/http"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 var goSrcRegexp = regexp.MustCompile(`kuuland/kuu(@.*)?/.*.go`)
@@ -175,4 +176,17 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 		return trueVal
 	}
 	return falseVal
+}
+
+// assert1 defined assert func
+func assert1(guard bool, err interface{}) {
+	if !guard {
+		panic(err)
+	}
+}
+
+// isFunc defined func check
+func isFunc(target interface{}) bool {
+	retType := reflect.TypeOf(target)
+	return retType.Kind() == reflect.Func
 }

@@ -3,16 +3,17 @@ package kuu
 import (
 	"context"
 	"fmt"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-gonic/gin"
-	"github.com/jtolds/gls"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"syscall"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
+	"github.com/jtolds/gls"
 )
 
 var (
@@ -74,6 +75,7 @@ func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
 // Default
 func Default() (e *Engine) {
 	e = &Engine{Engine: gin.Default()}
+	e.Use(Recovery)
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
 			msg := L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})

@@ -1,11 +1,12 @@
 package kuu
 
 import (
+	"log"
+	"sync"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/jtolds/gls"
-	"log"
-	"sync"
 )
 
 var (
@@ -124,24 +125,22 @@ func DS(name string) *gorm.DB {
 }
 
 // WithTransaction
-func WithTransaction(fn func(*gorm.DB) error) error {
-	tx := DB().Begin()
-	if err := tx.Error; err != nil {
-		return err
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			ERROR(r)
-			tx.Rollback()
+func WithTransaction(fn func(*gorm.DB) error) (err error) {
+	var tx *gorm.DB
+	if err = CatchError(func() {
+		if tx = DB().Begin(); tx.Error != nil {
+			panic(tx.Error)
 		}
-	}()
-	if err := fn(tx); err != nil {
-		if rberr := tx.Rollback().Error; rberr != nil {
-			ERROR(rberr)
+		if err := fn(tx); err != nil {
+			panic(err)
 		}
-		return err
+		if err := tx.Commit().Error; err != nil {
+			panic(err)
+		}
+	}); err != nil {
+		tx.Rollback()
 	}
-	return tx.Commit().Error
+	return
 }
 
 // Release
