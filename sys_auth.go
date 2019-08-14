@@ -188,11 +188,10 @@ func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err 
 
 // GetDataScopeWheres
 func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
-	value := scope.Value
-	if value == nil || !desc.IsValid() {
+	if scope.Value == nil || !desc.IsValid() {
 		return
 	}
-
+	meta := Meta(scope.Value)
 	caches := GetRoutineCaches()
 	if caches != nil {
 		// 有忽略标记时
@@ -215,7 +214,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		}
 	}
 
-	subDocIDNames := Meta(value).SubDocIDNames
+	subDocIDNames := meta.SubDocIDNames
 	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
 		// 基于扩展档案ID的数据权限
 		for _, name := range subDocIDNames {
@@ -235,7 +234,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				attrs = append(attrs, desc.UID)
 			}
 		}
-		if names := Meta(scope.Value).OrgIDNames; len(names) > 0 {
+		if names := meta.OrgIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, "("+f.DBName+" in (?))")
@@ -243,7 +242,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				}
 			}
 		}
-		if names := Meta(scope.Value).UIDNames; len(names) > 0 {
+		if names := meta.UIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, "("+f.DBName+" = ?)")
@@ -251,6 +250,10 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				}
 			}
 		}
+	}
+	if meta.Name == "User" {
+		sqls = append(sqls, "id = ?")
+		attrs = append(attrs, desc.UID)
 	}
 	return
 }

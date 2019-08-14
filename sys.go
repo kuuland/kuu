@@ -807,7 +807,7 @@ func Sys() *Mod {
 	return &Mod{
 		Code: "sys",
 		Models: []interface{}{
-			&ExAttr{},
+			//&ExAttr{},
 			&ExcelTemplate{},
 			&ExcelTemplateHeader{},
 			&User{},

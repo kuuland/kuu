@@ -320,6 +320,8 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 				}
 			}
 			ret.Sort = strings.Join(retSort, ",")
+		} else {
+			db = db.Order("created_at desc")
 		}
 		// 处理preload
 		rawPreload := c.Query("preload")
