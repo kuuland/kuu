@@ -126,6 +126,10 @@ func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 		return
 	}
 	sign.Secret = &secret
+	if secret.Type == "" {
+		secret.Type = "ADMIN"
+	}
+	sign.Type = secret.Type
 	sign.Payload = DecodedToken(token, secret.Secret)
 	sign.SubDocID = secret.SubDocID
 	if sign.IsValid() {

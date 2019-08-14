@@ -1,16 +1,24 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"strconv"
 	"strings"
 )
 
 const (
-	DataScopePersonal         = "PERSONAL"
-	DataScopeCurrent          = "CURRENT"
+	// DataScopePersonal
+	DataScopePersonal = "PERSONAL"
+	// DataScopeCurrent
+	DataScopeCurrent = "CURRENT"
+	// DataScopeCurrentFollowing
 	DataScopeCurrentFollowing = "CURRENT_FOLLOWING"
 )
+
+// ActiveAuthProcessor
+var ActiveAuthProcessor = DefaultAuthProcessor{}
 
 func init() {
 	Enum("DataScope", "数据范围定义").
@@ -54,6 +62,213 @@ func (desc *PrivilegesDesc) IsValid() bool {
 // NotRootUser
 func (desc *PrivilegesDesc) NotRootUser() bool {
 	return desc.IsValid() && desc.UID != RootUID()
+}
+
+// AuthProcessor
+type AuthProcessor interface {
+	AllowCreate(AuthProcessorDesc) error
+	AddWritableWheres(AuthProcessorDesc) error
+	AddReadableWheres(AuthProcessorDesc) error
+}
+
+// AuthProcessorDesc
+type AuthProcessorDesc struct {
+	Meta                *Metadata
+	SubDocIDNames       []string
+	Scope               *gorm.Scope
+	PrisDesc            *PrivilegesDesc
+	HasCreatedByIDField bool
+	HasOrgIDField       bool
+	CreatedByIDField    *gorm.Field
+	OrgIDFieldField     *gorm.Field
+	CreatedByID         uint
+	OrgID               uint
+}
+
+// GetAuthProcessorDesc
+func GetAuthProcessorDesc(scope *gorm.Scope, desc *PrivilegesDesc) (auth AuthProcessorDesc) {
+	auth.Scope = scope
+	auth.PrisDesc = desc
+	if scope.Value != nil {
+		auth.Meta = Meta(scope.Value)
+		auth.SubDocIDNames = auth.Meta.SubDocIDNames
+
+		if field, ok := scope.FieldByName("CreatedByID"); ok {
+			auth.CreatedByIDField = field
+			auth.HasCreatedByIDField = ok
+		}
+		if field, ok := scope.FieldByName("OrgID"); ok {
+			auth.OrgIDFieldField = field
+			auth.HasOrgIDField = ok
+		}
+	}
+	return
+}
+
+// InjectCreateAuth
+var InjectCreateAuth = func(signType string, auth AuthProcessorDesc) (replace bool, err error) {
+	return
+}
+
+// InjectWritableAuth
+var InjectWritableAuth = func(signType string, auth AuthProcessorDesc) (replace bool, err error) {
+	return
+}
+
+// InjectReadableAuth
+var InjectReadableAuth = func(signType string, auth AuthProcessorDesc) (replace bool, err error) {
+	return
+}
+
+// DefaultAuthProcessor
+type DefaultAuthProcessor struct{}
+
+// AllowCreate
+func (por *DefaultAuthProcessor) AllowCreate(auth AuthProcessorDesc) (err error) {
+	if auth.PrisDesc.IsValid() {
+		signType := auth.PrisDesc.SignInfo.Type
+		if replace, custErr := InjectCreateAuth(signType, auth); custErr != nil {
+			return custErr
+		} else if replace {
+			return
+		}
+		desc := auth.PrisDesc
+		if desc.SignInfo.SubDocID != 0 && len(auth.SubDocIDNames) > 0 {
+			// 基于扩展档案ID的数据权限
+			if auth.HasCreatedByIDField && auth.CreatedByID != desc.UID {
+				return fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID)
+			}
+		} else {
+			// 基于组织的数据权限
+			if auth.OrgID == 0 {
+				if auth.HasCreatedByIDField && auth.CreatedByID != desc.UID {
+					return fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID)
+				}
+			} else if auth.HasOrgIDField && !desc.IsWritableOrgID(auth.OrgID) {
+				return fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, auth.OrgID)
+			}
+		}
+	}
+	return
+}
+
+// AddWritableWheres
+func (por *DefaultAuthProcessor) AddWritableWheres(auth AuthProcessorDesc) (err error) {
+	if auth.PrisDesc.IsValid() {
+		signType := auth.PrisDesc.SignInfo.Type
+		if replace, custErr := InjectWritableAuth(signType, auth); custErr != nil {
+			return custErr
+		} else if replace {
+			return
+		}
+		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.WritableOrgIDs)
+		if len(sqls) > 0 {
+			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
+		}
+	}
+	return
+}
+
+// AddReadableWheres
+func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err error) {
+	if auth.PrisDesc.IsValid() {
+		signType := auth.PrisDesc.SignInfo.Type
+		if replace, custErr := InjectReadableAuth(signType, auth); custErr != nil {
+			return custErr
+		} else if replace {
+			return
+		}
+		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.ReadableOrgIDs)
+		if len(sqls) > 0 {
+			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
+		}
+	}
+	return
+}
+
+// GetDataScopeWheres
+func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
+	value := scope.Value
+	if value == nil || !desc.IsValid() {
+		return
+	}
+
+	caches := GetRoutineCaches()
+	if caches != nil {
+		// 有忽略标记时
+		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
+			return
+		}
+		// 查询用户菜单时
+		if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
+			if desc.NotRootUser() {
+				_, hasCodeField := scope.FieldByName("Code")
+				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+				if hasCodeField && hasCreatedByIDField {
+					// 菜单数据权限控制与组织无关，且只有两种情况：
+					// 1.自己创建的，一定看得到
+					// 2.别人创建的，必须通过分配操作权限才能看到
+					scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
+				}
+			}
+			return
+		}
+	}
+
+	subDocIDNames := Meta(value).SubDocIDNames
+	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
+		// 基于扩展档案ID的数据权限
+		for _, name := range subDocIDNames {
+			if f, ok := scope.FieldByName(name); ok {
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.SignInfo.SubDocID)
+			}
+		}
+	} else {
+		// 基于组织的数据权限
+		if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
+			sqls = append(sqls, "("+f.DBName+" in (?))")
+			attrs = append(attrs, orgIDs)
+		} else {
+			if f, ok := scope.FieldByName("CreatedByID"); ok {
+				sqls = append(sqls, "("+f.DBName+" = ?)")
+				attrs = append(attrs, desc.UID)
+			}
+		}
+		if names := Meta(scope.Value).OrgIDNames; len(names) > 0 {
+			for _, name := range names {
+				if f, ok := scope.FieldByName(name); ok {
+					sqls = append(sqls, "("+f.DBName+" in (?))")
+					attrs = append(attrs, orgIDs)
+				}
+			}
+		}
+		if names := Meta(scope.Value).UIDNames; len(names) > 0 {
+			for _, name := range names {
+				if f, ok := scope.FieldByName(name); ok {
+					sqls = append(sqls, "("+f.DBName+" = ?)")
+					attrs = append(attrs, desc.UID)
+				}
+			}
+		}
+	}
+	return
+}
+
+// CountWheres
+func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
+	var (
+		meta  = Meta(valueOrName)
+		scope = db.NewScope(meta.NewValue())
+		desc  = GetRoutinePrivilegesDesc()
+	)
+	if desc != nil {
+		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
+		if len(sqls) > 0 {
+			db = db.Where(strings.Join(sqls, " OR "), attrs...)
+		}
+	}
+	return db
 }
 
 // GetPrivilegesDesc

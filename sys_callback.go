@@ -70,18 +70,14 @@ func createCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc != nil {
 			var (
-				hasOrgIDField       bool = false
-				orgID               uint
-				hasCreatedByIDField bool = false
-				createdByID         uint
-				subDocIDNames       = Meta(scope.Value).SubDocIDNames
+				orgID       uint
+				createdByID uint
 			)
 			if field, ok := scope.FieldByName("CreatedByID"); ok {
 				if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
 					_ = scope.Err(fmt.Errorf("自动设置创建人ID失败：%s", err.Error()))
 					return
 				}
-				hasCreatedByIDField = ok
 				createdByID = field.Field.Interface().(uint)
 			}
 			if field, ok := scope.FieldByName("UpdatedByID"); ok {
@@ -97,7 +93,6 @@ func createCallback(scope *gorm.Scope) {
 						return
 					}
 				}
-				hasOrgIDField = ok
 				orgID = field.Field.Interface().(uint)
 			}
 
@@ -107,24 +102,12 @@ func createCallback(scope *gorm.Scope) {
 					return
 				}
 			}
-
-			if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
-				// 基于扩展档案ID的数据权限
-				if hasCreatedByIDField && createdByID != desc.UID {
-					_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
-					return
-				}
-			} else {
-				// 基于组织的数据权限
-				if orgID == 0 {
-					if hasCreatedByIDField && createdByID != desc.UID {
-						_ = scope.Err(fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID))
-						return
-					}
-				} else if hasOrgIDField && !desc.IsWritableOrgID(orgID) {
-					_ = scope.Err(fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, orgID))
-					return
-				}
+			auth := GetAuthProcessorDesc(scope, desc)
+			auth.OrgID = orgID
+			auth.CreatedByID = createdByID
+			if err := ActiveAuthProcessor.AllowCreate(auth); err != nil {
+				_ = scope.Err(err)
+				return
 			}
 		}
 	}
@@ -140,7 +123,11 @@ func deleteCallback(scope *gorm.Scope) {
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		var desc *PrivilegesDesc
 		if desc = GetRoutinePrivilegesDesc(); desc.IsValid() {
-			addSearchWheres(scope, desc, desc.WritableOrgIDs)
+			auth := GetAuthProcessorDesc(scope, desc)
+			if err := ActiveAuthProcessor.AddWritableWheres(auth); err != nil {
+				_ = scope.Err(err)
+				return
+			}
 		}
 
 		if !scope.Search.Unscoped && hasDeletedAtField && !deletedAtField.IsBlank {
@@ -190,7 +177,11 @@ func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
 			// 添加可写权限控制
-			addSearchWheres(scope, desc, desc.WritableOrgIDs)
+			auth := GetAuthProcessorDesc(scope, desc)
+			if err := ActiveAuthProcessor.AddWritableWheres(auth); err != nil {
+				_ = scope.Err(err)
+				return
+			}
 			if err := scope.SetColumn("UpdatedByID", desc.UID); err != nil {
 				ERROR("自动设置修改人ID失败：%s", err.Error())
 			}
@@ -210,7 +201,11 @@ func afterSaveCallback(scope *gorm.Scope) {
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
-			addSearchWheres(scope, desc, desc.ReadableOrgIDs)
+			auth := GetAuthProcessorDesc(scope, desc)
+			if err := ActiveAuthProcessor.AddReadableWheres(auth); err != nil {
+				_ = scope.Err(err)
+				return
+			}
 		}
 	}
 }
@@ -232,7 +227,6 @@ func validateCallback(scope *gorm.Scope) {
 							if err := scope.DB().AddError(formattedValidError(err, resource)); err != nil {
 								ERROR("添加验证错误信息失败：%s", err.Error())
 							}
-
 						}
 					} else {
 						if err := scope.DB().AddError(validatorErrors); err != nil {
@@ -243,97 +237,6 @@ func validateCallback(scope *gorm.Scope) {
 			}
 		}
 	}
-}
-
-func addSearchWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) {
-	sqls, attrs := GetDataScopeWheres(scope, desc, orgIDs)
-	if len(sqls) > 0 {
-		scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
-	}
-}
-
-func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
-	value := scope.Value
-	if value == nil || !desc.IsValid() {
-		return
-	}
-
-	caches := GetRoutineCaches()
-	if caches != nil {
-		// 有忽略标记时
-		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-			return
-		}
-		// 查询用户菜单时
-		if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
-			if desc.NotRootUser() {
-				_, hasCodeField := scope.FieldByName("Code")
-				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-				if hasCodeField && hasCreatedByIDField {
-					// 菜单数据权限控制与组织无关，且只有两种情况：
-					// 1.自己创建的，一定看得到
-					// 2.别人创建的，必须通过分配操作权限才能看到
-					scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
-				}
-			}
-			return
-		}
-	}
-
-	subDocIDNames := Meta(value).SubDocIDNames
-	if desc.SignInfo.SubDocID != 0 && len(subDocIDNames) > 0 {
-		// 基于扩展档案ID的数据权限
-		for _, name := range subDocIDNames {
-			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "("+f.DBName+" = ?)")
-				attrs = append(attrs, desc.SignInfo.SubDocID)
-			}
-		}
-	} else {
-		// 基于组织的数据权限
-		if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
-			sqls = append(sqls, "("+f.DBName+" in (?))")
-			attrs = append(attrs, orgIDs)
-		} else {
-			if f, ok := scope.FieldByName("CreatedByID"); ok {
-				sqls = append(sqls, "("+f.DBName+" = ?)")
-				attrs = append(attrs, desc.UID)
-			}
-		}
-		if names := Meta(scope.Value).OrgIDNames; len(names) > 0 {
-			for _, name := range names {
-				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, "("+f.DBName+" in (?))")
-					attrs = append(attrs, orgIDs)
-				}
-			}
-		}
-		if names := Meta(scope.Value).UIDNames; len(names) > 0 {
-			for _, name := range names {
-				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, "("+f.DBName+" = ?)")
-					attrs = append(attrs, desc.UID)
-				}
-			}
-		}
-	}
-	return
-}
-
-// CountWheres
-func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
-	var (
-		meta  = Meta(valueOrName)
-		scope = db.NewScope(meta.NewValue())
-		desc  = GetRoutinePrivilegesDesc()
-	)
-	if desc != nil {
-		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
-		if len(sqls) > 0 {
-			db = db.Where(strings.Join(sqls, " OR "), attrs...)
-		}
-	}
-	return db
 }
 
 // AddExtraSpaceIfExist

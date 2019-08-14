@@ -15,6 +15,7 @@ type GenTokenDesc struct {
 	SubDocID uint
 	Desc     string `binding:"required"`
 	IsAPIKey bool
+	Type     string
 }
 
 // GenToken
@@ -23,6 +24,9 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	iat := time.Now().Unix()
 	desc.Payload["Iat"] = iat      // 签发时间
 	desc.Payload["Exp"] = desc.Exp // 过期时间
+	if desc.Type == "" {
+		desc.Type = "ADMIN"
+	}
 	// 生成新密钥
 	secretData = &SignSecret{
 		UID:      desc.UID,
@@ -32,6 +36,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Method:   "LOGIN",
 		SubDocID: desc.SubDocID,
 		Desc:     desc.Desc,
+		Type:     desc.Type,
 		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
 	}
 	// 签发令牌

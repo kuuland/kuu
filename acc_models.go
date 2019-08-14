@@ -27,11 +27,13 @@ type SignSecret struct {
 	Exp        int64     `name:"令牌过期时间戳"`
 	Method     string    `name:"登录/登出"`
 	IsAPIKey   null.Bool `name:"是否API Key"`
+	Type       string    `name:"令牌类型"`
 }
 
 // SignContext
 type SignContext struct {
 	Token    string
+	Type     string
 	Lang     string
 	UID      uint
 	SubDocID uint

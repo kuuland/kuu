@@ -391,12 +391,13 @@ type File struct {
 
 // Param
 type Param struct {
-	Model `rest:"*" displayName:"参数" displayLocale:"menu_param_doc"`
+	Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string    `name:"参数编码" gorm:"not null" locale:""`
-	Name      string    `name:"参数名称" gorm:"not null" locale:""`
-	Value     string    `name:"参数值" locale:""`
-	IsBuiltIn null.Bool `name:"是否预置" locale:""`
+	Code      string    `name:"参数编码" gorm:"not null"`
+	Name      string    `name:"参数名称" gorm:"not null"`
+	Value     string    `name:"参数值" gorm:"size:4096"`
+	Type      string    `name:"参数类型"`
+	IsBuiltIn null.Bool `name:"是否预置"`
 }
 
 func (p *Param) ExcelTemplate() ExcelTemplate {
