@@ -31,6 +31,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
         - [Query associations](#query-associations)
     - [Password field filter](#password-field-filter)
     - [Global default callbacks](#global-default-callbacks)
+    - [Inject custom authentication](#inject-custom-authentication)
     - [Struct validation](#struct-validation)
     - [Modular project structure](#modular-project-structure)
     - [Global log API](#global-log-api)
@@ -812,6 +813,37 @@ Because `db.Count` does not call any callbacks, you must call `kuu.CountWheres` 
 db = CountWheres("Address", db)
 // use model value
 db = CountWheres(&Address{}, db)
+```
+
+### Inject custom authentication
+
+Specify the token type, the default is `ADMIN`:
+
+```go
+secret, err := kuu.GenToken(kuu.GenTokenDesc{
+    Payload: jwt.MapClaims{
+        "MemberID":  member.ID,
+        "CreatedAt": member.CreatedAt,
+    },
+    UID:      member.UID,
+    SubDocID: member.ID,
+    Exp:      time.Now().Add(time.Second * time.Duration(kuu.ExpiresSeconds)).Unix(),
+    Type:     "MY_SIGN_TYPE",
+})
+```
+
+Inject your rules:
+
+```go
+kuu.InjectCreateAuth = func(signType string, auth kuu.AuthProcessorDesc) (replace bool, err error) {
+    return
+}
+kuu.InjectWritableAuth = func(signType string, auth kuu.AuthProcessorDesc) (replace bool, err error) {
+    return
+}
+kuu.InjectReadableAuth = func(signType string, auth kuu.AuthProcessorDesc) (replace bool, err error) {
+    return
+}
 ```
 
 ### Struct validation
