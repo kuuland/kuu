@@ -210,7 +210,7 @@ func GetUserLanguageMessages(c *gin.Context, userLang ...string) LanguageMessage
 		messages LanguageMessagesMap
 		lang     string
 	)
-	if len(userLang) > 0 {
+	if len(userLang) > 0 && userLang[0] != "" {
 		lang = userLang[0]
 	} else if sign := GetSignContext(c); sign.IsValid() && sign.Lang != "" {
 		lang = sign.Lang
