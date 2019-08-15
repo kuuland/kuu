@@ -45,14 +45,14 @@ type LanguageMessage struct {
 	IsBuiltIn        null.Bool   `name:"是否预置"`
 }
 
-// SetContext
-func (m *LanguageMessage) SetContext(c *gin.Context) *LanguageMessage {
+// C
+func (m *LanguageMessage) C(c *gin.Context) *LanguageMessage {
 	m.c = c
 	return m
 }
 
-// SetLang
-func (m *LanguageMessage) SetLang(lang string) *LanguageMessage {
+// Lang
+func (m *LanguageMessage) Lang(lang string) *LanguageMessage {
 	m.lang = lang
 	return m
 }
@@ -210,12 +210,19 @@ func GetUserLanguageMessages(c *gin.Context, userLang ...string) LanguageMessage
 		messages LanguageMessagesMap
 		lang     string
 	)
+	if c == nil {
+		if ctx := GetRoutineRequestContext(); ctx != nil {
+			c = ctx.Context
+		}
+	}
 	if len(userLang) > 0 && userLang[0] != "" {
 		lang = userLang[0]
-	} else if sign := GetSignContext(c); sign.IsValid() && sign.Lang != "" {
-		lang = sign.Lang
-	} else {
-		lang = ParseLang(c)
+	} else if c != nil {
+		if sign := GetSignContext(c); sign.IsValid() && sign.Lang != "" {
+			lang = sign.Lang
+		} else {
+			lang = ParseLang(c)
+		}
 	}
 	messages = languageMessagesCache[lang]
 	return messages

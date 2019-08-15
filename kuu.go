@@ -76,7 +76,7 @@ func Default() (e *Engine) {
 	e.Use(Recovery)
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
-			msg := L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})
+			msg := c.L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})
 			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), msg)
 		})
 	}

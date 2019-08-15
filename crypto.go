@@ -22,12 +22,9 @@ func GenerateFromPassword(p string) (string, error) {
 }
 
 // CompareHashAndPassword 密码比对
-func CompareHashAndPassword(hashedPassword, password string) bool {
+func CompareHashAndPassword(hashedPassword, password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	if err != nil {
-		ERROR(err)
-	}
-	return err == nil
+	return err
 }
 
 // Base64Encode Base64编码

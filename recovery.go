@@ -52,7 +52,7 @@ func recovery() gin.HandlerFunc {
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					STDErr(c, L("sys_exception", "sorry, sys exception, please try again later"), err)
+					STDErr(c, L("sys_exception", "sorry, sys exception, please try again later").C(c), err)
 				}
 			}
 		}()

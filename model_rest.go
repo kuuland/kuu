@@ -206,7 +206,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(L("rest_update_failed", "Update failed"), err)
+			c.STDErr(c.L("rest_update_failed", "Update failed"), err)
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -363,7 +363,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		bizScope.QueryResult = ret
 		bizScope.callCallbacks(BizQueryKind)
 		if bizScope.HasError() {
-			c.STDErr(L("rest_query_failed", "Query failed"), bizScope.DB.Error)
+			c.STDErr(c.L("rest_query_failed", "Query failed"), bizScope.DB.Error)
 			return
 		}
 		if v := c.Query("export"); v != "" {
@@ -374,7 +374,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			case "excel":
 				ExcelExport(c, ret, reflectType)
 			default:
-				c.STDErr(L("rest_query_failed", "Query failed"), fmt.Errorf("unsupported export type: %s", v))
+				c.STDErr(c.L("rest_query_failed", "Query failed"), fmt.Errorf("unsupported export type: %s", v))
 			}
 			return
 		}
@@ -476,7 +476,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(L("rest_delete_failed", "Delete failed"), err)
+			c.STDErr(c.L("rest_delete_failed", "Delete failed"), err)
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -525,7 +525,7 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(L("rest_create_failed", "Create failed"), err)
+			c.STDErr(c.L("rest_create_failed", "Create failed"), err)
 		} else {
 			if multi {
 				c.STD(docs)

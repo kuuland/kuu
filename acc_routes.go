@@ -74,7 +74,7 @@ var LoginRoute = RouteInfo{
 			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
 		})
 		if err != nil {
-			c.STDErr(L("acc_token_failed", "Token signing failed"), err)
+			c.STDErr(c.L("acc_token_failed", "Token signing failed"), err)
 			return
 		}
 		// 设置到上下文中
@@ -103,7 +103,7 @@ var LogoutRoute = RouteInfo{
 			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
 				if err := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).Error; err != nil {
-					c.STDErr(L("acc_logout_failed", "Logout failed"), err)
+					c.STDErr(c.L("acc_logout_failed", "Logout failed"), err)
 					return
 				}
 				// 保存登出历史
@@ -126,7 +126,7 @@ var ValidRoute = RouteInfo{
 			// 查询用户
 			var user User
 			if err := c.IgnoreAuth().DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
-				c.STDErr(L("user_query_failed", "Query user failed"), err)
+				c.STDErr(c.L("user_query_failed", "Query user failed"), err)
 				return
 			}
 			// 处理Lang参数
@@ -141,7 +141,7 @@ var ValidRoute = RouteInfo{
 			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
 			c.STD(c.SignInfo.Payload)
 		} else {
-			c.STDErrHold(L("acc_token_expired", "Token has expired")).Code(555).Render()
+			c.STDErrHold(c.L("acc_token_expired", "Token has expired")).Code(555).Render()
 		}
 	},
 }
@@ -152,7 +152,7 @@ var APIKeyRoute = RouteInfo{
 	Path:   "/apikeys",
 	HandlerFunc: func(c *Context) {
 		var body GenTokenDesc
-		failedMessage := L("apikeys_failed", "Create API & Keys failed")
+		failedMessage := c.L("apikeys_failed", "Create API & Keys failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
 			c.STDErr(failedMessage, err)
 			return

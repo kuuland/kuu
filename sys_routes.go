@@ -29,7 +29,7 @@ var OrgLoginableRoute = RouteInfo{
 		c.IgnoreAuth()
 		sign := c.SignInfo
 		if data, err := GetLoginableOrgs(c.Context, sign.UID); err != nil {
-			c.STDErr(L("org_query_failed", "Query organization failed"), err)
+			c.STDErr(c.L("org_query_failed", "Query organization failed"), err)
 		} else {
 			c.STD(data)
 		}
@@ -42,7 +42,7 @@ var UserRoleAssigns = RouteInfo{
 	Path:   "/user/role_assigns/:uid",
 	HandlerFunc: func(c *Context) {
 		raw := c.Param("uid")
-		failedMessage := L("role_assigns_failed", "User roles query failed")
+		failedMessage := c.L("role_assigns_failed", "User roles query failed")
 		if raw == "" {
 			c.STDErr(failedMessage, errors.New("UID is required"))
 			return
@@ -62,7 +62,7 @@ var UserMenusRoute = RouteInfo{
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
 		var menus []Menu
-		failedMessage := L("user_menus_failed", "User menus query failed")
+		failedMessage := c.L("user_menus_failed", "User menus query failed")
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
 			c.STDErr(failedMessage, err)
@@ -120,7 +120,7 @@ var UploadRoute = RouteInfo{
 			uploadDir = "assets"
 		}
 		EnsureDir(uploadDir)
-		failedMessage := L("upload_failed", "Upload file failed")
+		failedMessage := c.L("upload_failed", "Upload file failed")
 		//	MD5
 		file, _ := c.FormFile("file")
 		src, err := file.Open()
@@ -186,7 +186,7 @@ var AuthRoute = RouteInfo{
 		split := strings.Split(ps, ",")
 
 		if len(split) == 0 {
-			c.STDErr(L("auth_failed", "Authentication failed"), errors.New("'p' is required"))
+			c.STDErr(c.L("auth_failed", "Authentication failed"), errors.New("'p' is required"))
 		}
 
 		ret := make(map[string]bool)
@@ -737,7 +737,7 @@ var ModelDocsRoute = RouteInfo{
 		if json {
 			data, err := yaml.YAMLToJSON([]byte(yml))
 			if err != nil {
-				c.STDErr(L("model_docs_failed", "Model document query failed"), err)
+				c.STDErr(c.L("model_docs_failed", "Model document query failed"), err)
 				return
 			}
 			json := string(data)
@@ -765,7 +765,7 @@ var LangmsgsRoute = RouteInfo{
 			db = db.Where("group = ?", group)
 		}
 		var list []LanguageMessage
-		failedMessage := L("lang_msgs_failed", "Query i18n messages failed")
+		failedMessage := c.L("lang_msgs_failed", "Query i18n messages failed")
 		if err := db.Find(&list).Order("sort").Error; err != nil {
 			c.STDErr(failedMessage, err)
 			return
@@ -790,7 +790,7 @@ var LangtransGetRoute = RouteInfo{
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
 		c.IgnoreAuth()
-		failedMessage := L("lang_trans_query_failed", "Query translation list failed")
+		failedMessage := c.L("lang_trans_query_failed", "Query translation list failed")
 		var (
 			languages []Language
 			messages  []LanguageMessage
@@ -847,7 +847,7 @@ var LangtransPostRoute = RouteInfo{
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
 		var body M
-		failedMessage := L("lang_trans_save_failed", "Save locale messages failed")
+		failedMessage := c.L("lang_trans_save_failed", "Save locale messages failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
 			c.STDErr(failedMessage, err)
 			return
@@ -910,7 +910,7 @@ var LanglistPostRoute = RouteInfo{
 	Path:   "/langlist",
 	HandlerFunc: func(c *Context) {
 		var body []Language
-		failedMessage := L("lang_list_save_failed", "Save languages failed")
+		failedMessage := c.L("lang_list_save_failed", "Save languages failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
 			c.STDErr(failedMessage, err)
 			return

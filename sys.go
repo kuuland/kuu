@@ -197,7 +197,9 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_up").Add("{{time}}", "{{time}}", "{{time}}")
 	// 接口
 	register.SetKey("acc_token_failed").Add("Token signing failed", "令牌签发失败", "令牌簽發失敗")
+	register.SetKey("acc_login_failed").Add("Login failed", "登录失败", "登錄失敗")
 	register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
+	register.SetKey("acc_password_failed").Add("The password you entered isn't right.", "账号密码不一致", "賬號密碼不一致")
 	register.SetKey("acc_token_expired").Add("Token has expired", "令牌已过期", "令牌已過期")
 	register.SetKey("apikeys_failed").Add("Create Access Key failed", "创建访问密钥失败", "創建訪問密鑰失敗")
 	register.SetKey("acc_please_login").Add("Please login", "请重新登录", "請重新登錄")
@@ -216,7 +218,6 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("lang_trans_query_failed").Add("Query translation list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
 	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
 	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
-	register.SetKey("login_failed").Add("Login failed", "登录失败", "登錄失敗")
 	// Model RESTful
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
@@ -670,12 +671,14 @@ func createPresetMenus(tx *gorm.DB) {
 
 // GetSignContext
 func GetSignContext(c *gin.Context) (sign *SignContext) {
-	// 解析登录信息
-	if v, exists := c.Get(SignContextKey); exists {
-		sign = v.(*SignContext)
-	} else {
-		if v, err := DecodedContext(c); err == nil {
-			sign = v
+	if c != nil {
+		// 解析登录信息
+		if v, exists := c.Get(SignContextKey); exists {
+			sign = v.(*SignContext)
+		} else {
+			if v, err := DecodedContext(c); err == nil {
+				sign = v
+			}
 		}
 	}
 	return
@@ -751,7 +754,7 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 		Username string
 		Password string
 	}{}
-	failedMessage := L("login_failed", "Login failed")
+	failedMessage := c.L("acc_login_failed", "Login failed")
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		c.STDErr(failedMessage, err)
@@ -770,8 +773,8 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 	}
 	// 检测密码是否正确
 	body.Password = strings.ToLower(body.Password)
-	if !CompareHashAndPassword(user.Password, body.Password) {
-		c.STDErr(failedMessage, errors.New("inconsistent account password"))
+	if err := CompareHashAndPassword(user.Password, body.Password); err != nil {
+		c.STDErr(c.L("acc_password_failed", "The password you entered isn't right."), err)
 		return
 	}
 	payload = jwt.MapClaims{

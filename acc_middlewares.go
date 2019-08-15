@@ -17,8 +17,8 @@ func AuthMiddleware(c *gin.Context) {
 		// 从请求参数中解码令牌
 		sign, err := DecodedContext(c)
 		var (
-			loginMessage   = L("acc_please_login", "Please login").SetContext(c)
-			expiredMessage = L("acc_session_expired", "Login session has expired").SetContext(c)
+			loginMessage   = L("acc_please_login", "Please login").C(c)
+			expiredMessage = L("acc_session_expired", "Login session has expired").C(c)
 		)
 		if err != nil {
 			STDErrHold(c, loginMessage, err).Code(555).Abort()

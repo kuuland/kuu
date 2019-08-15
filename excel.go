@@ -231,7 +231,7 @@ func GetExcelTemplate(reflectType reflect.Type, actionType string) (template Exc
 // ExcelImport
 func ExcelImport(c *Context, reflectType reflect.Type) {
 	var (
-		failedMessage = L("rest_import_failed", "Import failed")
+		failedMessage = c.L("rest_import_failed", "Import failed")
 	)
 	// 解析请求体
 	file, _ := c.FormFile("file")
