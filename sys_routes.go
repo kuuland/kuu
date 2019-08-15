@@ -21,14 +21,14 @@ import (
 
 var valueCacheMap sync.Map
 
-// OrgListRoute
-var OrgListRoute = RouteInfo{
+// OrgLoginableRoute
+var OrgLoginableRoute = RouteInfo{
 	Method: "GET",
-	Path:   "/org/list",
+	Path:   "/org/loginable",
 	HandlerFunc: func(c *Context) {
 		c.IgnoreAuth()
 		sign := c.SignInfo
-		if data, err := GetOrgList(c.Context, sign.UID); err != nil {
+		if data, err := GetLoginableOrgs(c.Context, sign.UID); err != nil {
 			c.STDErr(L("org_query_failed", "Query organization failed"), err)
 		} else {
 			c.STD(data)

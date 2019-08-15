@@ -681,8 +681,8 @@ func GetSignContext(c *gin.Context) (sign *SignContext) {
 	return
 }
 
-// GetOrgList
-func GetOrgList(c *gin.Context, uid uint) ([]Org, error) {
+// GetLoginableOrgs
+func GetLoginableOrgs(c *gin.Context, uid uint) ([]Org, error) {
 	var (
 		data []Org
 		db   *gorm.DB
@@ -691,7 +691,7 @@ func GetOrgList(c *gin.Context, uid uint) ([]Org, error) {
 		db = DB().Find(&data)
 	} else {
 		if desc := GetPrivilegesDesc(c); desc != nil {
-			db = DB().Where("id in (?)", desc.ReadableOrgIDs).Find(&data)
+			db = DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data)
 		}
 	}
 	return data, db.Error
@@ -702,7 +702,7 @@ func GetActOrg(c *Context, actOrgID uint) (actOrg Org, err error) {
 		err = c.IgnoreAuth().DB().First(&actOrg, "id = ?", actOrgID).Error
 	} else {
 		var list []Org
-		if list, err = GetOrgList(c.Context, c.SignInfo.UID); err != nil {
+		if list, err = GetLoginableOrgs(c.Context, c.SignInfo.UID); err != nil {
 			return
 		}
 		if len(list) > 0 {
@@ -826,7 +826,7 @@ func Sys() *Mod {
 			&LanguageMessage{},
 		},
 		Routes: RoutesInfo{
-			OrgListRoute,
+			OrgLoginableRoute,
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,

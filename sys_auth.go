@@ -29,29 +29,45 @@ func init() {
 
 // PrivilegesDesc
 type PrivilegesDesc struct {
-	UID              uint
-	Codes            []string
-	Permissions      map[string]int64
-	ReadableOrgIDs   []uint
-	ReadableOrgIDMap map[uint]bool
-	WritableOrgIDs   []uint
-	WritableOrgIDMap map[uint]bool
-	Valid            bool
-	SignInfo         *SignContext
-	ActOrgID         uint
-	ActOrgCode       string
-	ActOrgName       string
-	RolesCode        []string
+	UID               uint
+	Codes             []string
+	Permissions       map[string]int64
+	ReadableOrgIDs    []uint
+	ReadableOrgIDMap  map[uint]Org
+	WritableOrgIDs    []uint
+	WritableOrgIDMap  map[uint]Org
+	LoginableOrgIDs   []uint
+	LoginableOrgIDMap map[uint]Org
+	Valid             bool
+	SignInfo          *SignContext
+	ActOrgID          uint
+	ActOrgCode        string
+	ActOrgName        string
+	RolesCode         []string
 }
 
 // IsWritableOrgID
 func (desc *PrivilegesDesc) IsWritableOrgID(orgID uint) bool {
-	return desc.WritableOrgIDMap[orgID] == true
+	if v, has := desc.WritableOrgIDMap[orgID]; has && v.ID != 0 {
+		return true
+	}
+	return false
 }
 
 // IsReadableOrgID
 func (desc *PrivilegesDesc) IsReadableOrgID(orgID uint) bool {
-	return desc.ReadableOrgIDMap[orgID] == true
+	if v, has := desc.ReadableOrgIDMap[orgID]; has && v.ID != 0 {
+		return true
+	}
+	return false
+}
+
+// IsLoginableOrgID
+func (desc *PrivilegesDesc) IsLoginableOrgID(orgID uint) bool {
+	if v, has := desc.LoginableOrgIDMap[orgID]; has && v.ID != 0 {
+		return true
+	}
+	return false
 }
 
 // IsValid
@@ -354,33 +370,35 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	orgMap := OrgIDMap(orgList)
 
 	var (
-		readableOrgIDs = make(map[uint]bool)
-		writableOrgIDs = make(map[uint]bool)
+		readableOrgIDMap  = make(map[uint]Org)
+		writableOrgIDMap  = make(map[uint]Org)
+		loginableOrgIDMap = make(map[uint]Org)
 	)
 	for orgID, orgRange := range orm {
 		org := orgMap[orgID]
+		loginableOrgIDMap[orgID] = org
 		// 统计可读
 		if vmap[orgRange.readable] == 2 {
-			readableOrgIDs[orgID] = true
+			readableOrgIDMap[orgID] = org
 		} else if vmap[orgRange.readable] == 3 {
 			for _, child := range orgList {
 				if strings.HasPrefix(child.FullPid, org.FullPid) {
-					readableOrgIDs[child.ID] = true
+					readableOrgIDMap[child.ID] = org
 				}
 			}
 		}
 		// 统计可写
 		if vmap[orgRange.writable] == 2 {
-			writableOrgIDs[orgID] = true
+			writableOrgIDMap[orgID] = org
 		} else if vmap[orgRange.writable] == 3 {
 			for _, child := range orgList {
 				if strings.HasPrefix(child.FullPid, org.FullPid) {
-					writableOrgIDs[child.ID] = true
+					writableOrgIDMap[child.ID] = org
 				}
 			}
 		}
 	}
-	keys := func(m map[uint]bool) (a []uint) {
+	keys := func(m map[uint]Org) (a []uint) {
 		for key, _ := range m {
 			a = append(a, key)
 		}
@@ -390,16 +408,18 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	for code, _ := range desc.Permissions {
 		desc.Codes = append(desc.Codes, code)
 	}
-	desc.ReadableOrgIDMap = readableOrgIDs
-	desc.ReadableOrgIDs = keys(readableOrgIDs)
-	desc.WritableOrgIDMap = writableOrgIDs
-	desc.WritableOrgIDs = keys(writableOrgIDs)
+	desc.ReadableOrgIDMap = readableOrgIDMap
+	desc.ReadableOrgIDs = keys(readableOrgIDMap)
+	desc.WritableOrgIDMap = writableOrgIDMap
+	desc.WritableOrgIDs = keys(writableOrgIDMap)
+	desc.LoginableOrgIDMap = loginableOrgIDMap
+	desc.LoginableOrgIDs = keys(loginableOrgIDMap)
 	// 计算ActOrgID
 	var actOrg Org
-	if user.ActOrgID != 0 && desc.ReadableOrgIDMap[user.ActOrgID] {
+	if user.ActOrgID != 0 && desc.IsLoginableOrgID(user.ActOrgID) {
 		actOrg = orgMap[user.ActOrgID]
-	} else if len(desc.ReadableOrgIDs) > 0 {
-		actOrg = orgMap[desc.ReadableOrgIDs[0]]
+	} else if len(desc.LoginableOrgIDs) > 0 {
+		actOrg = orgMap[desc.LoginableOrgIDs[0]]
 	}
 	desc.ActOrgID = actOrg.ID
 	desc.ActOrgCode = actOrg.Code
