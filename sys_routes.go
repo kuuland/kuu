@@ -61,7 +61,6 @@ var UserMenusRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
-		c.SetRoutineCache(GLSUserMenusKey, true)
 		var menus []Menu
 		failedMessage := L("user_menus_failed", "User menus query failed")
 		// 查询授权菜单

@@ -199,7 +199,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 			return
 		}
 		// 查询用户菜单时
-		if _, queryUserMenus := caches[GLSUserMenusKey]; queryUserMenus {
+		if meta.Name == "Menu" {
 			if desc.NotRootUser() {
 				_, hasCodeField := scope.FieldByName("Code")
 				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
@@ -226,7 +226,11 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 	} else {
 		// 基于组织的数据权限
 		if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
-			sqls = append(sqls, "("+f.DBName+" in (?))")
+			dbName := f.DBName
+			if meta.Name == "Org" {
+				dbName = "id"
+			}
+			sqls = append(sqls, "("+dbName+" in (?))")
 			attrs = append(attrs, orgIDs)
 		} else {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {

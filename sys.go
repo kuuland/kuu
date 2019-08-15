@@ -362,7 +362,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_menu_name_required").Add("Please enter a menu name", "请输入菜单名称", "請輸入菜單名稱")
 	register.SetKey("kuu_menu_uri").Add("URI", "菜单地址", "菜單地址")
 	register.SetKey("kuu_menu_sort").Add("Sort", "菜单排序", "菜單排序")
-	register.SetKey("kuu_menu_disable").Add("Disable", "可见性", "可見性")
+	register.SetKey("kuu_menu_disable").Add("Disable", "是否禁用", "是否禁用")
 	register.SetKey("kuu_menu_detail").Add("Detail", "详情", "詳情")
 	register.SetKey("kuu_menu_external").Add("External link", "外部链接", "外部鏈接")
 	register.SetKey("kuu_menu_defaultopen").Add("Open by default", "默认打开", "默認打開")

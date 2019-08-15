@@ -23,8 +23,6 @@ var (
 	GLSSignInfoKey = "SignInfo"
 	// GLSIgnoreAuthKey
 	GLSIgnoreAuthKey = "IgnoreAuth"
-	// UserMenus
-	GLSUserMenusKey = "UserMenus"
 	// GLSRoutineCachesKey
 	GLSRoutineCachesKey = "RoutineCaches"
 	// GLSRequestContextKey
