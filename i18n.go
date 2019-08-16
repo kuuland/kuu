@@ -25,24 +25,24 @@ type LanguageMessagesMap map[string]LanguageMessage
 
 // Language
 type Language struct {
-	ModelExOrg `rest:"*" displayName:"国际化语言列表"`
+	gorm.Model `rest:"*" displayName:"国际化语言列表"`
 	LangCode   string `name:"语言编码"`
 	LangName   string `name:"语言名称"`
 }
 
 // LanguageMessage
 type LanguageMessage struct {
+	gorm.Model       `rest:"*" displayName:"国际化语言条目"`
 	c                *gin.Context `json:"-" gorm:"-"`
 	lang             string       `json:"-" gorm:"-"`
-	ModelExOrg       `rest:"*" displayName:"国际化语言条目"`
-	LangCode         string      `name:"语言编码"`
-	Key              string      `name:"消息键"`
-	Value            string      `name:"翻译值"`
-	DefaultMessage   string      `name:"默认消息" json:"-,omitempty"`
-	FormattedContext interface{} `name:"格式化上下文" json:"-,omitempty" gorm:"-"`
-	Group            string      `name:"分组"`
-	Sort             int         `name:"排序值"`
-	IsBuiltIn        null.Bool   `name:"是否预置"`
+	LangCode         string       `name:"语言编码"`
+	Key              string       `name:"消息键"`
+	Value            string       `name:"翻译值"`
+	DefaultMessage   string       `name:"默认消息" json:"-,omitempty"`
+	FormattedContext interface{}  `name:"格式化上下文" json:"-,omitempty" gorm:"-"`
+	Group            string       `name:"分组"`
+	Sort             int          `name:"排序值"`
+	IsBuiltIn        null.Bool    `name:"是否预置"`
 }
 
 // C
