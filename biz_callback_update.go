@@ -28,9 +28,6 @@ func bizUpdateCallback(scope *Scope) {
 			} else {
 				itemScope := tx.NewScope(item)
 				if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
-					if err := itemScope.SetColumn(field.DBName, nil); err != nil {
-						ERROR("清空 DeletedAt 字段失败：%s", err.Error())
-					}
 					if err := tx.Delete(item).Error; err != nil {
 						_ = scope.Err(err)
 						return
