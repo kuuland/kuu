@@ -208,8 +208,8 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if _, ok := ErrOut(err); ok {
-				c.STDErr(c.L("rest_update_failed", ErrMsgs(err)[0]), err)
+			if cusErr, ok := ErrOut(err); ok {
+				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
 			} else {
 				c.STDErr(c.L("rest_update_failed", "Update failed"), err)
 			}
@@ -369,8 +369,8 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		bizScope.QueryResult = ret
 		bizScope.callCallbacks(BizQueryKind)
 		if bizScope.HasError() {
-			if _, ok := ErrOut(bizScope.DB.Error); ok {
-				c.STDErr(c.L("rest_query_failed", ErrMsgs(bizScope.DB.Error)[0]), bizScope.DB.Error)
+			if cusErr, ok := ErrOut(bizScope.DB.Error); ok {
+				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(bizScope.DB.Error)[0]), bizScope.DB.Error)
 			} else {
 				c.STDErr(c.L("rest_query_failed", "Query failed"), bizScope.DB.Error)
 			}
@@ -486,8 +486,8 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if _, ok := ErrOut(err); ok {
-				c.STDErr(c.L("rest_delete_failed", ErrMsgs(err)[0]), err)
+			if cusErr, ok := ErrOut(err); ok {
+				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
 			} else {
 				c.STDErr(c.L("rest_delete_failed", "Delete failed"), err)
 			}
@@ -539,8 +539,8 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if _, ok := ErrOut(err); ok {
-				c.STDErr(c.L("rest_create_failed", ErrMsgs(err)[0]), err)
+			if cusErr, ok := ErrOut(err); ok {
+				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
 			} else {
 				c.STDErr(c.L("rest_create_failed", "Create failed"), err)
 			}
