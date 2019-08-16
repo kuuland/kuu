@@ -205,18 +205,35 @@ var MetaRoute = RouteInfo{
 	Path:   "/meta",
 	HandlerFunc: func(c *Context) {
 		json := c.Query("json")
+		name := c.Query("name")
+		filters := strings.Split(name, ",")
+
+		var list []*Metadata
+		if len(filters) > 0 {
+			for _, name := range filters {
+				if v, ok := metadataMap[name]; ok && v != nil {
+					list = append(list, v)
+				}
+			}
+		} else {
+			list = metadataList
+		}
+		if len(list) == 0 {
+			c.STDErr(c.L("sys_meta_failed", "Metadata does not exist: {{name}}", M{"name": name}))
+			return
+		}
 		if json != "" {
-			c.STD(metadataList)
+			c.STD(list)
 		} else {
 			var (
-				hashKey = "meta"
+				hashKey = fmt.Sprintf("meta_%s", filters)
 				result  string
 			)
 			if v, ok := valueCacheMap.Load(hashKey); ok {
 				result = v.(string)
 			} else {
 				var buffer bytes.Buffer
-				for _, m := range metadataList {
+				for _, m := range list {
 					if len(m.Fields) > 0 {
 						if m.DisplayName != "" {
 							buffer.WriteString(fmt.Sprintf("%s(%s) {\n", m.Name, m.DisplayName))

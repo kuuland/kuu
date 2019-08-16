@@ -197,6 +197,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
 	register.SetKey("acc_password_failed").Add("The password you entered isn't right.", "账号密码不一致", "賬號密碼不一致")
 	register.SetKey("acc_token_expired").Add("Token has expired", "令牌已过期", "令牌已過期")
+	register.SetKey("sys_meta_failed").Add("Metadata does not exist: {{name}}", "元数据不存在：{{name}}", "元數據不存在：{{name}}")
+
 	register.SetKey("apikeys_failed").Add("Create Access Key failed", "创建访问密钥失败", "創建訪問密鑰失敗")
 	register.SetKey("acc_please_login").Add("Please login", "请重新登录", "請重新登錄")
 	register.SetKey("acc_session_expired").Add("Login session has expired", "登录会话已过期", "登錄會話已過期")
