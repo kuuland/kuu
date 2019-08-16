@@ -1,14 +1,16 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/jinzhu/gorm"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/jinzhu/gorm"
 )
 
 // RestDesc
@@ -206,7 +208,11 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(c.L("rest_update_failed", "Update failed"), err)
+			if _, ok := ErrOut(err); ok {
+				c.STDErr(c.L("rest_update_failed", ErrMsgs(err)[0]), err)
+			} else {
+				c.STDErr(c.L("rest_update_failed", "Update failed"), err)
+			}
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -363,7 +369,11 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		bizScope.QueryResult = ret
 		bizScope.callCallbacks(BizQueryKind)
 		if bizScope.HasError() {
-			c.STDErr(c.L("rest_query_failed", "Query failed"), bizScope.DB.Error)
+			if _, ok := ErrOut(bizScope.DB.Error); ok {
+				c.STDErr(c.L("rest_query_failed", ErrMsgs(bizScope.DB.Error)[0]), bizScope.DB.Error)
+			} else {
+				c.STDErr(c.L("rest_query_failed", "Query failed"), bizScope.DB.Error)
+			}
 			return
 		}
 		if v := c.Query("export"); v != "" {
@@ -476,7 +486,11 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(c.L("rest_delete_failed", "Delete failed"), err)
+			if _, ok := ErrOut(err); ok {
+				c.STDErr(c.L("rest_delete_failed", ErrMsgs(err)[0]), err)
+			} else {
+				c.STDErr(c.L("rest_delete_failed", "Delete failed"), err)
+			}
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
 			c.STD(result)
@@ -525,7 +539,11 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			c.STDErr(c.L("rest_create_failed", "Create failed"), err)
+			if _, ok := ErrOut(err); ok {
+				c.STDErr(c.L("rest_create_failed", ErrMsgs(err)[0]), err)
+			} else {
+				c.STDErr(c.L("rest_create_failed", "Create failed"), err)
+			}
 		} else {
 			if multi {
 				c.STD(docs)

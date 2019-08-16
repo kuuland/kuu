@@ -14,6 +14,7 @@ require (
 	github.com/jinzhu/gorm v1.9.8
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
 	github.com/jtolds/gls v4.20.0+incompatible
+	github.com/pkg/errors v0.8.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c

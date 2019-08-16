@@ -1,10 +1,12 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -13,7 +15,39 @@ var (
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrAffectedSaveToken   = errors.New("未新增或修改任何记录，请检查更新条件或数据权限")
 	ErrAffectedDeleteToken = errors.New("未删除任何记录，请检查更新条件或数据权限")
+
+	ErrWidelyCode         = uint(1 << 50)
+	ErrFieldValidatorCode = uint(1 << 51)
+	ErrWidely             = &Error{Code: ErrWidelyCode}
+	ErrFieldValidator     = &Error{Code: ErrFieldValidatorCode}
 )
+
+// Error defined kuu error type
+type Error struct {
+	Meta string
+	Code uint
+}
+
+// Error defined a friendly reminder
+func (e *Error) Error() string {
+	return fmt.Sprintf("ErrCode(%v)", e.Code)
+}
+
+// ErrWith defined wrap error
+func ErrWith(err *Error, msg string) error {
+	return errors.Wrap(err, msg)
+}
+
+// ErrOut defined unwrap error
+func ErrOut(err error) (cusError *Error, ok bool) {
+	cusError, ok = errors.Cause(err).(*Error)
+	return
+}
+
+// ErrMsgs defined split wrap msg
+func ErrMsgs(err error) []string {
+	return strings.Split(err.Error(), ":")
+}
 
 // CatchError error which one from outside of recovery pluigns, this rec just for kuu
 // you can CatchError if your error code does not affect the next plug-in
