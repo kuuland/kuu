@@ -113,15 +113,13 @@ func initSys() {
 
 func createRootUser(tx *gorm.DB) {
 	root := User{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
-		},
-		Username:  "root",
-		Name:      "Default",
-		Password:  MD5("kuu"),
-		IsBuiltIn: null.NewBool(true, true),
+		CreatedByID: RootUID(),
+		UpdatedByID: RootUID(),
+		OrgID:       RootOrgID(),
+		Username:    "root",
+		Name:        "Default",
+		Password:    MD5("kuu"),
+		IsBuiltIn:   null.NewBool(true, true),
 	}
 	tx.Create(&root)
 	rootUser = &root
@@ -129,13 +127,11 @@ func createRootUser(tx *gorm.DB) {
 
 func createRootOrg(tx *gorm.DB) {
 	root := Org{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
-		},
-		Code: "default",
-		Name: "Default",
+		CreatedByID: RootUID(),
+		UpdatedByID: RootUID(),
+		OrgID:       RootOrgID(),
+		Code:        "default",
+		Name:        "Default",
 	}
 	tx.Create(&root)
 	rootOrg = &root
