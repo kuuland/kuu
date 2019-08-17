@@ -140,14 +140,12 @@ func createRootOrg(tx *gorm.DB) {
 func createRootPrivileges(tx *gorm.DB) {
 	// 创建角色
 	rootRole := &Role{
-		Model: Model{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
-		},
-		Code:      "root_role",
-		Name:      "Default",
-		IsBuiltIn: null.NewBool(true, true),
+		CreatedByID: RootUID(),
+		UpdatedByID: RootUID(),
+		OrgID:       RootOrgID(),
+		Code:        "root_role",
+		Name:        "Default",
+		IsBuiltIn:   null.NewBool(true, true),
 	}
 	tx.Create(rootRole)
 	// 创建数据权限记录
@@ -432,6 +430,15 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_meta_fields_isref").Add("Is Ref", "是否引用", "是否引用")
 	register.SetKey("kuu_meta_fields_ispassword").Add("Is Password", "是否密码", "是否密碼")
 	register.SetKey("kuu_meta_fields_isarray").Add("Is Array", "是否数组", "是否數組")
+	// Kuu File
+	register.SetKey("kuu_file_uid").Add("UID", "文件唯一ID", "文件唯一ID")
+	register.SetKey("kuu_file_class").Add("Class", "文件分类", "文件分類")
+	register.SetKey("kuu_file_type").Add("Mine-Type", "Mine-Type", "Mine-Type")
+	register.SetKey("kuu_file_size").Add("Size", "文件大小", "文件大小")
+	register.SetKey("kuu_file_name").Add("Name", "文件名称", "文件名稱")
+	register.SetKey("kuu_file_url").Add("URL", "文件地址", "文件地址")
+	register.SetKey("kuu_file_createdat").Add("Created At", "上传时间", "上傳時間")
+	register.SetKey("kuu_file_actions_upload").Add("Upload", "上传文件", "上傳文件")
 	register.Exec()
 
 }
@@ -688,12 +695,8 @@ func GetLoginableOrgs(c *gin.Context, uid uint) ([]Org, error) {
 		data []Org
 		db   *gorm.DB
 	)
-	if uid == RootUID() {
-		db = DB().Find(&data)
-	} else {
-		if desc := GetPrivilegesDesc(c); desc != nil {
-			db = DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data)
-		}
+	if desc := GetPrivilegesDesc(c); desc != nil {
+		db = DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data)
 	}
 	return data, db.Error
 }

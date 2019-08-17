@@ -200,7 +200,21 @@ type RoleAssign struct {
 
 // Role
 type Role struct {
-	Model `rest:"*" displayName:"角色"`
+	// 引用Model将无法Preload，故复制字段
+	ID          uint       `gorm:"primary_key" rest:"*" displayName:"角色"`
+	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	OrgID       uint       `name:"所属组织ID（默认字段）"`
+	CreatedByID uint       `name:"创建人ID（默认字段）"`
+	UpdatedByID uint       `name:"修改人ID（默认字段）"`
+	DeletedByID uint       `name:"删除人ID（默认字段）"`
+	Remark      string     `name:"备注"`
+	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+
 	ExtendField
 	Code                string                `name:"角色编码" gorm:"not null"`
 	Name                string                `name:"角色名称" gorm:"not null"`

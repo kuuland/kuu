@@ -209,7 +209,7 @@ var MetaRoute = RouteInfo{
 		filters := strings.Split(name, ",")
 
 		var list []*Metadata
-		if len(filters) > 0 {
+		if name != "" {
 			for _, name := range filters {
 				if v, ok := metadataMap[name]; ok && v != nil {
 					list = append(list, v)
