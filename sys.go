@@ -433,7 +433,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	// Kuu File
 	register.SetKey("kuu_file_uid").Add("UID", "文件唯一ID", "文件唯一ID")
 	register.SetKey("kuu_file_class").Add("Class", "文件分类", "文件分類")
-	register.SetKey("kuu_file_type").Add("Mine-Type", "Mine-Type", "Mine-Type")
+	register.SetKey("kuu_file_type").Add("Type", "文件类型", "文件類型")
 	register.SetKey("kuu_file_size").Add("Size", "文件大小", "文件大小")
 	register.SetKey("kuu_file_name").Add("Name", "文件名称", "文件名稱")
 	register.SetKey("kuu_file_url").Add("URL", "文件地址", "文件地址")
