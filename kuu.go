@@ -388,7 +388,6 @@ func connectedPrint(name, args string) {
 
 func onInit(e *Engine) {
 	initDataSources()
-	initRedis()
 	e.initConfigs()
 	e.initStatics()
 
