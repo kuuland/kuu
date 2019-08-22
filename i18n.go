@@ -130,7 +130,7 @@ func (r *LangRegister) Exec(db ...*gorm.DB) *LangRegister {
 	}
 
 	var (
-		base      = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, created_by_id, updated_by_id, lang_code, key, value, is_built_in) VALUES `
+		base      = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value, is_built_in) VALUES `
 		now       = time.Now().Format("2006-01-02 15:04:05")
 		batchSize = 200
 		buffer    bytes.Buffer
@@ -138,8 +138,8 @@ func (r *LangRegister) Exec(db ...*gorm.DB) *LangRegister {
 	)
 	buffer.WriteString(base)
 	for index, item := range r.list {
-		buffer.WriteString("(?, ?, ?, ?, ?, ?, ?, TRUE)")
-		vars = append(vars, now, now, RootUID(), RootUID(), item.LangCode, item.Key, item.Value)
+		buffer.WriteString("(?, ?, ?, ?, ?, TRUE)")
+		vars = append(vars, now, now, item.LangCode, item.Key, item.Value)
 		if (index+1)%batchSize == 0 || index == len(r.list)-1 {
 			if sql := buffer.String(); sql != "" {
 				r.DB.Exec(sql, vars...)
