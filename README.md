@@ -1092,7 +1092,7 @@ func main() {
 - [System module](https://github.com/kuuland/kuu/blob/master/sys.go#L564) - Menu, admin, roles, organization, etc.
 - [Admin](https://github.com/kuuland/ui) - A React boilerplate.
 
-#### Security framework
+### Security framework
 
 <img src="/docs/kuu_security_framework.png" alt="Kuu Security framework"/>
 
