@@ -305,6 +305,9 @@ func (m *Menu) BeforeSave() {
 			m.Code = RandCode()
 		}
 	}
+	if !m.Closeable.Valid {
+		m.Closeable = null.NewBool(true, true)
+	}
 }
 
 // AfterSave
