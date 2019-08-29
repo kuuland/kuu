@@ -256,8 +256,10 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 										args = append(args, a...)
 									}
 								} else {
-									queries = append(queries, fmt.Sprintf("\"%s\" = ?", k))
-									args = append(args, v)
+									if field, ok := ms.FieldByName(k); ok {
+										queries = append(queries, fmt.Sprintf("\"%s\" = ?", field.DBName))
+										args = append(args, v)
+									}
 								}
 							}
 						}
