@@ -14,7 +14,14 @@ func bizBeforeCreateCallback(scope *Scope) {
 
 func bizCreateCallback(scope *Scope) {
 	if !scope.HasError() {
-		if err := scope.DB.Create(scope.Value).Error; err != nil {
+		dbScope := scope.DB.NewScope(scope.Value)
+		for _, field := range dbScope.Fields() {
+			checkCreateOrUpdateField(scope, field)
+		}
+		err := scope.DB.
+			Set("gorm:association_autoupdate", false).
+			Create(scope.Value).Error
+		if err != nil {
 			_ = scope.Err(err)
 			return
 		}

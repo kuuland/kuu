@@ -1,5 +1,7 @@
 package kuu
 
+import "github.com/jinzhu/gorm"
+
 const (
 	// BizCreateKind
 	BizCreateKind = "create"
@@ -207,4 +209,40 @@ func (c *Callback) reorder() {
 	c.updates = sortProcessors(updates)
 	c.deletes = sortProcessors(deletes)
 	c.queries = sortProcessors(queries)
+}
+
+func createOrUpdateItem(scope *Scope, item interface{}) {
+	tx := scope.DB
+	if tx.NewRecord(item) {
+		if err := tx.Create(item).Error; err != nil {
+			_ = scope.Err(err)
+			return
+		}
+	} else {
+		itemScope := tx.NewScope(item)
+		if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
+			if err := tx.Delete(item).Error; err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		} else {
+			if err := tx.Model(item).Updates(item).Error; err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
+	}
+}
+
+func checkCreateOrUpdateField(scope *Scope, field *gorm.Field) {
+	if field.Relationship != nil && !field.IsBlank {
+		switch field.Relationship.Kind {
+		case "has_many", "many_to_many":
+			for i := 0; i < field.Field.Len(); i++ {
+				createOrUpdateItem(scope, field.Field.Index(i).Addr().Interface())
+			}
+		case "has_one", "belongs_to":
+			createOrUpdateItem(scope, field.Field.Addr().Interface())
+		}
+	}
 }
