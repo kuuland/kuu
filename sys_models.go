@@ -229,7 +229,7 @@ type Role struct {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	Model `rest:"*" displayName:"角色操作权限"`
+	ModelExOrg `rest:"*" displayName:"角色操作权限"`
 	ExtendField
 	RoleID   uint   `name:"角色ID"`
 	MenuCode string `name:"菜单编码"`
@@ -243,6 +243,11 @@ type DataPrivileges struct {
 	TargetOrgID   uint   `name:"目标组织ID"`
 	ReadableRange string `name:"可读范围" enum:"DataScope"`
 	WritableRange string `name:"可写范围" enum:"DataScope"`
+}
+
+// BeforeSave
+func (m *DataPrivileges) BeforeSave(scope *gorm.Scope) {
+	_ = scope.SetColumn("OrgID", m.TargetOrgID)
 }
 
 // Menu
@@ -291,7 +296,7 @@ func updatePresetRolePrivileges(tx *gorm.DB, deleteBefore bool, ignoreAuth bool)
 	}
 }
 
-// AfterSave
+// BeforeSave
 func (m *Menu) BeforeSave() {
 	if m.Code == "" {
 		if m.URI != "" && !m.IsLink.Bool {
