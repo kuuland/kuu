@@ -235,13 +235,15 @@ func createOrUpdateItem(scope *Scope, item interface{}) {
 }
 
 func checkCreateOrUpdateField(scope *Scope, field *gorm.Field) {
+	// 只需要处理has_many和has_one
+	// belongs_to和many_to_many不允许直接创建或更新关联档案
 	if field.Relationship != nil && !field.IsBlank {
 		switch field.Relationship.Kind {
-		case "has_many", "many_to_many":
+		case "has_many":
 			for i := 0; i < field.Field.Len(); i++ {
 				createOrUpdateItem(scope, field.Field.Index(i).Addr().Interface())
 			}
-		case "has_one", "belongs_to":
+		case "has_one":
 			createOrUpdateItem(scope, field.Field.Addr().Interface())
 		}
 	}

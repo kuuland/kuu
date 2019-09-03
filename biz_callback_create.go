@@ -14,16 +14,18 @@ func bizBeforeCreateCallback(scope *Scope) {
 
 func bizCreateCallback(scope *Scope) {
 	if !scope.HasError() {
-		dbScope := scope.DB.NewScope(scope.Value)
-		for _, field := range dbScope.Fields() {
-			checkCreateOrUpdateField(scope, field)
-		}
+		// 先创建主表、再创建/更新子表
 		err := scope.DB.
 			Set("gorm:association_autoupdate", false).
+			Set("gorm:association_autocreate", false).
 			Create(scope.Value).Error
 		if err != nil {
 			_ = scope.Err(err)
 			return
+		}
+		dbScope := scope.DB.NewScope(scope.Value)
+		for _, field := range dbScope.Fields() {
+			checkCreateOrUpdateField(scope, field)
 		}
 	}
 }

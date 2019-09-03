@@ -22,6 +22,7 @@ func bizUpdateCallback(scope *Scope) {
 		}
 		scope.DB = scope.DB.Model(scope.UpdateCond).
 			Set("gorm:association_autoupdate", false).
+			Set("gorm:association_autocreate", false).
 			Updates(scope.Value)
 		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)

@@ -1,4 +1,4 @@
-<img src="/docs/logo.png" alt="Modular Go Web Framework"/>
+![Modular Go Web Framework](./docs/logo.png)
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 [![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
@@ -507,6 +507,8 @@ curl -X DELETE \
 ```
 
 ### Associations
+
+![Associations](./docs/associations.png)
 
 1. if association has a primary key, Kuu will call Update to save it, otherwise it will be created
 1. If the association has both `ID` and `DeletedAt`, Kuu will delete it.
@@ -1094,7 +1096,7 @@ func main() {
 
 ### Security framework
 
-<img src="/docs/kuu_security_framework.png" alt="Kuu Security framework"/>
+![Kuu Security framework](./docs/kuu_security_framework.png)
 
 ## FAQ
 
@@ -1102,7 +1104,7 @@ func main() {
 
 > [Kuu and Shino](https://www.youtube.com/results?search_query=kuu+shino)
 
-<img src="/docs/kuu_and_shino.png" alt="Kuu and Shino"/>
+![Kuu and Shino](./docs/kuu_and_shino.png)
 
 ## License
  
