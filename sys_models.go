@@ -282,10 +282,9 @@ func updatePresetRolePrivileges(tx *gorm.DB, deleteBefore bool, ignoreAuth bool)
 	tx.Find(&menus)
 	for _, menu := range menus {
 		tx.Create(&OperationPrivileges{
-			Model: Model{
+			ModelExOrg: ModelExOrg{
 				CreatedByID: RootUID(),
 				UpdatedByID: RootUID(),
-				OrgID:       RootOrgID(),
 			},
 			RoleID:   RootRoleID(),
 			MenuCode: menu.Code,
