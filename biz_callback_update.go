@@ -26,9 +26,9 @@ func bizUpdateCallback(scope *Scope) {
 			Updates(scope.Value)
 		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)
-		} else if scope.DB.RowsAffected < 1 {
-			_ = scope.Err(ErrAffectedSaveToken)
-			return
+			//} else if scope.DB.RowsAffected < 1 {
+			//	_ = scope.Err(ErrAffectedSaveToken)
+			//	return
 		}
 	}
 }

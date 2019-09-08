@@ -394,3 +394,9 @@ func onInit(e *Engine) {
 	// Register default callbacks
 	registerCallbacks()
 }
+
+// Release
+func Release() {
+	releaseDB()
+	releaseAuditDB()
+}
