@@ -54,6 +54,9 @@ func (e *Engine) Import(mods ...*Mod) {
 				if route.Path == "" || route.HandlerFunc == nil {
 					PANIC("Route path and handler can't be nil")
 				}
+				if route.Name == "" {
+					PANIC("Need route name for system audit: %s %s", route.Method, route.Path)
+				}
 				if route.Method == "" {
 					route.Method = "GET"
 				}
