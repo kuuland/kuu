@@ -46,6 +46,7 @@ type HandlersChain []HandlerFunc
 type RouteInfo struct {
 	Method       string
 	Path         string
+	Name         string
 	HandlerFunc  HandlerFunc
 	IgnorePrefix bool
 }
@@ -398,5 +399,5 @@ func onInit(e *Engine) {
 // Release
 func Release() {
 	releaseDB()
-	releaseAuditDB()
+	releaseCacheDB()
 }

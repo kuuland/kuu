@@ -23,6 +23,7 @@ var valueCacheMap sync.Map
 
 // OrgLoginableRoute
 var OrgLoginableRoute = RouteInfo{
+	Name:   "查询可登录组织",
 	Method: "GET",
 	Path:   "/org/loginable",
 	HandlerFunc: func(c *Context) {
@@ -38,6 +39,7 @@ var OrgLoginableRoute = RouteInfo{
 
 // UserRoleAssigns
 var UserRoleAssigns = RouteInfo{
+	Name:   "查询用户已分配角色",
 	Method: "GET",
 	Path:   "/user/role_assigns/:uid",
 	HandlerFunc: func(c *Context) {
@@ -58,6 +60,7 @@ var UserRoleAssigns = RouteInfo{
 
 // UserMenusRoute
 var UserMenusRoute = RouteInfo{
+	Name:   "查询用户菜单",
 	Method: "GET",
 	Path:   "/user/menus",
 	HandlerFunc: func(c *Context) {
@@ -111,6 +114,7 @@ var UserMenusRoute = RouteInfo{
 
 // UploadRoute
 var UploadRoute = RouteInfo{
+	Name:   "默认文件上传接口",
 	Method: "POST",
 	Path:   "/upload",
 	HandlerFunc: func(c *Context) {
@@ -179,6 +183,7 @@ var UploadRoute = RouteInfo{
 
 // AuthRoute
 var AuthRoute = RouteInfo{
+	Name:   "操作权限鉴权接口",
 	Method: "GET",
 	Path:   "/auth",
 	HandlerFunc: func(c *Context) {
@@ -201,6 +206,7 @@ var AuthRoute = RouteInfo{
 
 // MetaRoute
 var MetaRoute = RouteInfo{
+	Name:   "查询元数据列表",
 	Method: "GET",
 	Path:   "/meta",
 	HandlerFunc: func(c *Context) {
@@ -259,6 +265,7 @@ var MetaRoute = RouteInfo{
 
 // EnumRoute
 var EnumRoute = RouteInfo{
+	Name:   "查询枚举列表",
 	Path:   "/enum",
 	Method: "GET",
 	HandlerFunc: func(c *Context) {
@@ -305,6 +312,7 @@ var EnumRoute = RouteInfo{
 
 // ModelDocsRoute
 var ModelDocsRoute = RouteInfo{
+	Name:         "查询默认接口文档",
 	Method:       "GET",
 	IgnorePrefix: true,
 	Path:         "/model/docs",
@@ -769,6 +777,7 @@ var ModelDocsRoute = RouteInfo{
 
 // LangmsgsRoute
 var LangmsgsRoute = RouteInfo{
+	Name:   "查询国际化消息列表",
 	Method: "GET",
 	Path:   "/langmsgs",
 	HandlerFunc: func(c *Context) {
@@ -803,6 +812,7 @@ var LangmsgsRoute = RouteInfo{
 
 // LangtransGetRoute
 var LangtransGetRoute = RouteInfo{
+	Name:   "查询国际化翻译列表",
 	Method: "GET",
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
@@ -860,6 +870,7 @@ var LangtransGetRoute = RouteInfo{
 
 // LangtransPostRoute
 var LangtransPostRoute = RouteInfo{
+	Name:   "修改国际化翻译列表",
 	Method: "POST",
 	Path:   "/langtrans",
 	HandlerFunc: func(c *Context) {
@@ -923,6 +934,7 @@ var LangtransPostRoute = RouteInfo{
 
 // LanglistPostRoute
 var LanglistPostRoute = RouteInfo{
+	Name:   "修改国际化语言列表",
 	Method: "POST",
 	Path:   "/langlist",
 	HandlerFunc: func(c *Context) {

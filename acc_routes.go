@@ -56,6 +56,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 
 // LoginRoute
 var LoginRoute = RouteInfo{
+	Name:   "默认登录接口",
 	Method: "POST",
 	Path:   "/login",
 	HandlerFunc: func(c *Context) {
@@ -92,6 +93,7 @@ var LoginRoute = RouteInfo{
 
 // LogoutRoute
 var LogoutRoute = RouteInfo{
+	Name:   "默认登出接口",
 	Method: "POST",
 	Path:   "/logout",
 	HandlerFunc: func(c *Context) {
@@ -119,6 +121,7 @@ var LogoutRoute = RouteInfo{
 
 // ValidRoute
 var ValidRoute = RouteInfo{
+	Name:   "令牌有效性验证接口",
 	Method: "POST",
 	Path:   "/valid",
 	HandlerFunc: func(c *Context) {
@@ -148,6 +151,7 @@ var ValidRoute = RouteInfo{
 
 // APIKeyRoute
 var APIKeyRoute = RouteInfo{
+	Name:   "令牌生成接口",
 	Method: "POST",
 	Path:   "/apikeys",
 	HandlerFunc: func(c *Context) {
@@ -172,6 +176,7 @@ var APIKeyRoute = RouteInfo{
 
 // WhitelistRoute
 var WhitelistRoute = RouteInfo{
+	Name:   "查询白名单列表",
 	Method: "GET",
 	Path:   "/whitelist",
 	HandlerFunc: func(c *Context) {

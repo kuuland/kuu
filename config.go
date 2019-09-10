@@ -11,8 +11,7 @@ var (
 	inst  *Config
 )
 
-// Parse config file when init
-func init() {
+func parseKuuJSON() {
 	filePath := os.Getenv("CONFIG_FILE")
 	if IsBlank(filePath) {
 		filePath = "kuu.json"
@@ -44,6 +43,7 @@ func C(newConfig ...map[string]interface{}) *Config {
 		inst = nil
 	}
 	if inst == nil {
+		parseKuuJSON()
 		inst = &Config{Keys: pairs}
 	}
 	return inst

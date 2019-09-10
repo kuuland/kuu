@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"github.com/boltdb/bolt"
 	"github.com/jinzhu/gorm"
 	"net/http"
 	"net/url"
@@ -15,25 +14,7 @@ var (
 	AuditUpdateCallback = auditUpdateCallback
 	// AuditDeleteCallback
 	AuditDeleteCallback = auditDeleteCallback
-	// AuditDB
-	AuditDB *bolt.DB
 )
-
-func init() {
-	dbPath := C().DefaultGetString("audit", "kuu_audit.db")
-	db, err := bolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		FATAL(err)
-	} else {
-		AuditDB = db
-	}
-}
-
-func releaseAuditDB() {
-	if AuditDB != nil {
-		_ = AuditDB.Close()
-	}
-}
 
 type AuditInfo struct {
 	Time           string      `json:",omitempty"`
