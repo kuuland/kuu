@@ -136,7 +136,7 @@ func (o *Org) BeforeCreate(scope *gorm.Scope) {
 	if o.Pid == 0 {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() && desc.ActOrgID != 0 {
 			o.Pid = desc.ActOrgID
-		} else if o.ID != RootOrgID() {
+		} else if o.Code != "default" {
 			o.Pid = RootOrgID()
 		}
 	}
