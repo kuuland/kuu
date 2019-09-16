@@ -82,32 +82,54 @@ func split(args ...interface{}) (string, []interface{}) {
 	return format, a
 }
 
+func isBlankArgs(args ...interface{}) bool {
+	if len(args) == 0 || (len(args) == 1 || args[0] == nil) {
+		return true
+	}
+	return false
+}
+
 // PRINT
 func PRINT(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	format, a := split(args...)
 	Logger.Printf(format, a...)
 }
 
 // DEBUG
 func DEBUG(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	format, a := split(args...)
 	Logger.Debugf(format, a...)
 }
 
 // WARN
 func WARN(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	format, a := split(args...)
 	Logger.Warnf(format, a...)
 }
 
 // INFO
 func INFO(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	format, a := split(args...)
 	Logger.Infof(format, a...)
 }
 
 // ERROR
 func ERROR(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	switch args[0].(type) {
 	case error:
 		args[0] = args[0].(error).Error()
@@ -123,6 +145,9 @@ func ERROR(args ...interface{}) {
 
 // FATAL
 func FATAL(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	switch args[0].(type) {
 	case error:
 		args[0] = args[0].(error).Error()
@@ -133,6 +158,9 @@ func FATAL(args ...interface{}) {
 
 // PANIC
 func PANIC(args ...interface{}) {
+	if isBlankArgs(args...) {
+		return
+	}
 	switch args[0].(type) {
 	case error:
 		args[0] = args[0].(error).Error()

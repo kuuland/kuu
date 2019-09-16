@@ -1,27 +1,90 @@
 package kuu
 
 import (
-	"github.com/boltdb/bolt"
+	"encoding/binary"
+	"github.com/mojocn/base64Captcha"
 )
 
-var cacheBoltDB *bolt.DB
+// DefaultCacher
+var DefaultCacher Cacher
+
+// Cacher
+type Cacher interface {
+	SetString(string, string)
+	GetString(string) string
+	SetInt(string, int)
+	GetInt(string) int
+	DelCache(...string)
+	Set(id string, value string)
+	Get(id string, clear bool) string
+	Close()
+}
 
 func init() {
 	if _, exists := C().Get("redis"); exists {
 		// 初始化redis
+		DefaultCacher = NewCacherRedis()
 	} else {
 		// 初始化bolt
-		db, err := bolt.Open("cache.db", 0600, nil)
-		if err != nil {
-			FATAL(err)
-		} else {
-			cacheBoltDB = db
-		}
+		DefaultCacher = NewCacherBolt()
 	}
+	// 初始化验证码存储器
+	base64Captcha.SetCustomStore(DefaultCacher)
 }
 
 func releaseCacheDB() {
-	if cacheBoltDB != nil {
-		_ = cacheBoltDB.Close()
+	if DefaultCacher != nil {
+		DefaultCacher.Close()
 	}
+}
+
+func itob(v int) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	return b
+}
+
+func btoi(b []byte) (v int) {
+	if b != nil {
+		v = int(binary.BigEndian.Uint64(b))
+	}
+	return
+}
+
+// SetCacheString
+func SetCacheString(key, val string) {
+	if DefaultCacher != nil {
+		DefaultCacher.SetString(key, val)
+	}
+}
+
+// GetCacheString
+func GetCacheString(key string) (val string) {
+	if DefaultCacher != nil {
+		val = DefaultCacher.GetString(key)
+	}
+	return
+}
+
+// SetCacheInt
+func SetCacheInt(key string, val int) {
+	if DefaultCacher != nil {
+		DefaultCacher.SetInt(key, val)
+	}
+}
+
+// GetCacheInt
+func GetCacheInt(key string) (val int) {
+	if DefaultCacher != nil {
+		val = DefaultCacher.GetInt(key)
+	}
+	return
+}
+
+// DelCache
+func DelCache(keys ...string) {
+	if DefaultCacher != nil {
+		DefaultCacher.DelCache(keys...)
+	}
+	return
 }

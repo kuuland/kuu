@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"errors"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -189,8 +190,10 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register := NewLangRegister(tx)
 	register.SetKey("kuu_up").Add("{{time}}", "{{time}}", "{{time}}")
 	// 接口
+	register.SetKey("captcha_failed").Add("Incorrect captcha code", "验证码不正确", "驗證碼不正確")
 	register.SetKey("acc_token_failed").Add("Token signing failed", "令牌签发失败", "令牌簽發失敗")
 	register.SetKey("acc_login_failed").Add("Login failed", "登录失败", "登錄失敗")
+	register.SetKey("acc_login_disabled").Add("Account has been disabled", "账号已停用", "賬號已停用")
 	register.SetKey("acc_logout_failed").Add("Logout failed", "登出失败", "登出失敗")
 	register.SetKey("acc_password_failed").Add("The password you entered isn't right.", "账号密码不一致", "賬號密碼不一致")
 	register.SetKey("acc_token_expired").Add("Token has expired", "令牌已过期", "令牌已過期")
@@ -750,35 +753,69 @@ var GetUserWithRoles = func(uid uint) (*User, error) {
 	return &user, nil
 }
 
-func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
+func getFailedTimesKey(username string) string {
+	return strings.ToLower(fmt.Sprintf("login_%s_failed_times", username))
+}
+
+func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 	body := struct {
-		Username string
-		Password string
+		Username     string
+		Password     string
+		CaptchaID    string `json:"captcha_id"`
+		CaptchaValue string `json:"captcha_val"`
 	}{}
-	failedMessage := c.L("acc_login_failed", "Login failed")
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		c.STDErr(failedMessage, err)
+		resp.Error = err
 		return
+	}
+	// 判断是否需要需要校验验证码
+	failedTimesKey := getFailedTimesKey(body.Username)
+	failedTimes := GetCacheInt(failedTimesKey)
+	cacheFailedTimes := func() {
+		SetCacheInt(failedTimesKey, failedTimes+1)
+	}
+	resp = &LoginHandlerResponse{
+		Username:        body.Username,
+		Password:        body.Password,
+		LanguageMessage: c.L("acc_login_failed", "Login failed"),
+	}
+	if failedTimes > 3 {
+		// 校验验证码
+		if body.CaptchaID == "" {
+			body.CaptchaID = ParseCaptchaID(c)
+		}
+		if body.CaptchaValue == "" {
+			body.CaptchaValue = ParseCaptchaValue(c)
+		}
+		verifyResult := VerifyCaptcha(body.CaptchaID, body.CaptchaValue)
+		if !verifyResult {
+			resp.Error = errors.New("verify captcha failed")
+			resp.LanguageMessage = c.L("captcha_failed", "Incorrect captcha code")
+			return
+		}
 	}
 	// 检测账号是否存在
 	var user User
 	if err := DB().Where(&User{Username: body.Username}).First(&user).Error; err != nil {
-		c.STDErr(failedMessage, err)
+		resp.Error = err
+		cacheFailedTimes()
 		return
 	}
 	// 检测账号是否有效
 	if user.Disable.Bool {
-		c.STDErr(failedMessage, errors.New("account has been disabled"))
+		resp.LanguageMessage = c.L("acc_login_disabled", "Account has been disabled")
+		cacheFailedTimes()
 		return
 	}
 	// 检测密码是否正确
 	body.Password = strings.ToLower(body.Password)
 	if err := CompareHashAndPassword(user.Password, body.Password); err != nil {
-		c.STDErr(c.L("acc_password_failed", "The password you entered isn't right."), err)
+		resp.Error = err
+		cacheFailedTimes()
 		return
 	}
-	payload = jwt.MapClaims{
+	resp.Payload = jwt.MapClaims{
 		"UID":       user.ID,
 		"Username":  user.Username,
 		"Name":      user.Name,
@@ -790,14 +827,14 @@ func defaultLoginHandler(c *Context) (payload jwt.MapClaims, uid uint) {
 		"CreatedAt": user.CreatedAt,
 		"UpdatedAt": user.UpdatedAt,
 	}
-	payload = SetPayloadAttrs(payload, &user)
+	resp.Payload = SetPayloadAttrs(resp.Payload, &user)
 	// 处理Lang参数
 	if user.Lang == "" {
 		user.Lang = ParseLang(c.Context)
 	}
-	payload["Lang"] = user.Lang
-	c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
-	uid = user.ID
+	resp.Payload["Lang"] = user.Lang
+	resp.Lang = user.Lang
+	resp.UID = user.ID
 	return
 }
 
@@ -837,6 +874,7 @@ func Sys() *Mod {
 			AuthRoute,
 			MetaRoute,
 			EnumRoute,
+			CaptchaRoute,
 			ModelDocsRoute,
 			LangmsgsRoute,
 			LangtransGetRoute,

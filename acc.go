@@ -9,7 +9,18 @@ import (
 )
 
 // LoginHandlerFunc
-type LoginHandlerFunc func(*Context) (jwt.MapClaims, uint)
+type LoginHandlerFunc func(*Context) *LoginHandlerResponse
+
+// LoginHandlerResponse
+type LoginHandlerResponse struct {
+	Username        string
+	Password        string
+	Payload         jwt.MapClaims
+	Lang            string
+	UID             uint
+	Error           error
+	LanguageMessage *LanguageMessage
+}
 
 var (
 	TokenKey  = "Token"
@@ -20,8 +31,10 @@ var (
 		"POST /login",
 		"GET /enum",
 		"GET /meta",
+		"GET /model/docs",
 		"GET /language",
 		"GET /langmsgs",
+		"GET /captcha",
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400

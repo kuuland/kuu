@@ -67,38 +67,45 @@ func (c *Context) GetRoutineCache(key string) interface{} {
 }
 
 // PRINT
-func (c *Context) PRINT(args ...interface{}) {
+func (c *Context) PRINT(args ...interface{}) *Context {
 	PRINT(args...)
+	return c
 }
 
 // DEBUG
-func (c *Context) DEBUG(args ...interface{}) {
+func (c *Context) DEBUG(args ...interface{}) *Context {
 	DEBUG(args...)
+	return c
 }
 
 // WARN
-func (c *Context) WARN(args ...interface{}) {
+func (c *Context) WARN(args ...interface{}) *Context {
 	WARN(args...)
+	return c
 }
 
 // INFO
-func (c *Context) INFO(args ...interface{}) {
+func (c *Context) INFO(args ...interface{}) *Context {
 	INFO(args...)
+	return c
 }
 
 // ERROR
-func (c *Context) ERROR(args ...interface{}) {
+func (c *Context) ERROR(args ...interface{}) *Context {
 	ERROR(args...)
+	return c
 }
 
 // FATAL
-func (c *Context) FATAL(args ...interface{}) {
+func (c *Context) FATAL(args ...interface{}) *Context {
 	FATAL(args...)
+	return c
 }
 
 // PANIC
-func (c *Context) PANIC(args ...interface{}) {
+func (c *Context) PANIC(args ...interface{}) *Context {
 	PANIC(args...)
+	return c
 }
 
 // IgnoreAuth

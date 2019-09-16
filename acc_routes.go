@@ -64,14 +64,15 @@ var LoginRoute = RouteInfo{
 		if loginHandler == nil {
 			PANIC("login handler not configured")
 		}
-		payload, uid := loginHandler(c)
-		if uid == 0 || len(payload) == 0 {
+		resp := loginHandler(c)
+		if resp.Error != nil {
+			c.ERROR(resp.Error).STDErr(resp.LanguageMessage)
 			return
 		}
 		// 调用令牌签发
 		secretData, err := GenToken(GenTokenDesc{
-			UID:     uid,
-			Payload: payload,
+			UID:     resp.UID,
+			Payload: resp.Payload,
 			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
 		})
 		if err != nil {
@@ -82,12 +83,16 @@ var LoginRoute = RouteInfo{
 		c.Set(SignContextKey, &SignContext{
 			Token:   secretData.Token,
 			UID:     secretData.UID,
-			Payload: payload,
+			Payload: resp.Payload,
 			Secret:  secretData,
 		})
 		// 设置Cookie
+		c.SetCookie(RequestLangKey, resp.Lang, ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
-		c.STD(payload)
+		// 清空验证码Cookie和缓存
+		c.SetCookie(CaptchaIDKey, "", -1, "/", "", false, true)
+		DelCache(getFailedTimesKey(resp.Username))
+		c.STD(resp.Payload)
 	},
 }
 

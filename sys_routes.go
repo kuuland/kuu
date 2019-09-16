@@ -310,6 +310,22 @@ var EnumRoute = RouteInfo{
 	},
 }
 
+// CaptchaRoute
+var CaptchaRoute = RouteInfo{
+	Name:   "查询验证码",
+	Path:   "/captcha",
+	Method: "GET",
+	HandlerFunc: func(c *Context) {
+		captchaID := ParseCaptchaID(c)
+		id, base64Str := GenerateCaptcha(captchaID)
+		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
+		c.STD(M{
+			"id":        id,
+			"base64Str": base64Str,
+		})
+	},
+}
+
 // ModelDocsRoute
 var ModelDocsRoute = RouteInfo{
 	Name:         "查询默认接口文档",

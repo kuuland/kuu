@@ -13,6 +13,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	session "github.com/go-session/gin-session"
 	"github.com/jtolds/gls"
 )
 
@@ -387,10 +388,11 @@ func connectedPrint(name, args string) {
 	INFO("%-8s is connected: %s", name, args)
 }
 
-func onInit(e *Engine) {
+func onInit(app *Engine) {
+	app.Use(session.New())
 	initDataSources()
-	e.initConfigs()
-	e.initStatics()
+	app.initConfigs()
+	app.initStatics()
 
 	// Register default callbacks
 	registerCallbacks()
