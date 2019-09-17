@@ -341,7 +341,7 @@ type File struct {
 
 // Param
 type Param struct {
-	Model `rest:"*" displayName:"参数"`
+	ModelExOrg `rest:"*" displayName:"参数"`
 	ExtendField
 	Code      string    `name:"参数编码" gorm:"not null"`
 	Name      string    `name:"参数名称" gorm:"not null"`
