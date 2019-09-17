@@ -93,10 +93,9 @@ func initSys() {
 			createPresetLanguageMessages(tx)
 			// 保存初始化标记
 			param := Param{
-				Model: Model{
+				ModelExOrg: ModelExOrg{
 					CreatedByID: RootUID(),
 					UpdatedByID: RootUID(),
-					OrgID:       RootOrgID(),
 				},
 				Code:      initCode,
 				IsBuiltIn: null.NewBool(true, true),
