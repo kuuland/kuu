@@ -757,6 +757,10 @@ func getFailedTimesKey(username string) string {
 	return strings.ToLower(fmt.Sprintf("login_%s_failed_times", username))
 }
 
+func failedTimesValid(times int) bool {
+	return times > C().DefaultGetInt("captchaFailedTimes", 3)
+}
+
 func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 	body := struct {
 		Username     string
@@ -780,7 +784,7 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 		Password:        body.Password,
 		LanguageMessage: c.L("acc_login_failed", "Login failed"),
 	}
-	if failedTimes > 3 {
+	if failedTimesValid(failedTimes) {
 		// 校验验证码
 		if body.CaptchaID == "" {
 			body.CaptchaID = ParseCaptchaID(c)

@@ -8,6 +8,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v3"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -316,13 +317,19 @@ var CaptchaRoute = RouteInfo{
 	Path:   "/captcha",
 	Method: "GET",
 	HandlerFunc: func(c *Context) {
-		captchaID := ParseCaptchaID(c)
-		id, base64Str := GenerateCaptcha(captchaID)
-		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
-		c.STD(M{
-			"id":        id,
-			"base64Str": base64Str,
-		})
+		need := c.Query("need")
+		if need != "" {
+			times := GetCacheInt(getFailedTimesKey(need))
+			c.STD(null.NewBool(failedTimesValid(times), true))
+		} else {
+			captchaID := ParseCaptchaID(c)
+			id, base64Str := GenerateCaptcha(captchaID)
+			c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
+			c.STD(M{
+				"id":        id,
+				"base64Str": base64Str,
+			})
+		}
 	},
 }
 

@@ -81,6 +81,27 @@ func (c *Config) DefaultGetString(key string, defaultValue string) (s string) {
 	}
 }
 
+// DefaultGetInt returns the value associated with the key as a integer.
+func (c *Config) DefaultGetInt(key string, defaultValue int) (s int) {
+	if val, ok := c.Get(key); ok && val != nil {
+		v, _ := val.(float64)
+		s = int(v)
+		return s
+	} else {
+		return defaultValue
+	}
+}
+
+// DefaultGetInt returns the value associated with the key as a float64.
+func (c *Config) DefaultGetFloat64(key string, defaultValue float64) (s float64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		s, _ = val.(float64)
+	} else {
+		s = defaultValue
+	}
+	return
+}
+
 // GetBool returns the value associated with the key as a boolean.
 func (c *Config) GetBool(key string) (b bool) {
 	if val, ok := c.Get(key); ok && val != nil {
