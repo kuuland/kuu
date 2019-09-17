@@ -368,6 +368,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_menu_localekey").Add("Locale Key", "国际化键", "國際化鍵")
 	register.SetKey("kuu_menu_localekey").Add("Locale Key", "国际化键", "國際化鍵")
 	register.SetKey("kuu_menu_icon").Add("Icon", "图标", "圖標")
+	register.SetKey("kuu_menu_add_submenu").Add("Add Submenu", "添加子级", "添加子級")
 	// Kuu Param
 	register.SetKey("kuu_param_name").Add("Name", "参数名称", "參數名稱")
 	register.SetKey("kuu_param_code").Add("Code", "参数编码", "參數編碼")
