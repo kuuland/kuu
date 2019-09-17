@@ -20,10 +20,10 @@ func GenerateCaptcha(idKey string, configs ...interface{}) (id string, base64Str
 		config = configs[0]
 	} else {
 		config = base64Captcha.ConfigDigit{
-			Height:     80,
-			Width:      160,
+			Height:     30,
+			Width:      100,
 			MaxSkew:    1,
-			DotCount:   100,
+			DotCount:   90,
 			CaptchaLen: 4,
 		}
 	}

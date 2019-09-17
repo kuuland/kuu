@@ -320,16 +320,19 @@ var CaptchaRoute = RouteInfo{
 		need := c.Query("need")
 		if need != "" {
 			times := GetCacheInt(getFailedTimesKey(need))
-			c.STD(null.NewBool(failedTimesValid(times), true))
-		} else {
-			captchaID := ParseCaptchaID(c)
-			id, base64Str := GenerateCaptcha(captchaID)
-			c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
-			c.STD(M{
-				"id":        id,
-				"base64Str": base64Str,
-			})
+			valid := failedTimesValid(times)
+			if valid == false {
+				c.STD(null.NewBool(valid, true))
+				return
+			}
 		}
+		captchaID := ParseCaptchaID(c)
+		id, base64Str := GenerateCaptcha(captchaID)
+		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
+		c.STD(M{
+			"id":        id,
+			"base64Str": base64Str,
+		})
 	},
 }
 

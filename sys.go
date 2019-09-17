@@ -309,6 +309,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_login_username_placeholder").Add("Username", "账号", "賬號")
 	register.SetKey("kuu_login_password_required").Add("Please enter your password", "请输入登录密码", "請輸入登錄密碼")
 	register.SetKey("kuu_login_password_placeholder").Add("Password", "密码", "密碼")
+	register.SetKey("kuu_login_captcha_required").Add("Please enter the captcha", "请输入验证码", "請輸入驗證碼")
+	register.SetKey("kuu_login_captcha_placeholder").Add("Captcha", "验证码", "驗證碼")
 	register.SetKey("kuu_login_password_forgot").Add("Forgot your password?", "忘记密码？", "忘記密碼？")
 	register.SetKey("kuu_login_remember").Add("Remember", "记住我", "記住我")
 	register.SetKey("kuu_login_btn_submit").Add("Login", "登录", "登錄")
