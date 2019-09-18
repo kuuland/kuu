@@ -30,6 +30,7 @@ func init() {
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID               uint
+	OrgID             uint
 	Codes             []string
 	Permissions       map[string]int64
 	ReadableOrgIDs    []uint
@@ -312,6 +313,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	}
 	desc = &PrivilegesDesc{
 		UID:         sign.UID,
+		OrgID:       user.OrgID,
 		Permissions: make(map[string]int64),
 		Valid:       true,
 		SignInfo:    sign,
