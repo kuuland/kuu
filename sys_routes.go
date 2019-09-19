@@ -370,7 +370,7 @@ var ModelDocsRoute = RouteInfo{
 			validMeta = append(validMeta, m)
 		}
 
-		name := C().DefaultGetString("name", "Kuu")
+		name := GetAppName()
 		doc := Doc{
 			Openapi: "3.0.1",
 			Info: DocInfo{

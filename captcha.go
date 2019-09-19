@@ -13,6 +13,23 @@ var (
 	CaptchaValKey = "captcha_val"
 )
 
+type captchaStore struct{}
+
+// Set
+func (c *captchaStore) Set(id string, value string) {
+	DefaultCacher.SetString(id, value)
+	return
+}
+
+// Get
+func (c *captchaStore) Get(id string, clear bool) (val string) {
+	val = DefaultCacher.GetString(id)
+	if clear {
+		DefaultCacher.Del(id)
+	}
+	return
+}
+
 // GenerateCaptcha create a digit captcha.
 func GenerateCaptcha(idKey string, configs ...interface{}) (id string, base64Str string) {
 	var config interface{}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -79,7 +80,7 @@ func Default() (e *Engine) {
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		e.GET("/", func(c *Context) {
 			msg := c.L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})
-			c.STD(fmt.Sprintf("%s is up.", C().DefaultGetString("name", "Kuu")), msg)
+			c.STD(fmt.Sprintf("%s is up.", GetAppName()), msg)
 		})
 	}
 	onInit(e)
@@ -402,6 +403,15 @@ func onInit(app *Engine) {
 
 	// Register default callbacks
 	registerCallbacks()
+}
+
+// GetAppName
+func GetAppName() string {
+	name := C().GetString("name")
+	if name == "" {
+		PANIC("Application name is required")
+	}
+	return strings.ToLower(name)
 }
 
 // Release

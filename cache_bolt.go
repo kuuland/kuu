@@ -1,6 +1,9 @@
 package kuu
 
-import "github.com/boltdb/bolt"
+import (
+	"github.com/boltdb/bolt"
+	"time"
+)
 
 // CacherBolt
 type CacherBolt struct {
@@ -18,7 +21,7 @@ func NewCacherBolt() *CacherBolt {
 }
 
 // SetString
-func (c *CacherBolt) SetString(key, val string) {
+func (c *CacherBolt) SetString(key, val string, expiration ...time.Duration) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
 		if err != nil {
@@ -41,7 +44,7 @@ func (c *CacherBolt) GetString(key string) (val string) {
 }
 
 // SetInt
-func (c *CacherBolt) SetInt(key string, val int) {
+func (c *CacherBolt) SetInt(key string, val int, expiration ...time.Duration) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
 		if err != nil {
@@ -63,8 +66,25 @@ func (c *CacherBolt) GetInt(key string) (val int) {
 	return
 }
 
-// DelCache
-func (c *CacherBolt) DelCache(keys ...string) {
+// Incr
+func (c *CacherBolt) Incr(key string) (val int) {
+	ERROR(c.db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
+		if err != nil {
+			return err
+		}
+		v, err := bucket.NextSequence()
+		if err != nil {
+			return err
+		}
+		val = int(v)
+		return nil
+	}))
+	return
+}
+
+// Del
+func (c *CacherBolt) Del(keys ...string) {
 	if len(keys) == 0 {
 		return
 	}
@@ -83,24 +103,9 @@ func (c *CacherBolt) DelCache(keys ...string) {
 	return
 }
 
-// Set
-func (c *CacherBolt) Set(id string, value string) {
-	c.SetString(id, value)
-	return
-}
-
-// Get
-func (c *CacherBolt) Get(id string, clear bool) (val string) {
-	val = c.GetString(id)
-	if clear {
-		DelCache(id)
-	}
-	return
-}
-
 // Close
 func (c *CacherBolt) Close() {
 	if c.db != nil {
-		_ = c.db.Close()
+		ERROR(c.db.Close())
 	}
 }

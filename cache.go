@@ -3,6 +3,7 @@ package kuu
 import (
 	"encoding/binary"
 	"github.com/mojocn/base64Captcha"
+	"time"
 )
 
 // DefaultCacher
@@ -10,13 +11,12 @@ var DefaultCacher Cacher
 
 // Cacher
 type Cacher interface {
-	SetString(string, string)
+	SetString(string, string, ...time.Duration)
 	GetString(string) string
-	SetInt(string, int)
+	SetInt(string, int, ...time.Duration)
 	GetInt(string) int
-	DelCache(...string)
-	Set(id string, value string)
-	Get(id string, clear bool) string
+	Incr(string) int
+	Del(...string)
 	Close()
 }
 
@@ -29,7 +29,7 @@ func init() {
 		DefaultCacher = NewCacherBolt()
 	}
 	// 初始化验证码存储器
-	base64Captcha.SetCustomStore(DefaultCacher)
+	base64Captcha.SetCustomStore(&captchaStore{})
 }
 
 func releaseCacheDB() {
@@ -52,9 +52,9 @@ func btoi(b []byte) (v int) {
 }
 
 // SetCacheString
-func SetCacheString(key, val string) {
+func SetCacheString(key, val string, expiration ...time.Duration) {
 	if DefaultCacher != nil {
-		DefaultCacher.SetString(key, val)
+		DefaultCacher.SetString(key, val, expiration...)
 	}
 }
 
@@ -67,9 +67,9 @@ func GetCacheString(key string) (val string) {
 }
 
 // SetCacheInt
-func SetCacheInt(key string, val int) {
+func SetCacheInt(key string, val int, expiration ...time.Duration) {
 	if DefaultCacher != nil {
-		DefaultCacher.SetInt(key, val)
+		DefaultCacher.SetInt(key, val, expiration...)
 	}
 }
 
@@ -81,10 +81,18 @@ func GetCacheInt(key string) (val int) {
 	return
 }
 
+// IncrCache
+func IncrCache(key string) (val int) {
+	if DefaultCacher != nil {
+		val = DefaultCacher.Incr(key)
+	}
+	return
+}
+
 // DelCache
 func DelCache(keys ...string) {
 	if DefaultCacher != nil {
-		DefaultCacher.DelCache(keys...)
+		DefaultCacher.Del(keys...)
 	}
 	return
 }
