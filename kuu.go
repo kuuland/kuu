@@ -103,6 +103,10 @@ func GetGLSValue(key interface{}) (value interface{}, ok bool) {
 	return mgr.GetValue(key)
 }
 
+func beforeRun() {
+	DefaultCron.Start()
+}
+
 func shutdown(srv *http.Server) {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
@@ -141,6 +145,7 @@ func (e *Engine) Run(addr ...string) {
 		Addr:    address,
 		Handler: e.Engine,
 	}
+	beforeRun()
 	go func() {
 		INFO("Listening and serving HTTP on %s", address)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -157,6 +162,7 @@ func (e *Engine) RunTLS(addr, certFile, keyFile string) {
 		Addr:    addr,
 		Handler: e.Engine,
 	}
+	beforeRun()
 	go func() {
 		INFO("Listening and serving HTTP on %s", addr)
 		if err := srv.ListenAndServeTLS(certFile, keyFile); err != nil && err != http.ErrServerClosed {

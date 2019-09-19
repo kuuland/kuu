@@ -18,6 +18,7 @@ require (
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/mojocn/base64Captcha v0.0.0-20190801020520-752b1cd608b2
 	github.com/pkg/errors v0.8.1
+	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
