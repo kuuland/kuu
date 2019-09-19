@@ -317,9 +317,9 @@ var CaptchaRoute = RouteInfo{
 	Path:   "/captcha",
 	Method: "GET",
 	HandlerFunc: func(c *Context) {
-		need := c.Query("need")
-		if need != "" {
-			times := GetCacheInt(getFailedTimesKey(need))
+		user := c.Query("user")
+		if user != "" {
+			times := GetCacheInt(getFailedTimesKey(user))
 			valid := failedTimesValid(times)
 			if valid == false {
 				c.STD(null.NewBool(valid, true))
