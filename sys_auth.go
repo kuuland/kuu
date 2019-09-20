@@ -422,6 +422,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		actOrg = orgMap[user.ActOrgID]
 	} else if len(desc.LoginableOrgIDs) > 0 {
 		actOrg = orgMap[desc.LoginableOrgIDs[0]]
+	} else {
+		actOrg = orgMap[desc.OrgID]
 	}
 	desc.ActOrgID = actOrg.ID
 	desc.ActOrgCode = actOrg.Code
