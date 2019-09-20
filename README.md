@@ -2,6 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/kuuland/kuu?status.svg)](https://godoc.org/github.com/kuuland/kuu)
 [![Build Status](https://travis-ci.org/kuuland/kuu.svg?branch=master)](https://travis-ci.org/kuuland/kuu)
+[![codecov](https://codecov.io/gh/kuuland/kuu/branch/master/graph/badge.svg)](https://codecov.io/gh/kuuland/kuu)
 
 <!--English | [简体中文](./README-zh_CN.md)-->
 
