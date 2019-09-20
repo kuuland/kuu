@@ -317,15 +317,19 @@ var CaptchaRoute = RouteInfo{
 	Path:   "/captcha",
 	Method: "GET",
 	HandlerFunc: func(c *Context) {
-		user := c.Query("user")
+		var (
+			user  = c.Query("user")
+			valid bool
+		)
 		if user != "" {
 			times := GetCacheInt(getFailedTimesKey(user))
-			valid := failedTimesValid(times)
-			if valid == false {
-				c.STD(null.NewBool(valid, true))
-				return
-			}
+			valid = failedTimesValid(times)
 		}
+		if valid == false {
+			c.STD(null.NewBool(valid, true))
+			return
+		}
+		// 生成验证码
 		captchaID := ParseCaptchaID(c)
 		id, base64Str := GenerateCaptcha(captchaID)
 		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
