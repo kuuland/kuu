@@ -3,7 +3,6 @@ package kuu
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -126,11 +125,181 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 	return
 }
 
+// CondDesc
+type CondDesc struct {
+	AndSQLs  []string
+	AndAttrs []interface{}
+	OrSQLs   []string
+	OrAttrs  []interface{}
+}
+
+func parseObject(name string, obj interface{}) (sqls []string, attrs []interface{}) {
+	if value, ok := obj.(map[string]interface{}); ok {
+		// 对象值
+		if raw, has := value["$regex"]; has {
+			keyword := raw.(string)
+			hasPrefix := strings.HasPrefix(keyword, "^")
+			hasSuffix := strings.HasSuffix(keyword, "$")
+			if !hasPrefix && !hasSuffix {
+				keyword = fmt.Sprintf("^%s$", keyword)
+				hasPrefix = true
+				hasSuffix = true
+			}
+			if hasPrefix {
+				keyword = keyword[1:]
+			}
+			if hasSuffix {
+				keyword = keyword[:len(keyword)-1]
+			}
+			a := make([]string, 0)
+			if hasPrefix {
+				a = append(a, "%")
+			}
+			a = append(a, keyword)
+			if hasSuffix {
+				a = append(a, "%")
+			}
+			sqls = append(sqls, fmt.Sprintf(" %s LIKE ?", name))
+			attrs = append(attrs, strings.Join(a, ""))
+		} else if raw, has := value["$in"]; has {
+			sqls = append(sqls, fmt.Sprintf("%s IN (?)", name))
+			attrs = append(attrs, raw)
+		} else if raw, has := value["$nin"]; has {
+			sqls = append(sqls, fmt.Sprintf("%s NOT IN (?)", name))
+			attrs = append(attrs, raw)
+		} else if raw, has := value["$eq"]; has {
+			sqls = append(sqls, fmt.Sprintf("%s = ?", name))
+			attrs = append(attrs, raw)
+		} else if raw, has := value["$ne"]; has {
+			sqls = append(sqls, fmt.Sprintf("%s <> ?", name))
+			attrs = append(attrs, raw)
+		} else if raw, has := value["$exists"]; has {
+			sqls = append(sqls, fmt.Sprintf("%s IS NOT NULL", name))
+			attrs = append(attrs, raw)
+		} else {
+			gt, hgt := value["$gt"]
+			gte, hgte := value["$gte"]
+			lt, hlt := value["$lt"]
+			lte, hlte := value["$lte"]
+			if hgt {
+				if hlt {
+					sqls = append(sqls, fmt.Sprintf("%s > ? AND %s < ?", name, name))
+					attrs = append(attrs, gt, lt)
+				} else if hlte {
+					sqls = append(sqls, fmt.Sprintf("%s > ? AND %s <= ?", name, name))
+					attrs = append(attrs, gt, lte)
+				} else {
+					sqls = append(sqls, fmt.Sprintf("%s > ?", name))
+					attrs = append(attrs, gt)
+				}
+			} else if hgte {
+				if hlt {
+					sqls = append(sqls, fmt.Sprintf("%s >= ? AND %s < ?", name, name))
+					attrs = append(attrs, gte, lt)
+				} else if hlte {
+					sqls = append(sqls, fmt.Sprintf("%s >= ? AND %s <= ?", name, name))
+					attrs = append(attrs, gte, lte)
+				} else {
+					sqls = append(sqls, fmt.Sprintf("%s >= ?", name))
+					attrs = append(attrs, gte)
+				}
+			} else if hlt {
+				sqls = append(sqls, fmt.Sprintf("%s < ?", name))
+				attrs = append(attrs, lt)
+			} else if hlte {
+				sqls = append(sqls, fmt.Sprintf("%s <= ?", name))
+				attrs = append(attrs, lte)
+			}
+		}
+	} else {
+		// 普通值
+		sqls = append(sqls, fmt.Sprintf("%s = ?", name))
+		attrs = append(attrs, obj)
+	}
+	return
+}
+
+// ParseCond parse the cond parameter.
+func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc CondDesc, db *gorm.DB) {
+	var (
+		data  map[string]interface{}
+		scope = DB().NewScope(model)
+	)
+	switch cond.(type) {
+	case string:
+		Parse(cond.(string), data)
+	case map[string]interface{}:
+		data = cond.(map[string]interface{})
+	default:
+		_ = Copy(cond, data)
+	}
+
+	if data == nil || len(data) == 0 {
+		return
+	}
+
+	for key, val := range data {
+		var (
+			field, hasField = scope.FieldByName(key)
+			columnName      string
+		)
+		if hasField {
+			columnName = field.DBName
+		}
+
+		if v, ok := val.([]interface{}); ok {
+			var (
+				sqls  []string
+				attrs []interface{}
+			)
+			for _, item := range v {
+				if obj, ok := item.(map[string]interface{}); ok {
+					// 只处理对象值
+					ss, as := parseObject(columnName, obj)
+					if len(ss) > 0 {
+						sqls = append(sqls, ss...)
+					}
+					if len(as) > 0 {
+						attrs = append(attrs, as...)
+					}
+				}
+			}
+			switch key {
+			case "$and":
+				desc.AndSQLs = append(desc.AndSQLs, sqls...)
+				desc.AndAttrs = append(desc.AndAttrs, attrs...)
+			case "$or":
+				desc.OrSQLs = append(desc.OrSQLs, sqls...)
+				desc.OrAttrs = append(desc.OrAttrs, attrs...)
+			}
+		} else {
+			ss, as := parseObject(columnName, val)
+			if len(ss) > 0 {
+				desc.AndSQLs = append(desc.AndSQLs, ss...)
+			}
+			if len(as) > 0 {
+				desc.AndAttrs = append(desc.AndAttrs, as...)
+			}
+		}
+	}
+	if len(with) > 0 && with[0] != nil {
+		db = with[0]
+		if len(desc.AndSQLs) > 0 {
+			db = db.Where(strings.Join(desc.AndSQLs, " AND "), desc.AndAttrs...)
+		}
+		if len(desc.OrSQLs) > 0 {
+			db = db.Where(strings.Join(desc.OrSQLs, " OR "), desc.OrAttrs...)
+		}
+	}
+	return
+}
+
 func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
 		var (
-			result interface{}
-			err    error
+			result     interface{}
+			err        error
+			modelValue = reflect.New(reflectType).Interface()
 		)
 		// 事务执行
 		err = c.WithTransaction(func(tx *gorm.DB) error {
@@ -150,22 +319,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 			}
 			// 处理更新条件
 			queryDB := tx.New()
-			for key, val := range params.Cond {
-				if m, ok := val.(map[string]interface{}); ok {
-					query, args := fieldQuery(m, key)
-					if query != "" && len(args) > 0 {
-						queryDB = queryDB.Where(query, args...)
-						delete(params.Cond, key)
-					}
-				}
-			}
-			if !IsBlank(params.Cond) {
-				q := reflect.New(reflectType).Interface()
-				if err := Copy(params.Cond, q); err != nil {
-					return err
-				}
-				queryDB = queryDB.Where(q)
-			}
+			_, queryDB = ParseCond(params.Cond, modelValue, queryDB)
 			// 先查询更新前的数据
 			if multi {
 				result = reflect.New(reflect.SliceOf(reflectType)).Interface()
@@ -222,8 +376,11 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 
 func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
-		ret := new(BizQueryResult)
-		scope := DB().NewScope(reflect.New(reflectType).Interface())
+		var (
+			modelValue = reflect.New(reflectType).Interface()
+			ret        = new(BizQueryResult)
+			scope      = DB().NewScope(modelValue)
+		)
 		// 处理cond
 		var cond map[string]interface{}
 		rawCond := c.Query("cond")
@@ -233,60 +390,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			Parse(rawCond, &retCond)
 			ret.Cond = retCond
 		}
-		db := DB().Model(reflect.New(reflectType).Interface())
-		ms := db.NewScope(reflect.New(reflectType).Interface())
-		if cond != nil {
-			for key, val := range cond {
-				if key == "$and" || key == "$or" {
-					// arr = [{"pass":"123"},{"pass":{"$regex":"^333"}}]
-					if arr, ok := val.([]interface{}); ok {
-						queries := make([]string, 0)
-						args := make([]interface{}, 0)
-						for _, item := range arr {
-							// obj = {"pass":"123"}
-							obj, ok := item.(map[string]interface{})
-							if !ok {
-								continue
-							}
-							for k, v := range obj {
-								if m, ok := v.(map[string]interface{}); ok {
-									q, a := fieldQuery(m, k)
-									if !IsBlank(q) && !IsBlank(a) {
-										queries = append(queries, q)
-										args = append(args, a...)
-									}
-								} else {
-									if field, ok := ms.FieldByName(k); ok {
-										queries = append(queries, fmt.Sprintf("\"%s\" = ?", field.DBName))
-										args = append(args, v)
-									}
-								}
-							}
-						}
-						if !IsBlank(queries) && !IsBlank(args) {
-							if key == "$or" {
-								db = db.Where(strings.Join(queries, " OR "), args...)
-							} else {
-								db = db.Where(strings.Join(queries, " AND "), args...)
-							}
-						}
-					}
-					delete(cond, key)
-				} else if m, ok := val.(map[string]interface{}); ok {
-					query, args := fieldQuery(m, key)
-					if query != "" && len(args) > 0 {
-						db = db.Where(query, args...)
-						delete(cond, key)
-					}
-				} else {
-					if field, ok := ms.FieldByName(key); ok {
-						db = db.Where(fmt.Sprintf("%s = ?", field.DBName), val)
-					} else {
-						ERROR("field does not exist: %s", key)
-					}
-				}
-			}
-		}
+		_, db := ParseCond(cond, modelValue, DB().Model(modelValue))
 		// 处理project
 		rawProject := c.Query("project")
 		if rawProject != "" {
@@ -397,8 +501,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
 		var (
-			result interface{}
-			err    error
+			result     interface{}
+			err        error
+			modelValue = reflect.New(reflectType).Interface()
 		)
 		// 事务执行
 		err = c.WithTransaction(func(tx *gorm.DB) error {
@@ -431,23 +536,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 			if params.Multi || params.All {
 				multi = true
 			}
-			params.Cond = underlineMap(params.Cond)
-			for key, val := range params.Cond {
-				if m, ok := val.(map[string]interface{}); ok {
-					query, args := fieldQuery(m, key)
-					if query != "" && len(args) > 0 {
-						tx = tx.Where(query, args...)
-						delete(params.Cond, key)
-					}
-				}
-			}
-			if !IsBlank(params.Cond) {
-				query := reflect.New(reflectType).Interface()
-				if err := Copy(params.Cond, query); err != nil {
-					return err
-				}
-				tx = tx.Where(query)
-			}
+			_, tx = ParseCond(params.Cond, modelValue, tx)
 			execDelete := func(value interface{}) error {
 				bisScope := NewBizScope(c, value, tx).callCallbacks(BizDeleteKind)
 				if bisScope.HasError() {
@@ -560,86 +649,6 @@ func restImportHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
 		ExcelImport(c, reflectType)
 	}
-}
-
-func underlineMap(m map[string]interface{}) map[string]interface{} {
-	for k, v := range m {
-		delete(m, k)
-		m[underline(k)] = v
-	}
-	return m
-}
-
-func underline(str string) string {
-	reg := regexp.MustCompile(`([a-z])([A-Z])`)
-	return strings.ToLower(reg.ReplaceAllString(str, "${1}_${2}"))
-}
-
-func fieldQuery(m map[string]interface{}, key string) (query string, args []interface{}) {
-	key = underline(key)
-	if raw, has := m["$regex"]; has {
-		keyword := raw.(string)
-		hasPrefix := strings.HasPrefix(keyword, "^")
-		hasSuffix := strings.HasSuffix(keyword, "$")
-		if !hasPrefix && !hasSuffix {
-			keyword = fmt.Sprintf("^%s$", keyword)
-			hasPrefix = true
-			hasSuffix = true
-		}
-		if hasPrefix {
-			keyword = keyword[1:]
-		}
-		if hasSuffix {
-			keyword = keyword[:len(keyword)-1]
-		}
-		a := make([]string, 0)
-		if hasPrefix {
-			a = append(a, "%")
-		}
-		a = append(a, keyword)
-		if hasSuffix {
-			a = append(a, "%")
-		}
-		keyword = strings.Join(a, "")
-		return fmt.Sprintf(" %s LIKE ?", key), []interface{}{keyword}
-	} else if raw, has := m["$in"]; has {
-		return fmt.Sprintf("%s IN (?)", key), []interface{}{raw}
-	} else if raw, has := m["$nin"]; has {
-		return fmt.Sprintf("%s NOT IN (?)", key), []interface{}{raw}
-	} else if raw, has := m["$eq"]; has {
-		return fmt.Sprintf("%s = ?", key), []interface{}{raw}
-	} else if raw, has := m["$ne"]; has {
-		return fmt.Sprintf("%s <> ?", key), []interface{}{raw}
-	} else if raw, has := m["$exists"]; has {
-		return fmt.Sprintf("%s IS NOT NULL", key), []interface{}{raw}
-	} else {
-		gt, hgt := m["$gt"]
-		gte, hgte := m["$gte"]
-		lt, hlt := m["$lt"]
-		lte, hlte := m["$lte"]
-		if hgt {
-			if hlt {
-				return fmt.Sprintf("%s > ? AND %s < ?", key, key), []interface{}{gt, lt}
-			} else if hlte {
-				return fmt.Sprintf("%s > ? AND %s <= ?", key, key), []interface{}{gt, lte}
-			} else {
-				return fmt.Sprintf("%s > ?", key), []interface{}{gt}
-			}
-		} else if hgte {
-			if hlt {
-				return fmt.Sprintf("%s >= ? AND %s < ?", key, key), []interface{}{gte, lt}
-			} else if hlte {
-				return fmt.Sprintf("%s >= ? AND %s <= ?", key, key), []interface{}{gte, lte}
-			} else {
-				return fmt.Sprintf("%s >= ?", key), []interface{}{gte}
-			}
-		} else if hlt {
-			return fmt.Sprintf("%s < ?", key), []interface{}{lt}
-		} else if hlte {
-			return fmt.Sprintf("%s <= ?", key), []interface{}{lte}
-		}
-	}
-	return
 }
 
 func methodConflict(arr []string) bool {
