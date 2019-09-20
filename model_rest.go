@@ -234,56 +234,56 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 		_ = Copy(cond, data)
 	}
 
-	if data == nil || len(data) == 0 {
-		return
-	}
-
-	for key, val := range data {
-		var (
-			field, hasField = scope.FieldByName(key)
-			columnName      string
-		)
-		if hasField {
-			columnName = field.DBName
-		}
-
-		if v, ok := val.([]interface{}); ok {
+	if len(data) > 0 {
+		for key, val := range data {
 			var (
-				sqls  []string
-				attrs []interface{}
+				field, hasField = scope.FieldByName(key)
+				columnName      string
 			)
-			for _, item := range v {
-				if obj, ok := item.(map[string]interface{}); ok {
-					// 只处理对象值
-					ss, as := parseObject(columnName, obj)
-					if len(ss) > 0 {
-						sqls = append(sqls, ss...)
-					}
-					if len(as) > 0 {
-						attrs = append(attrs, as...)
+			if hasField {
+				columnName = field.DBName
+			}
+
+			if v, ok := val.([]interface{}); ok {
+				var (
+					sqls  []string
+					attrs []interface{}
+				)
+				for _, item := range v {
+					if obj, ok := item.(map[string]interface{}); ok {
+						// 只处理对象值
+						ss, as := parseObject(columnName, obj)
+						if len(ss) > 0 {
+							sqls = append(sqls, ss...)
+						}
+						if len(as) > 0 {
+							attrs = append(attrs, as...)
+						}
 					}
 				}
-			}
-			switch key {
-			case "$and":
-				desc.AndSQLs = append(desc.AndSQLs, sqls...)
-				desc.AndAttrs = append(desc.AndAttrs, attrs...)
-			case "$or":
-				desc.OrSQLs = append(desc.OrSQLs, sqls...)
-				desc.OrAttrs = append(desc.OrAttrs, attrs...)
-			}
-		} else {
-			ss, as := parseObject(columnName, val)
-			if len(ss) > 0 {
-				desc.AndSQLs = append(desc.AndSQLs, ss...)
-			}
-			if len(as) > 0 {
-				desc.AndAttrs = append(desc.AndAttrs, as...)
+				switch key {
+				case "$and":
+					desc.AndSQLs = append(desc.AndSQLs, sqls...)
+					desc.AndAttrs = append(desc.AndAttrs, attrs...)
+				case "$or":
+					desc.OrSQLs = append(desc.OrSQLs, sqls...)
+					desc.OrAttrs = append(desc.OrAttrs, attrs...)
+				}
+			} else {
+				ss, as := parseObject(columnName, val)
+				if len(ss) > 0 {
+					desc.AndSQLs = append(desc.AndSQLs, ss...)
+				}
+				if len(as) > 0 {
+					desc.AndAttrs = append(desc.AndAttrs, as...)
+				}
 			}
 		}
 	}
+
 	if len(with) > 0 && with[0] != nil {
 		db = with[0]
+
 		if len(desc.AndSQLs) > 0 {
 			db = db.Where(strings.Join(desc.AndSQLs, " AND "), desc.AndAttrs...)
 		}
