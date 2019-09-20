@@ -17,9 +17,6 @@ func bizDeleteCallback(scope *Scope) {
 		scope.DB = scope.DB.Delete(scope.Value)
 		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)
-		} else if scope.DB.RowsAffected < 1 {
-			_ = scope.Err(ErrAffectedDeleteToken)
-			return
 		}
 	}
 }

@@ -166,7 +166,7 @@ func deleteCallback(scope *gorm.Scope) {
 				AddExtraSpaceIfExist(extraOption),
 			)).Exec()
 		}
-		if scope.DB().RowsAffected < 1 {
+		if scope.DB().RowsAffected < 1 && desc.IsValid() {
 			_ = scope.Err(ErrAffectedDeleteToken)
 			return
 		}
@@ -191,7 +191,8 @@ func updateCallback(scope *gorm.Scope) {
 
 func afterSaveCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if scope.DB().RowsAffected < 1 {
+		desc := GetRoutinePrivilegesDesc()
+		if scope.DB().RowsAffected < 1 && desc.IsValid() {
 			_ = scope.Err(ErrAffectedSaveToken)
 			return
 		}
