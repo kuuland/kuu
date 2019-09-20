@@ -29,7 +29,9 @@ func init() {
 		DefaultCacher = NewCacherBolt()
 	}
 	// 初始化验证码存储器
-	base64Captcha.SetCustomStore(&captchaStore{})
+	if DefaultCacher != nil {
+		base64Captcha.SetCustomStore(&captchaStore{})
+	}
 }
 
 func releaseCacheDB() {
