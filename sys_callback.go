@@ -12,12 +12,16 @@ var (
 	skipValidations = "validations:skip_validations"
 	// CreateCallback
 	CreateCallback = createCallback
+	// AfterCreateCallback
+	AfterCreateCallback = afterCreateCallback
 	// BeforeQueryCallback
 	BeforeQueryCallback = beforeQueryCallback
 	// DeleteCallback
 	DeleteCallback = deleteCallback
 	// UpdateCallback
 	UpdateCallback = updateCallback
+	// AfterUpdateCallback
+	AfterUpdateCallback = afterUpdateCallback
 	// AfterSaveCallback
 	AfterSaveCallback = afterSaveCallback
 	// QueryCallback
@@ -43,14 +47,20 @@ func registerCallbacks() {
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
-	if callback.Update().Get("kuu:after_create") == nil {
-		callback.Update().After("gorm:create").Register("kuu:after_create", AfterSaveCallback)
+	if callback.Create().Get("kuu:after_create") == nil {
+		callback.Create().After("gorm:after_create").Register("kuu:after_create", AfterCreateCallback)
+	}
+	if callback.Create().Get("kuu:after_save") == nil {
+		callback.Create().After("gorm:after_create").Register("kuu:after_save", AfterSaveCallback)
 	}
 	if callback.Update().Get("kuu:update") == nil {
 		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
 	}
 	if callback.Update().Get("kuu:after_update") == nil {
-		callback.Update().After("gorm:update").Register("kuu:after_update", AfterSaveCallback)
+		callback.Update().After("gorm:after_update").Register("kuu:after_update", AfterUpdateCallback)
+	}
+	if callback.Update().Get("kuu:after_save") == nil {
+		callback.Update().After("gorm:after_update").Register("kuu:after_save", AfterSaveCallback)
 	}
 	if callback.Delete().Get("kuu:delete") == nil {
 		callback.Delete().Replace("gorm:delete", DeleteCallback)
@@ -111,6 +121,9 @@ func createCallback(scope *gorm.Scope) {
 			}
 		}
 	}
+}
+
+func afterCreateCallback(scope *gorm.Scope) {
 }
 
 func deleteCallback(scope *gorm.Scope) {
@@ -189,8 +202,16 @@ func updateCallback(scope *gorm.Scope) {
 	}
 }
 
+func afterUpdateCallback(scope *gorm.Scope) {
+}
+
 func afterSaveCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
+		// 处理子表更新
+		for _, field := range scope.Fields() {
+			checkCreateOrUpdateField(scope, field)
+		}
+		// 判断是否写入
 		desc := GetRoutinePrivilegesDesc()
 		if scope.DB().RowsAffected < 1 && desc.IsValid() {
 			_ = scope.Err(ErrAffectedSaveToken)
@@ -279,7 +300,44 @@ func formattedValidError(err govalidator.Error, resource interface{}) error {
 		message = fmt.Sprintf("%v is not a valid email address", attrName)
 	}
 	return NewValidError(resource, attrName, message)
+}
 
+func createOrUpdateItem(scope *gorm.Scope, item interface{}) {
+	tx := scope.DB()
+	if tx.NewRecord(item) {
+		if err := tx.Create(item).Error; err != nil {
+			_ = scope.Err(err)
+			return
+		}
+	} else {
+		itemScope := tx.NewScope(item)
+		if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
+			if err := tx.Delete(item).Error; err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		} else {
+			if err := tx.Model(item).Updates(item).Error; err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
+	}
+}
+
+func checkCreateOrUpdateField(scope *gorm.Scope, field *gorm.Field) {
+	// 只需要处理has_many和has_one
+	// belongs_to和many_to_many不允许直接创建或更新关联档案
+	if field.Relationship != nil && !field.IsBlank {
+		switch field.Relationship.Kind {
+		case "has_many":
+			for i := 0; i < field.Field.Len(); i++ {
+				createOrUpdateItem(scope, field.Field.Index(i).Addr().Interface())
+			}
+		case "has_one":
+			createOrUpdateItem(scope, field.Field.Addr().Interface())
+		}
+	}
 }
 
 // NewValidError generate a new error for a model's field

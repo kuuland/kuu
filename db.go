@@ -118,7 +118,9 @@ func DS(name string) *gorm.DB {
 	}
 	if v, ok := dataSourcesMap.Load(name); ok {
 		db := v.(*gorm.DB)
-		return db
+		return db.
+			Set("gorm:association_autoupdate", false).
+			Set("gorm:association_autocreate", false)
 	}
 	PANIC("No data source named \"%s\"", name)
 	return nil
