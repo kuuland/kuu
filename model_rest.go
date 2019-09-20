@@ -134,6 +134,9 @@ type CondDesc struct {
 }
 
 func parseObject(name string, obj interface{}) (sqls []string, attrs []interface{}) {
+	if name == "" || obj == nil {
+		return
+	}
 	if value, ok := obj.(map[string]interface{}); ok {
 		// 对象值
 		if raw, has := value["$regex"]; has {
