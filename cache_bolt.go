@@ -5,23 +5,23 @@ import (
 	"time"
 )
 
-// CacherBolt
-type CacherBolt struct {
+// CacheBolt
+type CacheBolt struct {
 	db                *bolt.DB
 	generalBucketName []byte
 }
 
-// NewCacherBolt
-func NewCacherBolt() *CacherBolt {
+// NewCacheBolt
+func NewCacheBolt() *CacheBolt {
 	db, err := bolt.Open("cache.db", 0600, nil)
 	if err != nil {
 		FATAL(err)
 	}
-	return &CacherBolt{db, []byte("general")}
+	return &CacheBolt{db, []byte("general")}
 }
 
 // SetString
-func (c *CacherBolt) SetString(key, val string, expiration ...time.Duration) {
+func (c *CacheBolt) SetString(key, val string, expiration ...time.Duration) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
 		if err != nil {
@@ -32,7 +32,7 @@ func (c *CacherBolt) SetString(key, val string, expiration ...time.Duration) {
 }
 
 // GetString
-func (c *CacherBolt) GetString(key string) (val string) {
+func (c *CacheBolt) GetString(key string) (val string) {
 	ERROR(c.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(c.generalBucketName)
 		if bucket != nil {
@@ -44,7 +44,7 @@ func (c *CacherBolt) GetString(key string) (val string) {
 }
 
 // SetInt
-func (c *CacherBolt) SetInt(key string, val int, expiration ...time.Duration) {
+func (c *CacheBolt) SetInt(key string, val int, expiration ...time.Duration) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
 		if err != nil {
@@ -55,7 +55,7 @@ func (c *CacherBolt) SetInt(key string, val int, expiration ...time.Duration) {
 }
 
 // GetInt
-func (c *CacherBolt) GetInt(key string) (val int) {
+func (c *CacheBolt) GetInt(key string) (val int) {
 	ERROR(c.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(c.generalBucketName)
 		if bucket != nil {
@@ -67,7 +67,7 @@ func (c *CacherBolt) GetInt(key string) (val int) {
 }
 
 // Incr
-func (c *CacherBolt) Incr(key string) (val int) {
+func (c *CacheBolt) Incr(key string) (val int) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
 		if err != nil {
@@ -84,7 +84,7 @@ func (c *CacherBolt) Incr(key string) (val int) {
 }
 
 // Del
-func (c *CacherBolt) Del(keys ...string) {
+func (c *CacheBolt) Del(keys ...string) {
 	if len(keys) == 0 {
 		return
 	}
@@ -104,7 +104,7 @@ func (c *CacherBolt) Del(keys ...string) {
 }
 
 // Close
-func (c *CacherBolt) Close() {
+func (c *CacheBolt) Close() {
 	if c.db != nil {
 		ERROR(c.db.Close())
 	}

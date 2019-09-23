@@ -17,15 +17,15 @@ type captchaStore struct{}
 
 // Set
 func (c *captchaStore) Set(id string, value string) {
-	DefaultCacher.SetString(id, value)
+	DefaultCache.SetString(id, value)
 	return
 }
 
 // Get
 func (c *captchaStore) Get(id string, clear bool) (val string) {
-	val = DefaultCacher.GetString(id)
+	val = DefaultCache.GetString(id)
 	if clear {
-		DefaultCacher.Del(id)
+		DefaultCache.Del(id)
 	}
 	return
 }

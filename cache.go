@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-// DefaultCacher
-var DefaultCacher Cacher
+// DefaultCache
+var DefaultCache Cache
 
-// Cacher
-type Cacher interface {
+// Cache
+type Cache interface {
 	SetString(string, string, ...time.Duration)
 	GetString(string) string
 	SetInt(string, int, ...time.Duration)
@@ -23,20 +23,20 @@ type Cacher interface {
 func init() {
 	if _, exists := C().Get("redis"); exists {
 		// 初始化redis
-		DefaultCacher = NewCacherRedis()
+		DefaultCache = NewCacheRedis()
 	} else {
 		// 初始化bolt
-		DefaultCacher = NewCacherBolt()
+		DefaultCache = NewCacheBolt()
 	}
 	// 初始化验证码存储器
-	if DefaultCacher != nil {
+	if DefaultCache != nil {
 		base64Captcha.SetCustomStore(&captchaStore{})
 	}
 }
 
 func releaseCacheDB() {
-	if DefaultCacher != nil {
-		DefaultCacher.Close()
+	if DefaultCache != nil {
+		DefaultCache.Close()
 	}
 }
 
@@ -55,46 +55,46 @@ func btoi(b []byte) (v int) {
 
 // SetCacheString
 func SetCacheString(key, val string, expiration ...time.Duration) {
-	if DefaultCacher != nil {
-		DefaultCacher.SetString(key, val, expiration...)
+	if DefaultCache != nil {
+		DefaultCache.SetString(key, val, expiration...)
 	}
 }
 
 // GetCacheString
 func GetCacheString(key string) (val string) {
-	if DefaultCacher != nil {
-		val = DefaultCacher.GetString(key)
+	if DefaultCache != nil {
+		val = DefaultCache.GetString(key)
 	}
 	return
 }
 
 // SetCacheInt
 func SetCacheInt(key string, val int, expiration ...time.Duration) {
-	if DefaultCacher != nil {
-		DefaultCacher.SetInt(key, val, expiration...)
+	if DefaultCache != nil {
+		DefaultCache.SetInt(key, val, expiration...)
 	}
 }
 
 // GetCacheInt
 func GetCacheInt(key string) (val int) {
-	if DefaultCacher != nil {
-		val = DefaultCacher.GetInt(key)
+	if DefaultCache != nil {
+		val = DefaultCache.GetInt(key)
 	}
 	return
 }
 
 // IncrCache
 func IncrCache(key string) (val int) {
-	if DefaultCacher != nil {
-		val = DefaultCacher.Incr(key)
+	if DefaultCache != nil {
+		val = DefaultCache.Incr(key)
 	}
 	return
 }
 
 // DelCache
 func DelCache(keys ...string) {
-	if DefaultCacher != nil {
-		DefaultCacher.Del(keys...)
+	if DefaultCache != nil {
+		DefaultCache.Del(keys...)
 	}
 	return
 }

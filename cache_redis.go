@@ -8,18 +8,18 @@ import (
 	"time"
 )
 
-// CacherRedis
-type CacherRedis struct {
+// CacheRedis
+type CacheRedis struct {
 	clusterMode   bool
 	client        *redis.Client
 	clusterClient *redis.ClusterClient
 }
 
-func (c *CacherRedis) buildKey(key string) string {
+func (c *CacheRedis) buildKey(key string) string {
 	return fmt.Sprintf("%s_%s", GetAppName(), key)
 }
 
-func (c *CacherRedis) buildKeyAndExp(key string, expiration []time.Duration) (string, time.Duration) {
+func (c *CacheRedis) buildKeyAndExp(key string, expiration []time.Duration) (string, time.Duration) {
 	key = c.buildKey(key)
 	var exp time.Duration
 	if len(expiration) > 0 {
@@ -28,10 +28,10 @@ func (c *CacherRedis) buildKeyAndExp(key string, expiration []time.Duration) (st
 	return key, exp
 }
 
-// NewCacherRedis
-func NewCacherRedis() *CacherRedis {
+// NewCacheRedis
+func NewCacheRedis() *CacheRedis {
 	GetAppName()
-	c := &CacherRedis{}
+	c := &CacheRedis{}
 	if C().GetBool("redis:cluster") {
 		var opts redis.ClusterOptions
 		C().GetInterface("redis", &opts)
@@ -56,7 +56,7 @@ func NewCacherRedis() *CacherRedis {
 }
 
 // SetString
-func (c *CacherRedis) SetString(rawKey, val string, expiration ...time.Duration) {
+func (c *CacheRedis) SetString(rawKey, val string, expiration ...time.Duration) {
 	var (
 		key, exp = c.buildKeyAndExp(rawKey, expiration)
 		status   *redis.StatusCmd
@@ -72,7 +72,7 @@ func (c *CacherRedis) SetString(rawKey, val string, expiration ...time.Duration)
 }
 
 // GetString
-func (c *CacherRedis) GetString(rawKey string) (val string) {
+func (c *CacheRedis) GetString(rawKey string) (val string) {
 	var (
 		key = c.buildKey(rawKey)
 		cmd *redis.StringCmd
@@ -91,13 +91,13 @@ func (c *CacherRedis) GetString(rawKey string) (val string) {
 }
 
 // SetInt
-func (c *CacherRedis) SetInt(rawKey string, val int, expiration ...time.Duration) {
+func (c *CacheRedis) SetInt(rawKey string, val int, expiration ...time.Duration) {
 	c.SetString(rawKey, strconv.Itoa(val), expiration...)
 
 }
 
 // GetInt
-func (c *CacherRedis) GetInt(key string) (val int) {
+func (c *CacheRedis) GetInt(key string) (val int) {
 	if v, err := strconv.Atoi(c.GetString(key)); err == nil {
 		val = v
 	}
@@ -105,7 +105,7 @@ func (c *CacherRedis) GetInt(key string) (val int) {
 }
 
 // Incr
-func (c *CacherRedis) Incr(rawKey string) (val int) {
+func (c *CacheRedis) Incr(rawKey string) (val int) {
 	var (
 		key = c.buildKey(rawKey)
 		cmd *redis.IntCmd
@@ -124,7 +124,7 @@ func (c *CacherRedis) Incr(rawKey string) (val int) {
 }
 
 // Del
-func (c *CacherRedis) Del(keys ...string) {
+func (c *CacheRedis) Del(keys ...string) {
 	for index, key := range keys {
 		keys[index] = c.buildKey(key)
 	}
@@ -141,7 +141,7 @@ func (c *CacherRedis) Del(keys ...string) {
 }
 
 // Close
-func (c *CacherRedis) Close() {
+func (c *CacheRedis) Close() {
 	if c.clusterMode {
 		if c.clusterClient != nil {
 			ERROR(c.clusterClient.Close())
