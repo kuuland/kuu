@@ -31,6 +31,7 @@ type AuditInfo struct {
 	SQLVars        interface{} `json:",omitempty"`
 }
 
+// Output
 func (info *AuditInfo) Output() {
 	content := Stringify(info, C().DefaultGetBool("audit:format", true))
 	INFO("KUU AUDIT: %s", content)

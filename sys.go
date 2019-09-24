@@ -878,6 +878,7 @@ func Sys() *Mod {
 			EnumRoute,
 			CaptchaRoute,
 			ModelDocsRoute,
+			ModelWSRoute,
 			LangmsgsRoute,
 			LangtransGetRoute,
 			LangtransPostRoute,

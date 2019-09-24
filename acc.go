@@ -32,6 +32,7 @@ var (
 		"GET /enum",
 		"GET /meta",
 		"GET /model/docs",
+		"GET /model/ws",
 		"GET /language",
 		"GET /langmsgs",
 		"GET /captcha",

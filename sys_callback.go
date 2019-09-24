@@ -12,16 +12,12 @@ var (
 	skipValidations = "validations:skip_validations"
 	// CreateCallback
 	CreateCallback = createCallback
-	// AfterCreateCallback
-	AfterCreateCallback = afterCreateCallback
 	// BeforeQueryCallback
 	BeforeQueryCallback = beforeQueryCallback
 	// DeleteCallback
 	DeleteCallback = deleteCallback
 	// UpdateCallback
 	UpdateCallback = updateCallback
-	// AfterUpdateCallback
-	AfterUpdateCallback = afterUpdateCallback
 	// AfterSaveCallback
 	AfterSaveCallback = afterSaveCallback
 	// QueryCallback
@@ -32,6 +28,7 @@ var (
 
 func registerCallbacks() {
 	callback := DB().Callback()
+	// 注册系统callback
 	if callback.Create().Get("validations:validate") == nil {
 		callback.Create().Before("gorm:before_create").Register("validations:validate", ValidateCallback)
 	}
@@ -47,17 +44,11 @@ func registerCallbacks() {
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
-	if callback.Create().Get("kuu:after_create") == nil {
-		callback.Create().After("gorm:after_create").Register("kuu:after_create", AfterCreateCallback)
-	}
 	if callback.Create().Get("kuu:after_save") == nil {
 		callback.Create().After("gorm:after_create").Register("kuu:after_save", AfterSaveCallback)
 	}
 	if callback.Update().Get("kuu:update") == nil {
 		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
-	}
-	if callback.Update().Get("kuu:after_update") == nil {
-		callback.Update().After("gorm:after_update").Register("kuu:after_update", AfterUpdateCallback)
 	}
 	if callback.Update().Get("kuu:after_save") == nil {
 		callback.Update().After("gorm:after_update").Register("kuu:after_save", AfterSaveCallback)
@@ -65,6 +56,17 @@ func registerCallbacks() {
 	if callback.Delete().Get("kuu:delete") == nil {
 		callback.Delete().Replace("gorm:delete", DeleteCallback)
 	}
+	// 注册数据变更callback
+	if callback.Create().Get("kuu:model_change") == nil {
+		callback.Create().After("gorm:after_create").Register("kuu:model_change", modelChangeCallback)
+	}
+	if callback.Update().Get("kuu:model_change") == nil {
+		callback.Update().After("gorm:after_update").Register("kuu:model_change", modelChangeCallback)
+	}
+	if callback.Delete().Get("kuu:model_change") == nil {
+		callback.Delete().After("gorm:after_delete").Register("kuu:model_change", modelChangeCallback)
+	}
+	// 注册审计callback
 	if C().DefaultGetBool("audit:callbacks", true) {
 		registerAuditCallbacks(callback)
 	}
@@ -121,9 +123,6 @@ func createCallback(scope *gorm.Scope) {
 			}
 		}
 	}
-}
-
-func afterCreateCallback(scope *gorm.Scope) {
 }
 
 func deleteCallback(scope *gorm.Scope) {
@@ -186,6 +185,15 @@ func deleteCallback(scope *gorm.Scope) {
 	}
 }
 
+func modelChangeCallback(scope *gorm.Scope) {
+	if !scope.HasError() && scope.Value != nil {
+		meta := Meta(scope.Value)
+		if meta != nil {
+			NotifyModelChange(meta.Name)
+		}
+	}
+}
+
 func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
@@ -200,9 +208,6 @@ func updateCallback(scope *gorm.Scope) {
 			}
 		}
 	}
-}
-
-func afterUpdateCallback(scope *gorm.Scope) {
 }
 
 func afterSaveCallback(scope *gorm.Scope) {
