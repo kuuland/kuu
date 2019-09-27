@@ -2,7 +2,10 @@ package kuu
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -37,6 +40,94 @@ func init() {
 	if LogDir != "" {
 		Logger.AddHook(new(DailyFileHook))
 	}
+}
+
+// LogInfo
+type LogInfo struct {
+	Time *time.Time `name:"记录时间"`
+	Type string     `name:"日志类型"`
+	// 用户信息
+	UID        uint   `name:"用户ID"`
+	User       User   `name:"用户对象" gorm:"foreignkey:UID"`
+	SubDocID   uint   `name:"用户子档案ID"`
+	Token      string `name:"使用令牌"`
+	SignMethod string `name:"登录/登出"`
+	// 请求信息
+	RequestID            string      `name:"请求唯一ID"`
+	RequestMethod        string      `name:"请求方法"`
+	RequestPath          string      `name:"请求接口"`
+	RequestHeaders       http.Header `name:"请求头"`
+	RequestQuery         url.Values  `name:"查询参数"`
+	RequestCost          float64     `name:"调用耗时"`
+	RequestIP            string      `name:"调用IP"`
+	RequestAddr          string      `name:"调用地区"`
+	RequestClientBrowser string      `name:"终端浏览器"`
+	RequestClientType    string      `name:"终端类型"`
+	RequestClientSys     string      `name:"终端系统"`
+	// 审计信息
+	AuditOp   string      `name:"操作类型"`
+	ModelName string      `name:"模型名称"`
+	SQL       interface{} `name:"SQL"`
+	SQLVars   interface{} `name:"SQL参数"`
+	// 日志详情
+	Level        string `name:"日志级别"`
+	ContentHuman string `name:"日志内容（可读描述）"`
+	ContentData  string `name:"日志详情（完整JSON）"`
+}
+
+// Log4Sign
+type Log4Sign struct {
+	gorm.Model `rest:"*" displayName:"登录日志"`
+	Time       *time.Time `name:"日志时间" sql:"index"`
+	UID        uint       `name:"用户ID" sql:"index"`
+	User       User       `name:"用户对象" gorm:"foreignkey:UID"`
+	SubDocID   uint       `name:"用户子档案ID"`
+	Token      string     `name:"使用令牌"`
+	SignMethod string     `name:"登录/登出"`
+}
+
+// Log4API
+type Log4API struct {
+	gorm.Model `rest:"*" displayName:"API日志"`
+	Time       *time.Time `name:"日志时间" sql:"index"`
+	// 用户信息
+	UID      uint   `name:"用户ID" sql:"index"`
+	User     User   `name:"用户对象" gorm:"foreignkey:UID"`
+	SubDocID uint   `name:"用户子档案ID"`
+	Token    string `name:"使用令牌"`
+	// 请求信息
+	RequestID      string      `name:"请求唯一ID" sql:"index"`
+	RequestMethod  string      `name:"请求方法" sql:"index"`
+	RequestPath    string      `name:"请求接口" sql:"index"`
+	RequestHeaders http.Header `name:"请求头"`
+	RequestQuery   url.Values  `name:"查询参数"`
+	RequestCost    float64     `name:"调用耗时"`
+	RequestIP      string      `name:"调用IP"`
+	RequestAddr    string      `name:"调用地区"`
+}
+
+// Log4Audit
+type Log4Audit struct {
+	gorm.Model `rest:"*" displayName:"审计日志"`
+	Time       *time.Time `name:"日志时间" sql:"index"`
+	// 用户信息
+	UID       uint        `name:"用户ID" sql:"index"`
+	User      User        `name:"用户对象" gorm:"foreignkey:UID"`
+	SubDocID  uint        `name:"用户子档案ID"`
+	Token     string      `name:"使用令牌"`
+	AuditOp   string      `name:"操作类型"`
+	ModelName string      `name:"模型名称"`
+	SQL       interface{} `name:"SQL"`
+	SQLVars   interface{} `name:"SQL参数"`
+	Content   string      `name:"日志内容"`
+}
+
+// Log4Biz
+type Log4Biz struct {
+	gorm.Model `rest:"*" displayName:"业务日志"`
+	Time       *time.Time `name:"日志时间" sql:"index"`
+	Level      string     `name:"日志级别"`
+	Content    string     `name:"日志内容"`
 }
 
 type DailyFileHook struct{}

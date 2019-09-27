@@ -12,11 +12,16 @@ var DefaultCache Cache
 // Cache
 type Cache interface {
 	SetString(string, string, ...time.Duration)
+	HasPrefix(string) map[string]string
+	HasSuffix(string) map[string]string
+	Contains(string) map[string]string
+	Search(string, func(string, string) bool) map[string]string
 	GetString(string) string
 	SetInt(string, int, ...time.Duration)
 	GetInt(string) int
 	Incr(string) int
 	Del(...string)
+	DelLike(...string)
 	Close()
 }
 
