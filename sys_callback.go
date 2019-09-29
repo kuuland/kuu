@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -41,11 +42,17 @@ func registerCallbacks() {
 	if callback.Query().Get("kuu:before_query") == nil {
 		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
 	}
+	if callback.Create().Get("kuu:update_ts") == nil {
+		callback.Create().Before("gorm:before_create").Register("kuu:update_ts", updateTsCallback)
+	}
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
 	}
 	if callback.Create().Get("kuu:after_save") == nil {
 		callback.Create().After("gorm:after_create").Register("kuu:after_save", AfterSaveCallback)
+	}
+	if callback.Update().Get("kuu:update_ts") == nil {
+		callback.Update().Before("gorm:assign_updating_attributes").Register("kuu:update_ts", updateTsCallback)
 	}
 	if callback.Update().Get("kuu:update") == nil {
 		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
@@ -75,6 +82,20 @@ func registerCallbacks() {
 func beforeQueryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BeforeFind")
+	}
+}
+
+func updateTsCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		if v, ok := scope.InstanceGet("gorm:update_interface"); ok {
+			newScope := scope.New(v)
+			now := time.Now()
+			if field, ok := newScope.FieldByName("Ts"); ok {
+				field.Set(now)
+				_ = newScope.SetColumn(field.DBName, now)
+			}
+			scope.InstanceSet("gorm:update_interface", newScope.Value)
+		}
 	}
 }
 

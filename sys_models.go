@@ -19,6 +19,7 @@ type Model struct {
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注"`
+	Ts          time.Time  `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	Org       *Org  `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy *User `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
@@ -36,6 +37,7 @@ type ModelExOrg struct {
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注"`
+	Ts          time.Time  `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	CreatedBy *User `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy *User `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
@@ -71,6 +73,7 @@ type User struct {
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注"`
+	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
@@ -116,6 +119,7 @@ type Org struct {
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注"`
+	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
@@ -214,6 +218,7 @@ type Role struct {
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注"`
+	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
