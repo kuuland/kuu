@@ -329,6 +329,10 @@ func formattedValidError(err govalidator.Error, resource interface{}) error {
 }
 
 func createOrUpdateItem(scope *gorm.Scope, item interface{}) {
+	if IsNil(item) {
+		return
+	}
+
 	tx := scope.DB()
 	if tx.NewRecord(item) {
 		if err := tx.Create(item).Error; err != nil {
@@ -336,7 +340,7 @@ func createOrUpdateItem(scope *gorm.Scope, item interface{}) {
 			return
 		}
 	} else {
-		itemScope := tx.NewScope(item)
+		itemScope := DB().NewScope(item)
 		if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
 			if err := tx.Delete(item).Error; err != nil {
 				_ = scope.Err(err)
@@ -358,10 +362,12 @@ func checkCreateOrUpdateField(scope *gorm.Scope, field *gorm.Field) {
 		switch field.Relationship.Kind {
 		case "has_many":
 			for i := 0; i < field.Field.Len(); i++ {
-				createOrUpdateItem(scope, field.Field.Index(i).Addr().Interface())
+				item := addrValue(field.Field.Index(i)).Interface()
+				createOrUpdateItem(scope, item)
 			}
 		case "has_one":
-			createOrUpdateItem(scope, field.Field.Addr().Interface())
+			item := addrValue(field.Field).Interface()
+			createOrUpdateItem(scope, item)
 		}
 	}
 }

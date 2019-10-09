@@ -49,6 +49,15 @@ func IsBlank(value interface{}) bool {
 	return reflect.DeepEqual(indirectValue.Interface(), reflect.Zero(indirectValue.Type()).Interface())
 }
 
+// IsNil
+func IsNil(i interface{}) bool {
+	defer func() {
+		recover()
+	}()
+	vi := reflect.ValueOf(i)
+	return vi.IsNil()
+}
+
 func fileWithLineNum() string {
 	for i := 2; i < 15; i++ {
 		_, file, line, ok := runtime.Caller(i)
@@ -65,6 +74,13 @@ func indirectValue(value interface{}) reflect.Value {
 		reflectValue = reflectValue.Elem()
 	}
 	return reflectValue
+}
+
+func addrValue(value reflect.Value) reflect.Value {
+	if value.CanAddr() && value.Kind() != reflect.Ptr {
+		value = value.Addr()
+	}
+	return value
 }
 
 // CORSMiddleware
