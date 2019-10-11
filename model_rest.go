@@ -133,13 +133,13 @@ type CondDesc struct {
 	OrAttrs  []interface{}
 }
 
-func parseObject(name string, obj interface{}) (sqls []string, attrs []interface{}) {
-	if name == "" || obj == nil {
+func parseField(name string, value interface{}) (sqls []string, attrs []interface{}) {
+	if name == "" || value == nil {
 		return
 	}
-	if value, ok := obj.(map[string]interface{}); ok {
+	if vmap, ok := value.(map[string]interface{}); ok {
 		// 对象值
-		if raw, has := value["$regex"]; has {
+		if raw, has := vmap["$regex"]; has {
 			keyword := raw.(string)
 			hasPrefix := strings.HasPrefix(keyword, "^")
 			hasSuffix := strings.HasSuffix(keyword, "$")
@@ -164,26 +164,31 @@ func parseObject(name string, obj interface{}) (sqls []string, attrs []interface
 			}
 			sqls = append(sqls, fmt.Sprintf(" %s LIKE ?", name))
 			attrs = append(attrs, strings.Join(a, ""))
-		} else if raw, has := value["$in"]; has {
+		} else if raw, has := vmap["$in"]; has {
 			sqls = append(sqls, fmt.Sprintf("%s IN (?)", name))
 			attrs = append(attrs, raw)
-		} else if raw, has := value["$nin"]; has {
+		} else if raw, has := vmap["$nin"]; has {
 			sqls = append(sqls, fmt.Sprintf("%s NOT IN (?)", name))
 			attrs = append(attrs, raw)
-		} else if raw, has := value["$eq"]; has {
+		} else if raw, has := vmap["$eq"]; has {
 			sqls = append(sqls, fmt.Sprintf("%s = ?", name))
 			attrs = append(attrs, raw)
-		} else if raw, has := value["$ne"]; has {
+		} else if raw, has := vmap["$ne"]; has {
 			sqls = append(sqls, fmt.Sprintf("%s <> ?", name))
 			attrs = append(attrs, raw)
-		} else if raw, has := value["$exists"]; has {
-			sqls = append(sqls, fmt.Sprintf("%s IS NOT NULL", name))
-			attrs = append(attrs, raw)
+		} else if raw, has := vmap["$exists"]; has {
+			if v, ok := raw.(bool); ok {
+				if v {
+					sqls = append(sqls, fmt.Sprintf("%s IS NOT NULL", name))
+				} else {
+					sqls = append(sqls, fmt.Sprintf("%s IS NULL", name))
+				}
+			}
 		} else {
-			gt, hgt := value["$gt"]
-			gte, hgte := value["$gte"]
-			lt, hlt := value["$lt"]
-			lte, hlte := value["$lte"]
+			gt, hgt := vmap["$gt"]
+			gte, hgte := vmap["$gte"]
+			lt, hlt := vmap["$lt"]
+			lte, hlte := vmap["$lte"]
 			if hgt {
 				if hlt {
 					sqls = append(sqls, fmt.Sprintf("%s > ? AND %s < ?", name, name))
@@ -217,8 +222,48 @@ func parseObject(name string, obj interface{}) (sqls []string, attrs []interface
 	} else {
 		// 普通值
 		sqls = append(sqls, fmt.Sprintf("%s = ?", name))
-		attrs = append(attrs, obj)
+		attrs = append(attrs, value)
 	}
+	return
+}
+
+func parseObject(filter map[string]interface{}, model interface{}) (sqls []string, attrs []interface{}) {
+	if len(filter) == 0 {
+		return
+	}
+	for key, val := range filter {
+		if v, ok := val.([]interface{}); ok {
+			for _, item := range v {
+				if obj, ok := item.(map[string]interface{}); ok {
+					ss, as := parseObject(obj, model)
+					if len(ss) > 0 {
+						sqls = append(sqls, ss...)
+					}
+					if len(as) > 0 {
+						attrs = append(attrs, as...)
+					}
+				}
+			}
+		} else {
+			var (
+				scope           = DB().NewScope(model)
+				field, hasField = scope.FieldByName(key)
+				columnName      string
+			)
+			if hasField {
+				columnName = field.DBName
+			}
+
+			ss, as := parseField(columnName, val)
+			if len(ss) > 0 {
+				sqls = append(sqls, ss...)
+			}
+			if len(as) > 0 {
+				attrs = append(attrs, as...)
+			}
+		}
+	}
+
 	return
 }
 
@@ -239,14 +284,6 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 
 	if len(data) > 0 {
 		for key, val := range data {
-			var (
-				field, hasField = scope.FieldByName(key)
-				columnName      string
-			)
-			if hasField {
-				columnName = field.DBName
-			}
-
 			if v, ok := val.([]interface{}); ok {
 				var (
 					sqls  []string
@@ -255,7 +292,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 				for _, item := range v {
 					if obj, ok := item.(map[string]interface{}); ok {
 						// 只处理对象值
-						ss, as := parseObject(columnName, obj)
+						ss, as := parseObject(obj, model)
 						if len(ss) > 0 {
 							sqls = append(sqls, ss...)
 						}
@@ -273,7 +310,15 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 					desc.OrAttrs = append(desc.OrAttrs, attrs...)
 				}
 			} else {
-				ss, as := parseObject(columnName, val)
+				var (
+					field, hasField = scope.FieldByName(key)
+					columnName      string
+				)
+				if hasField {
+					columnName = field.DBName
+				}
+
+				ss, as := parseField(columnName, val)
 				if len(ss) > 0 {
 					desc.AndSQLs = append(desc.AndSQLs, ss...)
 				}
