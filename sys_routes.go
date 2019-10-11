@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -895,6 +896,96 @@ var LangtransGetRoute = RouteInfo{
 		}
 		sort.Sort(list)
 		c.STD(list)
+	},
+}
+
+// LangtransImportRoute
+var LangtransImportRoute = RouteInfo{
+	Name:   "导入国际化翻译列表",
+	Method: "POST",
+	Path:   "/langtrans/import",
+	HandlerFunc: func(c *Context) {
+		failedMessage := c.L("rest_import_failed", "Import failed")
+		// 解析请求体
+		file, _ := c.FormFile("file")
+		if file == nil {
+			c.STDErr(failedMessage, errors.New("no 'file' key in form-data"))
+			return
+		}
+		src, err := file.Open()
+		if err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		defer src.Close()
+		// 解析Excel
+		f, err := excelize.OpenReader(src)
+		if err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
+		if activeSheetName == "" {
+			activeSheetName = f.GetSheetName(0)
+		}
+		rows, err := f.GetRows(activeSheetName)
+		if err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		// 查询语言列表
+		var (
+			langs        []Language
+			indexCodeMap = make(map[int]string)
+		)
+		c.DB().Model(&Language{}).Find(&langs)
+		for index, name := range rows[0] {
+			for _, lang := range langs {
+				if lang.LangName == name {
+					indexCodeMap[index] = lang.LangCode
+				}
+			}
+		}
+		// 查询翻译列表
+		var (
+			msgs      []LanguageMessage
+			existMsgs = make(map[string]LanguageMessage)
+		)
+		c.DB().Model(&LanguageMessage{}).Find(&msgs)
+		for _, item := range msgs {
+			existMsgs[fmt.Sprintf("%s_%s", item.LangCode, item.Key)] = item
+		}
+		// 生成SQLs
+		var docs []*LanguageMessage
+		for index, row := range rows {
+			if index == 0 {
+				continue
+			}
+			for index, value := range row {
+				langCode := indexCodeMap[index]
+				if langCode == "" {
+					continue
+				}
+				doc := &LanguageMessage{Key: row[0], LangCode: langCode, Value: value}
+				if msg, ok := existMsgs[fmt.Sprintf("%s_%s", doc.LangCode, doc.Key)]; ok {
+					doc.ID = msg.ID
+				}
+				docs = append(docs, doc)
+			}
+		}
+		// 执行SQLs
+		if len(docs) > 0 {
+			err := c.WithTransaction(func(tx *gorm.DB) error {
+				register := NewLangRegister(tx)
+				register.Append(docs...)
+				return register.Exec()
+			})
+			if err != nil {
+				c.STDErr(failedMessage, err)
+				return
+			}
+		}
+		c.STD(docs)
 	},
 }
 

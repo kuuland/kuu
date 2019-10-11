@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"bytes"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
@@ -115,39 +116,63 @@ func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister 
 	return r
 }
 
+// Append
+func (r *LangRegister) Append(msgs ...*LanguageMessage) *LangRegister {
+	r.list = append(r.list, msgs...)
+	return r
+}
+
+// Reset
+func (r *LangRegister) Reset() {
+	r.list = r.list[0:0]
+}
+
 // Exec
-func (r *LangRegister) Exec(db ...*gorm.DB) *LangRegister {
+func (r *LangRegister) Exec(db ...*gorm.DB) error {
 	if len(db) > 0 {
 		r.DB = db[0]
 	}
 	if len(r.list) == 0 {
-		return r
+		return errors.New("empty list")
 	}
 
 	var (
-		base      = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value, is_built_in) VALUES `
-		now       = time.Now().Format("2006-01-02 15:04:05")
-		batchSize = 200
-		buffer    bytes.Buffer
-		vars      []interface{}
+		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value, is_built_in) VALUES `
+		insertBuffer bytes.Buffer
+		insertVars   []interface{}
+		now          = time.Now().Format("2006-01-02 15:04:05")
+		batchSize    = 200
 	)
-	buffer.WriteString(base)
+	// 执行新增/更新
 	for index, item := range r.list {
-		buffer.WriteString("(?, ?, ?, ?, ?, TRUE)")
-		vars = append(vars, now, now, item.LangCode, item.Key, item.Value)
-		if (index+1)%batchSize == 0 || index == len(r.list)-1 {
-			if sql := buffer.String(); sql != "" {
-				r.DB.Exec(sql, vars...)
-				buffer.Reset()
-				buffer.WriteString(base)
-				vars = vars[0:0]
+		if item.ID == 0 {
+			if insertBuffer.Len() == 0 {
+				insertBuffer.WriteString(insertBase)
+			}
+			insertBuffer.WriteString("(?, ?, ?, ?, ?, TRUE)")
+			insertVars = append(insertVars, now, now, item.LangCode, item.Key, item.Value)
+			if (index+1)%batchSize == 0 || index == len(r.list)-1 {
+				if sql := insertBuffer.String(); sql != "" {
+					if err := r.DB.Exec(sql, insertVars...).Error; err != nil {
+						r.Reset()
+						return err
+					}
+					insertBuffer.Reset()
+					insertVars = insertVars[0:0]
+				}
+			} else {
+				insertBuffer.WriteString(", ")
 			}
 		} else {
-			buffer.WriteString(", ")
+			sql := `UPDATE "sys_LanguageMessage" SET updated_at = ?, value = ? WHERE id = ?`
+			if err := r.DB.Exec(sql, now, item.Value, item.ID).Error; err != nil {
+				r.Reset()
+				return err
+			}
 		}
 	}
-	r.list = r.list[0:0]
-	return r
+	r.Reset()
+	return nil
 }
 
 // TranslatedList

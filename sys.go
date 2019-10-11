@@ -239,6 +239,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("fano_table_actions_cols").Add("Columns", "隐藏列", "隱藏列")
 	register.SetKey("fano_table_actions_filter").Add("Filter", "过滤", "過濾")
 	register.SetKey("fano_table_actions_sort").Add("Sort", "排序", "排序")
+	register.SetKey("fano_table_actions_import").Add("Import", "导入", "導入")
 	register.SetKey("fano_table_actions_export").Add("Export", "导出", "導出")
 	register.SetKey("fano_table_actions_refresh").Add("Refresh", "刷新", "刷新")
 	register.SetKey("fano_table_actions_expand").Add("Expand All", "全部展开", "全部展開")
@@ -440,7 +441,6 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_file_actions_upload").Add("Upload", "上传文件", "上傳文件")
 	register.SetKey("kuu_common_org").Add("Organization", "所属组织", "所屬組織")
 	register.Exec()
-
 }
 
 func createPresetMenus(tx *gorm.DB) {
@@ -856,6 +856,7 @@ func Sys() *Mod {
 			LangtransGetRoute,
 			LangtransPostRoute,
 			LanglistPostRoute,
+			LangtransImportRoute,
 		},
 		AfterImport: initSys,
 	}
