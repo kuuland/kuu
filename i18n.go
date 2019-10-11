@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
-	"gopkg.in/guregu/null.v3"
 	"strings"
 	"time"
 )
@@ -42,7 +41,6 @@ type LanguageMessage struct {
 	FormattedContext interface{}  `name:"格式化上下文" json:"-,omitempty" gorm:"-"`
 	Group            string       `name:"分组"`
 	Sort             int          `name:"排序值"`
-	IsBuiltIn        null.Bool    `name:"是否预置"`
 }
 
 // C
@@ -100,22 +98,19 @@ func (r *LangRegister) SetDB(db *gorm.DB) *LangRegister {
 // Add
 func (r *LangRegister) Add(enUS string, zhCN string, zhTW string) *LangRegister {
 	r.list = append(r.list, &LanguageMessage{
-		LangCode:  "en-US",
-		Key:       r.Key,
-		Value:     enUS,
-		IsBuiltIn: null.NewBool(true, true),
+		LangCode: "en-US",
+		Key:      r.Key,
+		Value:    enUS,
 	})
 	r.list = append(r.list, &LanguageMessage{
-		LangCode:  "zh-CN",
-		Key:       r.Key,
-		Value:     zhCN,
-		IsBuiltIn: null.NewBool(true, true),
+		LangCode: "zh-CN",
+		Key:      r.Key,
+		Value:    zhCN,
 	})
 	r.list = append(r.list, &LanguageMessage{
-		LangCode:  "zh-TW",
-		Key:       r.Key,
-		Value:     zhTW,
-		IsBuiltIn: null.NewBool(true, true),
+		LangCode: "zh-TW",
+		Key:      r.Key,
+		Value:    zhTW,
 	})
 	return r
 }

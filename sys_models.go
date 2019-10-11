@@ -268,7 +268,6 @@ type Menu struct {
 	Disable       null.Bool `name:"是否禁用"`
 	IsLink        null.Bool `name:"是否外链"`
 	Sort          int       `name:"排序值"`
-	IsBuiltIn     null.Bool `name:"是否内置"`
 	IsDefaultOpen null.Bool `name:"是否默认打开"`
 	Closeable     null.Bool `name:"是否可关闭"`
 	LocaleKey     string    `name:"国际化语言键"`
