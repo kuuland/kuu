@@ -157,10 +157,9 @@ func createRootPrivileges(tx *gorm.DB) {
 	})
 	// 创建分配记录
 	tx.Create(&RoleAssign{
-		Model: Model{
+		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
-			OrgID:       RootOrgID(),
 		},
 		RoleID: rootRole.ID,
 		UserID: RootUID(),
