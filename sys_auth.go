@@ -218,13 +218,18 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		// 查询用户菜单时
 		if meta.Name == "Menu" {
 			if desc.NotRootUser() {
-				_, hasCodeField := scope.FieldByName("Code")
-				_, hasCreatedByIDField := scope.FieldByName("CreatedByID")
+				codeField, hasCodeField := scope.FieldByName("Code")
+				createdByIDField, hasCreatedByIDField := scope.FieldByName("CreatedByID")
 				if hasCodeField && hasCreatedByIDField {
 					// 菜单数据权限控制与组织无关，且只有两种情况：
 					// 1.自己创建的，一定看得到
 					// 2.别人创建的，必须通过分配操作权限才能看到
-					scope.Search.Where("(code in (?)) OR (created_by_id = ?)", desc.Codes, desc.UID)
+					scope.Search.Where(fmt.Sprintf("(%v.%v IN (?)) OR (%v.%v = ?)",
+						scope.QuotedTableName(),
+						scope.Quote(codeField.DBName),
+						scope.QuotedTableName(),
+						scope.Quote(createdByIDField.DBName),
+					), desc.Codes, desc.UID)
 				}
 			}
 			return
@@ -236,7 +241,10 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		// 基于扩展档案ID的数据权限
 		for _, name := range subDocIDNames {
 			if f, ok := scope.FieldByName(name); ok {
-				sqls = append(sqls, "("+f.DBName+" = ?)")
+				sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
+					scope.QuotedTableName(),
+					scope.Quote(f.DBName),
+				))
 				attrs = append(attrs, desc.SignInfo.SubDocID)
 			}
 		}
@@ -247,18 +255,27 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 			if meta.Name == "Org" {
 				dbName = "id"
 			}
-			sqls = append(sqls, "("+dbName+" in (?))")
+			sqls = append(sqls, fmt.Sprintf("(%v.%v IN (?))",
+				scope.QuotedTableName(),
+				scope.Quote(dbName),
+			))
 			attrs = append(attrs, orgIDs)
 		} else {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {
-				sqls = append(sqls, "("+f.DBName+" = ?)")
+				sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
+					scope.QuotedTableName(),
+					scope.Quote(f.DBName),
+				))
 				attrs = append(attrs, desc.UID)
 			}
 		}
 		if names := meta.OrgIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, "("+f.DBName+" in (?))")
+					sqls = append(sqls, fmt.Sprintf("(%v.%v IN (?))",
+						scope.QuotedTableName(),
+						scope.Quote(f.DBName),
+					))
 					attrs = append(attrs, orgIDs)
 				}
 			}
@@ -266,14 +283,17 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		if names := meta.UIDNames; len(names) > 0 {
 			for _, name := range names {
 				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, "("+f.DBName+" = ?)")
+					sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
+						scope.QuotedTableName(),
+						scope.Quote(f.DBName),
+					))
 					attrs = append(attrs, desc.UID)
 				}
 			}
 		}
 	}
 	if meta.Name == "User" {
-		sqls = append(sqls, "id = ?")
+		sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)", scope.QuotedTableName(), scope.Quote("id")))
 		attrs = append(attrs, desc.UID)
 	}
 	return

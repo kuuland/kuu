@@ -137,7 +137,7 @@ func (r *LangRegister) Exec(db ...*gorm.DB) error {
 	}
 
 	var (
-		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value, is_built_in) VALUES `
+		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value) VALUES `
 		insertBuffer bytes.Buffer
 		insertVars   []interface{}
 		now          = time.Now().Format("2006-01-02 15:04:05")
@@ -149,7 +149,7 @@ func (r *LangRegister) Exec(db ...*gorm.DB) error {
 			if insertBuffer.Len() == 0 {
 				insertBuffer.WriteString(insertBase)
 			}
-			insertBuffer.WriteString("(?, ?, ?, ?, ?, TRUE)")
+			insertBuffer.WriteString("(?, ?, ?, ?, ?)")
 			insertVars = append(insertVars, now, now, item.LangCode, item.Key, item.Value)
 			if (index+1)%batchSize == 0 || index == len(r.list)-1 {
 				if sql := insertBuffer.String(); sql != "" {

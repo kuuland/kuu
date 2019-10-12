@@ -91,7 +91,7 @@ func updateTsCallback(scope *gorm.Scope) {
 			newScope := scope.New(v)
 			now := time.Now()
 			if field, ok := newScope.FieldByName("Ts"); ok {
-				field.Set(now)
+				_ = field.Set(now)
 				_ = newScope.SetColumn(field.DBName, now)
 			}
 			scope.InstanceSet("gorm:update_interface", newScope.Value)
