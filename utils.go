@@ -206,3 +206,47 @@ func isFunc(target interface{}) bool {
 	retType := reflect.TypeOf(target)
 	return retType.Kind() == reflect.Func
 }
+
+// ProjectFields
+func ProjectFields(data interface{}, project string) interface{} {
+	if IsNil(data) {
+		return data
+	}
+
+	if len(project) == 0 {
+		return data
+	}
+
+	fields := strings.Split(project, ",")
+	execProject := func(indirectValue reflect.Value) map[string]interface{} {
+		var (
+			raw interface{}
+			val = make(map[string]interface{})
+		)
+		if indirectValue.CanAddr() {
+			raw = indirectValue.Addr().Interface()
+		} else {
+			raw = indirectValue.Interface()
+		}
+		scope := DB().NewScope(raw)
+		for _, name := range fields {
+			if strings.HasPrefix(name, "-") {
+				name = name[1:]
+			}
+			if field, ok := scope.FieldByName(name); ok {
+				val[field.Name] = field.Field.Interface()
+			}
+		}
+		return val
+	}
+	if indirectValue := indirectValue(data); indirectValue.Kind() == reflect.Slice {
+		list := make([]map[string]interface{}, 0)
+		for i := 0; i < indirectValue.Len(); i++ {
+			item := execProject(indirectValue.Index(i))
+			list = append(list, item)
+		}
+		return list
+	} else {
+		return execProject(indirectValue)
+	}
+}

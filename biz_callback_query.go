@@ -23,6 +23,8 @@ func bizQueryCallback(scope *Scope) {
 			return
 		}
 		scope.QueryResult.List = Meta(reflect.New(scope.ReflectType).Interface()).OmitPassword(scope.QueryResult.List)
+		scope.QueryResult.List = ProjectFields(scope.QueryResult.List, scope.QueryResult.Project)
+
 		// 处理totalrecords、totalpages
 		var totalRecords int
 		scope.DB = CountWheres(scope.Value, scope.DB)
