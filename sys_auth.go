@@ -250,8 +250,9 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		}
 	} else {
 		// 基于组织的数据权限
-		if f, ok := scope.FieldByName("OrgID"); ok && len(orgIDs) > 0 {
-			dbName := f.DBName
+		orgIDField, hasOrgID := scope.FieldByName("OrgID")
+		if hasOrgID && len(orgIDs) > 0 {
+			dbName := orgIDField.DBName
 			if meta.Name == "Org" {
 				dbName = "id"
 			}
@@ -260,7 +261,6 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				scope.Quote(dbName),
 			))
 			attrs = append(attrs, orgIDs)
-		} else {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {
 				sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
 					scope.QuotedTableName(),
@@ -269,8 +269,8 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				attrs = append(attrs, desc.UID)
 			}
 		}
-		if names := meta.OrgIDNames; len(names) > 0 {
-			for _, name := range names {
+		if len(meta.OrgIDNames) > 0 {
+			for _, name := range meta.OrgIDNames {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, fmt.Sprintf("(%v.%v IN (?))",
 						scope.QuotedTableName(),
@@ -280,8 +280,8 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				}
 			}
 		}
-		if names := meta.UIDNames; len(names) > 0 {
-			for _, name := range names {
+		if (hasOrgID || len(meta.OrgIDNames) > 0) && len(meta.UIDNames) > 0 {
+			for _, name := range meta.UIDNames {
 				if f, ok := scope.FieldByName(name); ok {
 					sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
 						scope.QuotedTableName(),

@@ -198,7 +198,7 @@ func FillOrgFullInfo(list []Org) []Org {
 
 // RoleAssign
 type RoleAssign struct {
-	ModelExOrg `rest:"*" displayName:"用户角色分配"`
+	ModelExOrg `displayName:"用户角色分配"`
 	ExtendField
 	UserID     uint `name:"用户ID" gorm:"not null"`
 	RoleID     uint `name:"角色ID" gorm:"not null"`
@@ -234,7 +234,7 @@ type Role struct {
 
 // OperationPrivileges
 type OperationPrivileges struct {
-	ModelExOrg `rest:"*" displayName:"角色操作权限"`
+	ModelExOrg `displayName:"角色操作权限"`
 	ExtendField
 	RoleID   uint   `name:"角色ID"`
 	MenuCode string `name:"菜单编码"`
