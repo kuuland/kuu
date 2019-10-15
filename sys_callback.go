@@ -87,14 +87,10 @@ func beforeQueryCallback(scope *gorm.Scope) {
 
 func updateTsCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if v, ok := scope.InstanceGet("gorm:update_interface"); ok {
-			newScope := scope.New(v)
-			now := time.Now()
-			if field, ok := newScope.FieldByName("Ts"); ok {
-				_ = field.Set(now)
-				_ = newScope.SetColumn(field.DBName, now)
-			}
-			scope.InstanceSet("gorm:update_interface", newScope.Value)
+		now := time.Now()
+		if field, ok := scope.FieldByName("Ts"); ok {
+			_ = field.Set(now)
+			_ = scope.SetColumn(field.DBName, now)
 		}
 	}
 }

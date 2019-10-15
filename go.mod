@@ -15,7 +15,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/gorilla/websocket v1.4.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/jinzhu/gorm v1.9.11
+	github.com/jinzhu/gorm v1.9.10
 	github.com/jinzhu/inflection v1.0.0
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/mojocn/base64Captcha v0.0.0-20190801020520-752b1cd608b2
