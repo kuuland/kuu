@@ -946,15 +946,6 @@ var LangtransImportRoute = RouteInfo{
 				}
 			}
 		}
-		// 查询翻译列表
-		var (
-			msgs      []LanguageMessage
-			existMsgs = make(map[string]LanguageMessage)
-		)
-		c.DB().Model(&LanguageMessage{}).Find(&msgs)
-		for _, item := range msgs {
-			existMsgs[fmt.Sprintf("%s_%s", item.LangCode, item.Key)] = item
-		}
 		// 生成SQLs
 		var docs []*LanguageMessage
 		for index, row := range rows {
@@ -967,9 +958,6 @@ var LangtransImportRoute = RouteInfo{
 					continue
 				}
 				doc := &LanguageMessage{Key: row[0], LangCode: langCode, Value: value}
-				if msg, ok := existMsgs[fmt.Sprintf("%s_%s", doc.LangCode, doc.Key)]; ok {
-					doc.ID = msg.ID
-				}
 				docs = append(docs, doc)
 			}
 		}

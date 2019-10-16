@@ -3,6 +3,7 @@ package kuu
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
@@ -128,14 +129,24 @@ func (r *LangRegister) Reset() {
 }
 
 // Exec
-func (r *LangRegister) Exec(db ...*gorm.DB) error {
-	if len(db) > 0 {
-		r.DB = db[0]
+func (r *LangRegister) Exec(createOnly ...bool) error {
+	if r.DB == nil {
+		return nil
 	}
 	if len(r.list) == 0 {
 		return errors.New("empty list")
 	}
 
+	// 查询已有数据
+	var (
+		messageList []LanguageMessage
+		messageMap  = make(map[string]LanguageMessage)
+	)
+	DB().Model(&LanguageMessage{}).Find(&messageList)
+	for _, item := range messageList {
+		messageMap[fmt.Sprintf("%s_%s", item.LangCode, item.Key)] = item
+	}
+	// 执行SQL
 	var (
 		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value) VALUES `
 		insertBuffer bytes.Buffer
@@ -145,7 +156,11 @@ func (r *LangRegister) Exec(db ...*gorm.DB) error {
 	)
 	// 执行新增/更新
 	for index, item := range r.list {
-		if item.ID == 0 {
+		var existing LanguageMessage
+		if v, ok := messageMap[fmt.Sprintf("%s_%s", item.LangCode, item.Key)]; ok {
+			existing = v
+		}
+		if existing.ID == 0 && item.ID == 0 {
 			if insertBuffer.Len() == 0 {
 				insertBuffer.WriteString(insertBase)
 			}
@@ -164,8 +179,18 @@ func (r *LangRegister) Exec(db ...*gorm.DB) error {
 				insertBuffer.WriteString(", ")
 			}
 		} else {
+			if len(createOnly) > 0 && createOnly[0] {
+				continue
+			}
+			id := item.ID
+			if id == 0 {
+				id = existing.ID
+			}
+			if id == 0 {
+				continue
+			}
 			sql := `UPDATE "sys_LanguageMessage" SET updated_at = ?, value = ? WHERE id = ?`
-			if err := r.DB.Exec(sql, now, item.Value, item.ID).Error; err != nil {
+			if err := r.DB.Exec(sql, now, item.Value, id).Error; err != nil {
 				r.Reset()
 				return err
 			}

@@ -440,7 +440,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_file_createdat").Add("Created At", "上传时间", "上傳時間")
 	register.SetKey("kuu_file_actions_upload").Add("Upload", "上传文件", "上傳文件")
 	register.SetKey("kuu_common_org").Add("Organization", "所属组织", "所屬組織")
-	register.Exec()
+	_ = register.Exec(true)
 }
 
 func createPresetMenus(tx *gorm.DB) {
