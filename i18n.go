@@ -146,6 +146,7 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 	for _, item := range messageList {
 		messageMap[fmt.Sprintf("%s_%s", item.LangCode, item.Key)] = item
 	}
+
 	// 执行SQL
 	var (
 		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value) VALUES `
@@ -154,6 +155,9 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 		now          = time.Now().Format("2006-01-02 15:04:05")
 		batchSize    = 200
 	)
+	if r.DB.Dialect().GetName() == "mysql" {
+		insertBase = "INSERT INTO sys_LanguageMessage (created_at, updated_at, lang_code, `key`, value) VALUES "
+	}
 	// 执行新增/更新
 	for index, item := range r.list {
 		var existing LanguageMessage
@@ -190,6 +194,9 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 				continue
 			}
 			sql := `UPDATE "sys_LanguageMessage" SET updated_at = ?, value = ? WHERE id = ?`
+			if r.DB.Dialect().GetName() == "mysql" {
+				sql = "UPDATE sys_LanguageMessage SET updated_at = ?, value = ? WHERE id = ?"
+			}
 			if err := r.DB.Exec(sql, now, item.Value, id).Error; err != nil {
 				r.Reset()
 				return err

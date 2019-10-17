@@ -126,13 +126,14 @@ type Org struct {
 	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
-	Code     string `name:"组织编码" gorm:"not null"`
-	Name     string `name:"组织名称" gorm:"not null"`
-	Pid      uint   `name:"父组织ID"`
-	Sort     int    `name:"排序值"`
-	FullPid  string
-	FullName string
-	Class    string
+	Code      string `name:"组织编码" gorm:"not null"`
+	Name      string `name:"组织名称" gorm:"not null"`
+	Pid       uint   `name:"父组织ID"`
+	Sort      int    `name:"排序值"`
+	FullPid   string
+	FullName  string
+	Class     string
+	IsBuiltIn null.Bool `name:"是否内置"`
 }
 
 // BeforeCreate

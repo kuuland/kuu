@@ -127,6 +127,7 @@ func createRootOrg(tx *gorm.DB) {
 		UpdatedByID: RootUID(),
 		Code:        "default",
 		Name:        "Default",
+		IsBuiltIn:   null.NewBool(true, true),
 	}
 	tx.Create(&root)
 	rootOrg = &root
