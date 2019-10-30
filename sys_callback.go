@@ -43,7 +43,7 @@ func registerCallbacks() {
 		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
 	}
 	if callback.Create().Get("kuu:update_ts") == nil {
-		callback.Create().Before("gorm:before_create").Register("kuu:update_ts", updateTsCallback)
+		callback.Create().Before("gorm:create").Register("kuu:update_ts", updateTsForCreateCallback)
 	}
 	if callback.Create().Get("kuu:create") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:create", CreateCallback)
@@ -52,7 +52,7 @@ func registerCallbacks() {
 		callback.Create().After("gorm:after_create").Register("kuu:after_save", AfterSaveCallback)
 	}
 	if callback.Update().Get("kuu:update_ts") == nil {
-		callback.Update().Before("gorm:assign_updating_attributes").Register("kuu:update_ts", updateTsCallback)
+		callback.Update().Before("gorm:assign_updating_attributes").Register("kuu:update_ts", updateTsForUpdateCallback)
 	}
 	if callback.Update().Get("kuu:update") == nil {
 		callback.Update().Before("gorm:update").Register("kuu:update", UpdateCallback)
@@ -85,7 +85,19 @@ func beforeQueryCallback(scope *gorm.Scope) {
 	}
 }
 
-func updateTsCallback(scope *gorm.Scope) {
+func updateTsForCreateCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		now := time.Now()
+
+		if tsField, ok := scope.FieldByName("Ts"); ok {
+			if tsField.IsBlank {
+				tsField.Set(now)
+			}
+		}
+	}
+}
+
+func updateTsForUpdateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
 		// 注意：必须修改update_interface才能确保后续callback取到子表值
 		now := time.Now()
