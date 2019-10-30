@@ -490,7 +490,19 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			split := strings.Split(rawPreload, ",")
 			for _, item := range split {
 				if v, ok := ms.FieldByName(item); ok {
-					db = db.Preload(v.Name)
+					preloaded := false
+					if v.Relationship.Kind == "many_to_many" {
+						if deletedAtField, hasDeletedAt := ms.FieldByName("DeletedAt"); hasDeletedAt {
+							db = db.Preload(v.Name, fmt.Sprintf("%v.%v IS NULL",
+								ms.Quote(v.Relationship.JoinTableHandler.Table(db)),
+								ms.Quote(deletedAtField.DBName),
+							))
+							preloaded = true
+						}
+					}
+					if !preloaded {
+						db = db.Preload(v.Name)
+					}
 				}
 			}
 			ret.Preload = rawPreload
