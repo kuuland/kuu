@@ -13,12 +13,18 @@ type CacheRedis struct {
 	client redis.UniversalClient
 }
 
-func (c *CacheRedis) buildKey(key string) string {
-	return fmt.Sprintf("%s_%s", GetAppName(), key)
+// GetRedisClient
+func GetRedisClient() redis.UniversalClient {
+	return DefaultCache.(*CacheRedis).client
+}
+
+// BuildKey
+func BuildKey(keys ...string) string {
+	return fmt.Sprintf("%s_%s", GetAppName(), strings.Join(keys, "_"))
 }
 
 func (c *CacheRedis) buildKeyAndExp(key string, expiration []time.Duration) (string, time.Duration) {
-	key = c.buildKey(key)
+	key = BuildKey(key)
 	var exp time.Duration
 	if len(expiration) > 0 {
 		exp = expiration[0]
@@ -59,7 +65,7 @@ func (c *CacheRedis) SetString(rawKey, val string, expiration ...time.Duration) 
 // GetString
 func (c *CacheRedis) GetString(rawKey string) (val string) {
 	var (
-		key = c.buildKey(rawKey)
+		key = BuildKey(rawKey)
 		cmd = c.client.Get(key)
 	)
 	if err := cmd.Err(); err != nil {
@@ -87,7 +93,7 @@ func (c *CacheRedis) keys(pattern string) (values map[string]string) {
 
 // HasPrefix
 func (c *CacheRedis) HasPrefix(rawKey string) map[string]string {
-	pattern := c.buildKey(rawKey)
+	pattern := BuildKey(rawKey)
 	if !strings.HasSuffix(pattern, "*") {
 		pattern = fmt.Sprintf("%s*", pattern)
 	}
@@ -96,7 +102,7 @@ func (c *CacheRedis) HasPrefix(rawKey string) map[string]string {
 
 // HasSuffix
 func (c *CacheRedis) HasSuffix(rawKey string) map[string]string {
-	pattern := c.buildKey(rawKey)
+	pattern := BuildKey(rawKey)
 	if !strings.HasPrefix(pattern, "*") {
 		pattern = fmt.Sprintf("*%s", pattern)
 	}
@@ -105,7 +111,7 @@ func (c *CacheRedis) HasSuffix(rawKey string) map[string]string {
 
 // Contains
 func (c *CacheRedis) Contains(rawKey string) map[string]string {
-	pattern := c.buildKey(rawKey)
+	pattern := BuildKey(rawKey)
 	if !strings.HasPrefix(pattern, "*") {
 		pattern = fmt.Sprintf("*%s", pattern)
 	}
@@ -124,7 +130,7 @@ func (c *CacheRedis) Search(rawMatch string, filter func(string, string) bool) (
 		rawMatch = fmt.Sprintf("*%s*", rawMatch)
 	}
 	var (
-		match = c.buildKey(rawMatch)
+		match = BuildKey(rawMatch)
 		iter  = c.client.Scan(0, match, 0).Iterator()
 	)
 	if err := iter.Err(); err != nil {
@@ -159,7 +165,7 @@ func (c *CacheRedis) GetInt(key string) (val int) {
 // Incr
 func (c *CacheRedis) Incr(rawKey string) (val int) {
 	var (
-		key = c.buildKey(rawKey)
+		key = BuildKey(rawKey)
 		cmd = c.client.Incr(key)
 	)
 	if err := cmd.Err(); err != nil {
@@ -173,7 +179,7 @@ func (c *CacheRedis) Incr(rawKey string) (val int) {
 // Del
 func (c *CacheRedis) Del(keys ...string) {
 	for index, key := range keys {
-		keys[index] = c.buildKey(key)
+		keys[index] = BuildKey(key)
 	}
 	cmd := c.client.Del(keys...)
 	if err := cmd.Err(); err != nil {
