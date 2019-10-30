@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -30,6 +32,9 @@ var (
 func registerCallbacks() {
 	callback := DB().Callback()
 	// 注册系统callback
+	if callback.Create().Get("kuu:uuid_create") == nil {
+		callback.Create().Before("gorm:begin_transaction").Register("kuu:uuid_create", uuidCreateCallback)
+	}
 	if callback.Create().Get("validations:validate") == nil {
 		callback.Create().Before("gorm:before_create").Register("validations:validate", ValidateCallback)
 	}
@@ -76,6 +81,16 @@ func registerCallbacks() {
 	// 注册审计callback
 	if C().DefaultGetBool("audit:callbacks", true) {
 		registerAuditCallbacks(callback)
+	}
+}
+
+func uuidCreateCallback(scope *gorm.Scope) {
+	// 注意：由于gorm的scope.Fields函数内部缓存了主键的IsBlank状态，所以只能手动设置
+	meta := Meta(scope.Value)
+	if v, exists := meta.TagSettings["UUID"]; exists && v != "" {
+		reflectValue := indirectValue(scope.Value)
+		fieldValue := reflect.Indirect(reflectValue).FieldByName(v)
+		fieldValue.SetString(uuid.NewV4().String())
 	}
 }
 
