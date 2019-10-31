@@ -373,8 +373,15 @@ func createOrUpdateItem(scope *gorm.Scope, item interface{}) {
 			return
 		}
 	} else {
-		itemScope := DB().NewScope(item)
-		if field, ok := itemScope.FieldByName("DeletedAt"); ok && !field.IsBlank {
+		var (
+			itemScope          = DB().NewScope(item)
+			meta               = Meta(item)
+			deletedAtFieldName = "DeletedAt"
+		)
+		if v, exists := meta.TagSettings["DELETEDAT"]; exists && v != "" {
+			deletedAtFieldName = v
+		}
+		if field, ok := itemScope.FieldByName(deletedAtFieldName); ok && !field.IsBlank {
 			if err := tx.Delete(item).Error; err != nil {
 				_ = scope.Err(err)
 				return
