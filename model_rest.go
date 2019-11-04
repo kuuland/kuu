@@ -481,7 +481,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			}
 			ret.Sort = strings.Join(retSort, ",")
 		} else {
-			db = db.Order("created_at desc")
+			if scope.HasColumn("created_at") {
+				db = db.Order("created_at desc")
+			}
 		}
 		// 处理preload
 		rawPreload := c.Query("preload")
