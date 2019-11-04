@@ -104,6 +104,17 @@ func (u *User) BeforeSave(scope *gorm.Scope) (err error) {
 			err = scope.SetColumn("Password", hashed)
 		}
 	}
+	if u.ID != 0 {
+		DelCache(fmt.Sprintf("user_%d", u.ID))
+	}
+	return
+}
+
+// AfterDelete
+func (u *User) AfterDelete(tx *gorm.DB) (err error) {
+	if u.ID != 0 {
+		DelCache(fmt.Sprintf("user_%d", u.ID))
+	}
 	return
 }
 
@@ -260,18 +271,18 @@ func (m *DataPrivileges) BeforeSave(scope *gorm.Scope) {
 type Menu struct {
 	ModelExOrg `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string    `name:"菜单编码" gorm:"not null"`
-	Name          string    `name:"菜单名称" gorm:"not null"`
-	URI           string    `name:"菜单地址"`
-	Icon          string    `name:"菜单图标"`
-	Pid           uint      `name:"父菜单ID"`
-	Group         string    `name:"菜单分组名"`
-	Disable       null.Bool `name:"是否禁用"`
-	IsLink        null.Bool `name:"是否外链"`
-	Sort          int       `name:"排序值"`
-	IsDefaultOpen null.Bool `name:"是否默认打开"`
-	Closeable     null.Bool `name:"是否可关闭"`
-	LocaleKey     string    `name:"国际化语言键"`
+	Code          string      `name:"菜单编码" gorm:"not null"`
+	Name          string      `name:"菜单名称" gorm:"not null"`
+	URI           null.String `name:"菜单地址"`
+	Icon          string      `name:"菜单图标"`
+	Pid           uint        `name:"父菜单ID"`
+	Group         string      `name:"菜单分组名"`
+	Disable       null.Bool   `name:"是否禁用"`
+	IsLink        null.Bool   `name:"是否外链"`
+	Sort          int         `name:"排序值"`
+	IsDefaultOpen null.Bool   `name:"是否默认打开"`
+	Closeable     null.Bool   `name:"是否可关闭"`
+	LocaleKey     string      `name:"国际化语言键"`
 	IsVirtual     null.Bool
 	Type          string
 }
@@ -303,10 +314,10 @@ func updatePresetRolePrivileges(tx *gorm.DB, deleteBefore bool, ignoreAuth bool)
 // BeforeSave
 func (m *Menu) BeforeSave() {
 	if m.Code == "" {
-		if m.URI != "" && !m.IsLink.Bool {
-			code := m.URI
-			if strings.HasPrefix(m.URI, "/") {
-				code = m.URI[1:]
+		if m.URI.String != "" && !m.IsLink.Bool {
+			code := m.URI.String
+			if strings.HasPrefix(m.URI.String, "/") {
+				code = m.URI.String[1:]
 			}
 			code = strings.ReplaceAll(code, "/", ":")
 			m.Code = code

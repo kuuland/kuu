@@ -105,6 +105,22 @@ func initSys() {
 			PANIC("failed to initialize preset data: %s", err.Error())
 		}
 	}
+	//// 启动日志序列化任务
+	//_, _ = AddTask("@every 15m", func() {
+	//
+	//})
+	//// 启动历史日志清除任务
+	//_, _ = AddTask("@midnight", func() {
+	//	day := 24 * time.Hour
+	//	dest := day * 30 * 6
+	//	time.Now().Add(-dest)
+	//	//
+	//	//time.Now().Sub()
+	//	//DB().Model(&Log{}).Where("created_at < (now() - interval '30 minute')  and order_status = ?", models.OrderStatusPend).
+	//	//	Updates(&models.Order{
+	//	//		OrderStatus: models.OrderStatusCancel,
+	//	//	})
+	//})
 }
 
 func createRootUser(tx *gorm.DB) {
@@ -222,17 +238,18 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("menu_default").Add("Default", "默认菜单", "默認菜單")
 	register.SetKey("menu_sys_mgr").Add("System Management", "系统管理", "系統管理")
 	register.SetKey("menu_org_mgr").Add("Organization Management", "组织管理", "組織管理")
-	register.SetKey("menu_user_doc").Add("User", "用户", "用戶")
-	register.SetKey("menu_org_doc").Add("Organization", "组织", "組織")
+	register.SetKey("menu_user_doc").Add("User Management", "用户管理", "用戶管理")
+	register.SetKey("menu_org_doc").Add("Organization Management", "组织管理", "組織管理")
 	register.SetKey("menu_auth_mgr").Add("Authorization Management", "权限管理", "權限管理")
-	register.SetKey("menu_role_doc").Add("Role", "角色", "角色")
+	register.SetKey("menu_role_doc").Add("Role Management", "角色管理", "角色管理")
 	register.SetKey("menu_sys_settings").Add("System Settings", "系统设置", "系統設置")
-	register.SetKey("menu_menu_doc").Add("Menu", "菜单", "菜單")
-	register.SetKey("menu_param_doc").Add("Parameter", "参数", "參數")
-	register.SetKey("menu_audit_logs").Add("Audit Logs", "审计", "審計")
-	register.SetKey("menu_file_doc").Add("File", "文件", "文件")
+	register.SetKey("menu_menu_doc").Add("Menu Management", "菜单管理", "菜單管理")
+	register.SetKey("menu_param_doc").Add("Parameter Management", "参数管理", "參數管理")
+	register.SetKey("menu_audit_logs").Add("Audit Logs", "系统审计", "系統審計")
+	register.SetKey("menu_sys_monitor").Add("System Monitor", "系统监控", "系統監控")
+	register.SetKey("menu_file_doc").Add("File Management", "文件管理", "文件管理")
 	register.SetKey("menu_i18n").Add("Internationalization", "国际化", "國際化")
-	register.SetKey("menu_message").Add("Message", "消息", "消息")
+	register.SetKey("menu_message").Add("Message Center", "消息中心", "消息中心")
 	register.SetKey("menu_metadata").Add("Metadata", "元数据", "元數據")
 	// Fano
 	register.SetKey("fano_table_actions_add").Add("Add", "新增", "新增")
@@ -491,7 +508,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "User",
 		LocaleKey: "menu_user_doc",
 		Icon:      "user",
-		URI:       "/sys/user",
+		URI:       null.NewString("/sys/user", true),
 		Sort:      100,
 		Type:      "menu",
 	}
@@ -505,7 +522,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Organization",
 		LocaleKey: "menu_org_doc",
 		Icon:      "cluster",
-		URI:       "/sys/org",
+		URI:       null.NewString("/sys/org", true),
 		Sort:      200,
 		Type:      "menu",
 	}
@@ -532,7 +549,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Role",
 		LocaleKey: "menu_role_doc",
 		Icon:      "team",
-		URI:       "/sys/role",
+		URI:       null.NewString("/sys/role", true),
 		Sort:      100,
 		Type:      "menu",
 	}
@@ -559,7 +576,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Menu",
 		LocaleKey: "menu_menu_doc",
 		Icon:      "bars",
-		URI:       "/sys/menu",
+		URI:       null.NewString("/sys/menu", true),
 		Sort:      100,
 		Type:      "menu",
 	}
@@ -573,11 +590,25 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Parameter",
 		LocaleKey: "menu_param_doc",
 		Icon:      "profile",
-		URI:       "/sys/param",
+		URI:       null.NewString("/sys/param", true),
 		Sort:      200,
 		Type:      "menu",
 	}
 	tx.Create(&paramMenu)
+	monitorMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
+		Pid:       settingMenu.ID,
+		Name:      "System Monitor",
+		LocaleKey: "menu_sys_monitor",
+		Icon:      "monitor",
+		URI:       null.NewString("/sys/statics", true),
+		Sort:      300,
+		Type:      "menu",
+	}
+	tx.Create(&monitorMenu)
 	auditMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
@@ -587,7 +618,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Audit Logs",
 		LocaleKey: "menu_audit_logs",
 		Icon:      "book",
-		URI:       "/sys/audit",
+		URI:       null.NewString("/sys/audit", true),
 		Sort:      400,
 		Type:      "menu",
 	}
@@ -601,7 +632,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "File",
 		LocaleKey: "menu_file_doc",
 		Icon:      "file",
-		URI:       "/sys/file",
+		URI:       null.NewString("/sys/file", true),
 		Sort:      500,
 		Type:      "menu",
 	}
@@ -615,7 +646,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Internationalization",
 		LocaleKey: "menu_i18n",
 		Icon:      "global",
-		URI:       "/sys/i18n",
+		URI:       null.NewString("/sys/i18n", true),
 		Sort:      600,
 		Type:      "menu",
 	}
@@ -629,7 +660,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Message",
 		LocaleKey: "menu_message",
 		Icon:      "message",
-		URI:       "/sys/message",
+		URI:       null.NewString("/sys/message", true),
 		Sort:      700,
 		Type:      "menu",
 	}
@@ -643,7 +674,7 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Metadata",
 		LocaleKey: "menu_metadata",
 		Icon:      "appstore",
-		URI:       "/sys/metadata",
+		URI:       null.NewString("/sys/metadata", true),
 		Sort:      700,
 		Type:      "menu",
 	}
@@ -819,12 +850,27 @@ var SetPayloadAttrs = func(payload jwt.MapClaims, user *User) jwt.MapClaims {
 	return payload
 }
 
+// GetUserFromCache
+func GetUserFromCache(uid uint) (user User) {
+	cacheKey := fmt.Sprintf("user_%d", uid)
+	if info := GetCacheString(cacheKey); info != "" {
+		Parse(info, &user)
+	} else {
+		if err := DB().First(uid, &User{ID: uid}); err != nil {
+			SetCacheString(cacheKey, Stringify(user))
+		}
+	}
+	return
+}
+
 // Sys
 func Sys() *Mod {
 	return &Mod{
-		Code: "sys",
+		Code:        "sys",
+		Middlewares: gin.HandlersChain{
+			//LogMiddleware,
+		},
 		Models: []interface{}{
-			//&ExAttr{},
 			&ExcelTemplate{},
 			&ExcelTemplateHeader{},
 			&User{},
@@ -841,6 +887,7 @@ func Sys() *Mod {
 			&Route{},
 			&Language{},
 			&LanguageMessage{},
+			//&Log{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
