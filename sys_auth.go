@@ -299,10 +299,6 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 			}
 		}
 	}
-	if meta.Name == "User" {
-		sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)", scope.QuotedTableName(), scope.Quote("id")))
-		attrs = append(attrs, desc.UID)
-	}
 	return
 }
 

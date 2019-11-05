@@ -39,6 +39,35 @@ var OrgLoginableRoute = RouteInfo{
 	},
 }
 
+// OrgSwitchRoute
+var OrgSwitchRoute = RouteInfo{
+	Name:   "切换当前登录组织",
+	Method: "POST",
+	Path:   "/org/switch",
+	HandlerFunc: func(c *Context) {
+		var (
+			failedMessage = c.L("org_switch_failed", "Switching organization failed")
+			body          struct {
+				ActOrgID uint
+			}
+		)
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+
+		err := c.IgnoreAuth().DB().
+			Model(&User{ID: c.SignInfo.UID}).
+			Update(User{ActOrgID: body.ActOrgID}).Error
+
+		if err != nil {
+			c.STDErr(failedMessage, err)
+		} else {
+			c.STD("ok")
+		}
+	},
+}
+
 // UserRoleAssigns
 var UserRoleAssigns = RouteInfo{
 	Name:   "查询用户已分配角色",
@@ -1084,6 +1113,35 @@ var LanglistPostRoute = RouteInfo{
 			}
 			return tx.Error
 		})
+		if err != nil {
+			c.STDErr(failedMessage, err)
+		} else {
+			c.STD("ok")
+		}
+	},
+}
+
+// LangSwitchRoute
+var LangSwitchRoute = RouteInfo{
+	Name:   "切换用户语言环境",
+	Method: "POST",
+	Path:   "/lang/switch",
+	HandlerFunc: func(c *Context) {
+		var (
+			failedMessage = c.L("lang_switch_failed", "Switching language failed")
+			body          struct {
+				Lang string
+			}
+		)
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+
+		err := c.IgnoreAuth().DB().
+			Model(&User{ID: c.SignInfo.UID}).
+			Update(User{Lang: body.Lang}).Error
+
 		if err != nil {
 			c.STDErr(failedMessage, err)
 		} else {

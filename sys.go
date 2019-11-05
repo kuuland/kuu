@@ -891,6 +891,7 @@ func Sys() *Mod {
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
+			OrgSwitchRoute,
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,
@@ -905,6 +906,7 @@ func Sys() *Mod {
 			LangtransPostRoute,
 			LanglistPostRoute,
 			LangtransImportRoute,
+			LangSwitchRoute,
 		},
 		AfterImport: initSys,
 	}
