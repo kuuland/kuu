@@ -448,5 +448,14 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	desc.ActOrgID = actOrg.ID
 	desc.ActOrgCode = actOrg.Code
 	desc.ActOrgName = actOrg.Name
+	// 限制读取组织为当前组织或当前组织及以下（不能跨组织树分支或上级组织）
+	filteredReadableOrgIDs := make(map[uint]Org)
+	for itemID, itemOrg := range desc.ReadableOrgIDMap {
+		if strings.HasPrefix(itemOrg.FullPid, actOrg.FullPid) {
+			filteredReadableOrgIDs[itemID] = itemOrg
+		}
+	}
+	desc.ReadableOrgIDMap = filteredReadableOrgIDs
+	desc.ReadableOrgIDs = keys(filteredReadableOrgIDs)
 	return
 }
