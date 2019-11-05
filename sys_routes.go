@@ -369,7 +369,7 @@ var ModelDocsRoute = RouteInfo{
 		// 重新生成
 		var validMeta []*Metadata
 		for _, m := range metadataList {
-			if !m.RestDesc.IsValid() || len(m.Fields) == 0 {
+			if m == nil || m.RestDesc == nil || !m.RestDesc.IsValid() || len(m.Fields) == 0 {
 				continue
 			}
 			validMeta = append(validMeta, m)
