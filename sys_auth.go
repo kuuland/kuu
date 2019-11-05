@@ -29,22 +29,28 @@ func init() {
 
 // PrivilegesDesc
 type PrivilegesDesc struct {
-	UID               uint
-	OrgID             uint
-	Codes             []string
-	Permissions       map[string]int64
-	ReadableOrgIDs    []uint
-	ReadableOrgIDMap  map[uint]Org
-	WritableOrgIDs    []uint
-	WritableOrgIDMap  map[uint]Org
-	LoginableOrgIDs   []uint
-	LoginableOrgIDMap map[uint]Org
-	Valid             bool
-	SignInfo          *SignContext
-	ActOrgID          uint
-	ActOrgCode        string
-	ActOrgName        string
-	RolesCode         []string
+	UID                      uint
+	OrgID                    uint
+	Codes                    []string
+	Permissions              map[string]int64
+	ReadableOrgIDs           []uint
+	ReadableOrgIDMap         map[uint]Org
+	FullReadableOrgIDs       []uint
+	FullReadableOrgIDMap     map[uint]Org
+	WritableOrgIDs           []uint
+	WritableOrgIDMap         map[uint]Org
+	LoginableOrgIDs          []uint
+	LoginableOrgIDMap        map[uint]Org
+	PersonalReadableOrgIDs   []uint
+	PersonalReadableOrgIDMap map[uint]Org
+	PersonalWritableOrgIDs   []uint
+	PersonalWritableOrgIDMap map[uint]Org
+	Valid                    bool
+	SignInfo                 *SignContext
+	ActOrgID                 uint
+	ActOrgCode               string
+	ActOrgName               string
+	RolesCode                []string
 }
 
 // IsWritableOrgID
@@ -178,7 +184,7 @@ func (por *DefaultAuthProcessor) AddWritableWheres(auth AuthProcessorDesc) (err 
 		} else if replace {
 			return
 		}
-		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.WritableOrgIDs)
+		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.WritableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
 		if len(sqls) > 0 {
 			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 		}
@@ -195,7 +201,7 @@ func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err 
 		} else if replace {
 			return
 		}
-		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.ReadableOrgIDs)
+		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.ReadableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
 		if len(sqls) > 0 {
 			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 		}
@@ -204,7 +210,7 @@ func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err 
 }
 
 // GetDataScopeWheres
-func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) (sqls []string, attrs []interface{}) {
+func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, personalOrgIDMap map[uint]Org) (sqls []string, attrs []interface{}) {
 	if scope.Value == nil || !desc.IsValid() {
 		return
 	}
@@ -250,8 +256,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 		}
 	} else {
 		// 基于组织的数据权限
-		orgIDField, hasOrgID := scope.FieldByName("OrgID")
-		if hasOrgID && len(orgIDs) > 0 {
+		if orgIDField, has := scope.FieldByName("OrgID"); has && len(orgIDs) > 0 {
 			dbName := orgIDField.DBName
 			if meta.Name == "Org" {
 				dbName = "id"
@@ -261,12 +266,25 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 				scope.Quote(dbName),
 			))
 			attrs = append(attrs, orgIDs)
+		}
+		if len(personalOrgIDMap) > 0 && personalOrgIDMap[desc.ActOrgID].ID != 0 {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {
 				sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
 					scope.QuotedTableName(),
 					scope.Quote(f.DBName),
 				))
 				attrs = append(attrs, desc.UID)
+			}
+			if len(meta.UIDNames) > 0 {
+				for _, name := range meta.UIDNames {
+					if f, ok := scope.FieldByName(name); ok {
+						sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
+							scope.QuotedTableName(),
+							scope.Quote(f.DBName),
+						))
+						attrs = append(attrs, desc.UID)
+					}
+				}
 			}
 		}
 		if len(meta.OrgIDNames) > 0 {
@@ -277,17 +295,6 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint) 
 						scope.Quote(f.DBName),
 					))
 					attrs = append(attrs, orgIDs)
-				}
-			}
-		}
-		if (hasOrgID || len(meta.OrgIDNames) > 0) && len(meta.UIDNames) > 0 {
-			for _, name := range meta.UIDNames {
-				if f, ok := scope.FieldByName(name); ok {
-					sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
-						scope.QuotedTableName(),
-						scope.Quote(f.DBName),
-					))
-					attrs = append(attrs, desc.UID)
 				}
 			}
 		}
@@ -307,7 +314,7 @@ func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
 		desc  = GetRoutinePrivilegesDesc()
 	)
 	if desc != nil {
-		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs)
+		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs, desc.PersonalWritableOrgIDMap)
 		if len(sqls) > 0 {
 			db = db.Where(strings.Join(sqls, " OR "), attrs...)
 		}
@@ -349,6 +356,11 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		DataScopeCurrent:          2,
 		DataScopeCurrentFollowing: 3,
 	}
+	// 单独统计个人针对组织的可读写权限
+	var (
+		personalReadableOrgIDMap = make(map[uint]Org)
+		personalWritableOrgIDMap = make(map[uint]Org)
+	)
 	for _, assign := range user.RoleAssigns {
 		if assign.Role == nil {
 			continue
@@ -367,6 +379,15 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 			or := orm[dp.TargetOrgID]
 			dp.ReadableRange = strings.ToUpper(dp.ReadableRange)
 			dp.WritableRange = strings.ToUpper(dp.WritableRange)
+
+			if dp.ReadableRange == DataScopePersonal {
+				personalReadableOrgIDMap[dp.TargetOrgID] = Org{ID: dp.TargetOrgID}
+			}
+
+			if dp.WritableRange == DataScopePersonal {
+				personalWritableOrgIDMap[dp.TargetOrgID] = Org{ID: dp.TargetOrgID}
+			}
+
 			if or == nil {
 				or = &orange{
 					readable: dp.ReadableRange,
@@ -420,6 +441,13 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 			}
 		}
 	}
+	// 个人读写单独统计
+	for orgID := range personalReadableOrgIDMap {
+		personalReadableOrgIDMap[orgID] = orgMap[orgID]
+	}
+	for orgID := range personalWritableOrgIDMap {
+		personalWritableOrgIDMap[orgID] = orgMap[orgID]
+	}
 	keys := func(m map[uint]Org) (a []uint) {
 		for key, _ := range m {
 			a = append(a, key)
@@ -430,18 +458,31 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	for code, _ := range desc.Permissions {
 		desc.Codes = append(desc.Codes, code)
 	}
-	desc.ReadableOrgIDMap = readableOrgIDMap
-	desc.ReadableOrgIDs = keys(readableOrgIDMap)
+	desc.FullReadableOrgIDMap = readableOrgIDMap
+	desc.FullReadableOrgIDs = keys(readableOrgIDMap)
 	desc.WritableOrgIDMap = writableOrgIDMap
 	desc.WritableOrgIDs = keys(writableOrgIDMap)
 	desc.LoginableOrgIDMap = loginableOrgIDMap
 	desc.LoginableOrgIDs = keys(loginableOrgIDMap)
+
+	desc.PersonalReadableOrgIDMap = personalReadableOrgIDMap
+	desc.PersonalReadableOrgIDs = keys(personalReadableOrgIDMap)
+	desc.PersonalWritableOrgIDMap = personalWritableOrgIDMap
+	desc.PersonalWritableOrgIDs = keys(personalWritableOrgIDMap)
 	// 计算ActOrgID
 	var actOrg Org
 	if user.ActOrgID != 0 && desc.IsLoginableOrgID(user.ActOrgID) {
 		actOrg = orgMap[user.ActOrgID]
 	} else if len(desc.LoginableOrgIDs) > 0 {
 		actOrg = orgMap[desc.LoginableOrgIDs[0]]
+		// 取最顶级组织为默认值
+		for _, orgID := range desc.LoginableOrgIDs {
+			orgItem := orgMap[orgID]
+			if len(orgItem.FullPid) < len(actOrg.FullPid) {
+				actOrg = orgItem
+			}
+		}
+
 	} else {
 		actOrg = orgMap[desc.OrgID]
 	}
@@ -449,8 +490,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	desc.ActOrgCode = actOrg.Code
 	desc.ActOrgName = actOrg.Name
 	// 限制读取组织为当前组织或当前组织及以下（不能跨组织树分支或上级组织）
-	filteredReadableOrgIDs := make(map[uint]Org)
-	for itemID, itemOrg := range desc.ReadableOrgIDMap {
+	filteredReadableOrgIDs := map[uint]Org{actOrg.ID: actOrg}
+	for itemID, itemOrg := range desc.FullReadableOrgIDMap {
 		if strings.HasPrefix(itemOrg.FullPid, actOrg.FullPid) {
 			filteredReadableOrgIDs[itemID] = itemOrg
 		}
