@@ -129,20 +129,22 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		fieldValue := reflect.New(indirectType).Interface()
 		field := MetadataField{
 			Code:      fieldStruct.Name,
-			Kind:      fieldStruct.Type.Kind().String(),
+			Kind:      fieldStruct.Type.String(),
 			Enum:      fieldStruct.Tag.Get("enum"),
 			LocaleKey: fieldStruct.Tag.Get("locale"),
 		}
 		switch field.Kind {
-		case "bool":
+		case "bool", "null.Bool":
 			field.Type = "boolean"
 		case "int", "int8", "int16", "int32", "int64",
-			"uint", "uint8", "uint16", "uint32", "uint64":
+			"uint", "uint8", "uint16", "uint32", "uint64", "null.Int":
 			field.Type = "integer"
 		case "float32", "float64":
 			field.Type = "number"
 		case "slice", "struct", "ptr":
 			field.Type = "object"
+		case "null.String", "string":
+			field.Type = "string"
 		default:
 			field.Type = field.Kind
 		}
