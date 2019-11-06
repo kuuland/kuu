@@ -12,16 +12,14 @@ var DefaultCache Cache
 // Cache
 type Cache interface {
 	SetString(string, string, ...time.Duration)
-	HasPrefix(string) map[string]string
-	HasSuffix(string) map[string]string
-	Contains(string) map[string]string
-	Search(string, func(string, string) bool) map[string]string
+	HasPrefix(string, int) map[string]string
+	HasSuffix(string, int) map[string]string
+	Contains(string, int) map[string]string
 	GetString(string) string
 	SetInt(string, int, ...time.Duration)
 	GetInt(string) int
 	Incr(string) int
 	Del(...string)
-	DelLike(...string)
 	Close()
 }
 
@@ -92,6 +90,30 @@ func GetCacheInt(key string) (val int) {
 func IncrCache(key string) (val int) {
 	if DefaultCache != nil {
 		val = DefaultCache.Incr(key)
+	}
+	return
+}
+
+// HasPrefixCache
+func HasPrefixCache(key string, limit int) (val map[string]string) {
+	if DefaultCache != nil {
+		val = DefaultCache.HasPrefix(key, limit)
+	}
+	return
+}
+
+// HasSuffixCache
+func HasSuffixCache(key string, limit int) (val map[string]string) {
+	if DefaultCache != nil {
+		val = DefaultCache.HasSuffix(key, limit)
+	}
+	return
+}
+
+// ContainsCache
+func ContainsCache(key string, limit int) (val map[string]string) {
+	if DefaultCache != nil {
+		val = DefaultCache.Contains(key, limit)
 	}
 	return
 }

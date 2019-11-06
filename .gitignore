@@ -16,3 +16,4 @@ vendor
 .history
 .idea
 .vscode
+*.db

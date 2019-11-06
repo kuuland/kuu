@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"math/rand"
 	"net/http"
 	"os"
@@ -133,6 +134,15 @@ func Stringify(v interface{}, format ...bool) (ret string) {
 	return
 }
 
+// Parse
+func Parse(v string, r interface{}) error {
+	err := json.Unmarshal([]byte(v), r)
+	if err != nil {
+		ERROR(err)
+	}
+	return err
+}
+
 // EnsureDir
 func EnsureDir(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -150,14 +160,6 @@ func ParseID(id string) uint {
 		return uint(v)
 	}
 	return 0
-}
-
-// Parse
-func Parse(v string, r interface{}) {
-	err := json.Unmarshal([]byte(v), r)
-	if err != nil {
-		ERROR(err)
-	}
 }
 
 // Copy
@@ -249,4 +251,39 @@ func ProjectFields(data interface{}, project string) interface{} {
 	} else {
 		return execProject(indirectValue)
 	}
+}
+
+// BatchInsertItem
+type BatchInsertItem struct {
+	SQL  string
+	Vars []interface{}
+}
+
+// BatchInsert
+func BatchInsert(tx *gorm.DB, insertBase string, items []BatchInsertItem, batchSize int) error {
+	var (
+		insertBuffer bytes.Buffer
+		insertVars   []interface{}
+	)
+	for index, item := range items {
+		if insertBuffer.Len() == 0 {
+			insertBuffer.WriteString(insertBase)
+		}
+
+		insertBuffer.WriteString(item.SQL)
+		insertVars = append(insertVars, item.Vars...)
+
+		if (index+1)%batchSize == 0 || index == len(items)-1 {
+			if sql := insertBuffer.String(); sql != "" {
+				if err := tx.Exec(sql, insertVars...).Error; err != nil {
+					return err
+				}
+				insertBuffer.Reset()
+				insertVars = insertVars[0:0]
+			}
+		} else {
+			insertBuffer.WriteString(", ")
+		}
+	}
+	return nil
 }

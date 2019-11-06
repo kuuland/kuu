@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+const (
+	SignMethodLogin  = "LOGIN"
+	SignMethodLogout = "LOGOUT"
+)
+
 type GenTokenDesc struct {
 	UID      uint
 	Payload  jwt.MapClaims
@@ -33,7 +38,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Secret:   uuid.NewV4().String(),
 		Iat:      iat,
 		Exp:      desc.Exp,
-		Method:   "LOGIN",
+		Method:   SignMethodLogin,
 		SubDocID: desc.SubDocID,
 		Desc:     desc.Desc,
 		Type:     desc.Type,
@@ -60,6 +65,7 @@ var LoginRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/login",
 	HandlerFunc: func(c *Context) {
+		c.Set("is_login", true)
 		// 调用登录处理器获取登录数据
 		if loginHandler == nil {
 			PANIC("login handler not configured")
@@ -102,6 +108,7 @@ var LogoutRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/logout",
 	HandlerFunc: func(c *Context) {
+		c.Set("is_logout", true)
 		if c.SignInfo != nil && c.SignInfo.IsValid() {
 			var (
 				secretData SignSecret
@@ -109,7 +116,7 @@ var LogoutRoute = RouteInfo{
 			)
 			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
-				if err := db.Model(&secretData).Updates(&SignSecret{Method: "LOGOUT"}).Error; err != nil {
+				if err := db.Model(&secretData).Updates(&SignSecret{Method: SignMethodLogout}).Error; err != nil {
 					c.STDErr(c.L("acc_logout_failed", "Logout failed"), err)
 					return
 				}

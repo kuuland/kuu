@@ -19,6 +19,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/mojocn/base64Captcha v0.0.0-20190801020520-752b1cd608b2
+	github.com/mssola/user_agent v0.5.0
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0

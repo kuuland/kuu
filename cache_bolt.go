@@ -44,7 +44,7 @@ func (c *CacheBolt) GetString(key string) (val string) {
 	return
 }
 
-func (c *CacheBolt) seek(seek []byte, f func(k, v []byte) bool) (values map[string]string) {
+func (c *CacheBolt) seek(seek []byte, limit int, f func(k, v []byte) bool) (values map[string]string) {
 	values = make(map[string]string)
 	ERROR(c.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(c.generalBucketName)
@@ -52,6 +52,9 @@ func (c *CacheBolt) seek(seek []byte, f func(k, v []byte) bool) (values map[stri
 			c := bucket.Cursor()
 			for k, v := c.Seek(seek); k != nil && f(k, v); k, v = c.Next() {
 				values[string(k)] = string(v)
+				if limit > 0 && len(values) >= limit {
+					break
+				}
 			}
 		}
 		return nil
@@ -60,43 +63,35 @@ func (c *CacheBolt) seek(seek []byte, f func(k, v []byte) bool) (values map[stri
 }
 
 // HasPrefix
-func (c *CacheBolt) HasPrefix(prefix string) (values map[string]string) {
+func (c *CacheBolt) HasPrefix(prefix string, limit int) (values map[string]string) {
 	if len(prefix) == 0 {
 		return
 	}
 	seek := []byte(prefix)
-	return c.seek(seek, func(k, v []byte) bool {
+	return c.seek(seek, limit, func(k, v []byte) bool {
 		return bytes.HasPrefix(k, seek)
 	})
 }
 
 // HasSuffix
-func (c *CacheBolt) HasSuffix(suffix string) (values map[string]string) {
+func (c *CacheBolt) HasSuffix(suffix string, limit int) (values map[string]string) {
 	if len(suffix) == 0 {
 		return
 	}
 	seek := []byte(suffix)
-	return c.seek(seek, func(k, v []byte) bool {
+	return c.seek(seek, limit, func(k, v []byte) bool {
 		return bytes.HasSuffix(k, seek)
 	})
 }
 
 // Contains
-func (c *CacheBolt) Contains(pattern string) (values map[string]string) {
+func (c *CacheBolt) Contains(pattern string, limit int) (values map[string]string) {
 	if len(pattern) == 0 {
 		return
 	}
 	seek := []byte(pattern)
-	return c.seek(seek, func(k, v []byte) bool {
+	return c.seek(seek, limit, func(k, v []byte) bool {
 		return bytes.Contains(k, seek)
-	})
-}
-
-// Search
-func (c *CacheBolt) Search(basePattern string, filter func(string, string) bool) (values map[string]string) {
-	seek := []byte(basePattern)
-	return c.seek(seek, func(k, v []byte) bool {
-		return filter(string(k), string(v))
 	})
 }
 
@@ -152,37 +147,6 @@ func (c *CacheBolt) Del(keys ...string) {
 				if err := bucket.Delete([]byte(key)); err != nil {
 					return err
 				}
-			}
-		}
-		return nil
-	}))
-	return
-}
-
-// DelLike
-func (c *CacheBolt) DelLike(keys ...string) {
-	if len(keys) == 0 {
-		return
-	}
-
-	del := func(bucket *bolt.Bucket, k, v []byte) {
-		for _, key := range keys {
-			sk := []byte(key)
-			if bytes.Contains(k, sk) {
-				_ = bucket.Delete([]byte(key))
-			}
-		}
-	}
-
-	ERROR(c.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(c.generalBucketName)
-		if bucket != nil {
-			c := bucket.Cursor()
-
-			k, v := c.Seek([]byte(keys[0]))
-			for k != nil {
-				del(bucket, k, v)
-				k, v = c.Next()
 			}
 		}
 		return nil

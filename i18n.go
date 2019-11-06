@@ -149,15 +149,19 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 
 	// 执行SQL
 	var (
-		insertBase   = `INSERT INTO "sys_LanguageMessage" (created_at, updated_at, lang_code, key, value) VALUES `
+		insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ",
+			r.DB.Dialect().Quote("sys_LanguageMessage"),
+			r.DB.Dialect().Quote("created_at"),
+			r.DB.Dialect().Quote("updated_at"),
+			r.DB.Dialect().Quote("lang_code"),
+			r.DB.Dialect().Quote("key"),
+			r.DB.Dialect().Quote("value"),
+		)
 		insertBuffer bytes.Buffer
 		insertVars   []interface{}
 		now          = time.Now().Format("2006-01-02 15:04:05")
 		batchSize    = 200
 	)
-	if r.DB.Dialect().GetName() == "mysql" {
-		insertBase = "INSERT INTO sys_LanguageMessage (created_at, updated_at, lang_code, `key`, value) VALUES "
-	}
 	// 执行新增/更新
 	for index, item := range r.list {
 		var existing LanguageMessage

@@ -76,41 +76,51 @@ func (c *CacheRedis) GetString(rawKey string) (val string) {
 	return
 }
 
-func (c *CacheRedis) keys(pattern string) (values map[string]string) {
-	cmd := c.client.Keys(pattern)
-	if err := cmd.Err(); err != nil {
-		ERROR(err)
-		return
-	}
+func (c *CacheRedis) scan(cursor uint64, pattern string, limit int64) (values map[string]string) {
 	values = make(map[string]string)
-	if keys := cmd.Val(); len(keys) > 0 {
-		for _, key := range keys {
-			values[key] = c.client.Get(key).Val()
+	for len(values) < int(limit) {
+		cmd := c.client.Scan(cursor, pattern, limit)
+		if err := cmd.Err(); err != nil {
+			ERROR(err)
+			return
+		}
+
+		if keys, nextCur := cmd.Val(); len(keys) > 0 {
+			for _, key := range keys {
+				values[key] = c.client.Get(key).Val()
+			}
+			if (limit != 0 && len(values) >= int(limit)) || nextCur == 0 {
+				break
+			} else {
+				cursor = nextCur
+			}
+		} else {
+			break
 		}
 	}
 	return
 }
 
 // HasPrefix
-func (c *CacheRedis) HasPrefix(rawKey string) map[string]string {
+func (c *CacheRedis) HasPrefix(rawKey string, limit int) map[string]string {
 	pattern := BuildKey(rawKey)
 	if !strings.HasSuffix(pattern, "*") {
 		pattern = fmt.Sprintf("%s*", pattern)
 	}
-	return c.keys(pattern)
+	return c.scan(0, pattern, int64(limit))
 }
 
 // HasSuffix
-func (c *CacheRedis) HasSuffix(rawKey string) map[string]string {
+func (c *CacheRedis) HasSuffix(rawKey string, limit int) map[string]string {
 	pattern := BuildKey(rawKey)
 	if !strings.HasPrefix(pattern, "*") {
 		pattern = fmt.Sprintf("*%s", pattern)
 	}
-	return c.keys(pattern)
+	return c.scan(0, pattern, int64(limit))
 }
 
 // Contains
-func (c *CacheRedis) Contains(rawKey string) map[string]string {
+func (c *CacheRedis) Contains(rawKey string, limit int) map[string]string {
 	pattern := BuildKey(rawKey)
 	if !strings.HasPrefix(pattern, "*") {
 		pattern = fmt.Sprintf("*%s", pattern)
@@ -118,34 +128,7 @@ func (c *CacheRedis) Contains(rawKey string) map[string]string {
 	if !strings.HasSuffix(pattern, "*") {
 		pattern = fmt.Sprintf("%s*", pattern)
 	}
-	return c.keys(pattern)
-}
-
-// Search
-func (c *CacheRedis) Search(rawMatch string, filter func(string, string) bool) (values map[string]string) {
-	if rawMatch == "" {
-		rawMatch = "*"
-	}
-	if !strings.Contains(rawMatch, "*") {
-		rawMatch = fmt.Sprintf("*%s*", rawMatch)
-	}
-	var (
-		match = BuildKey(rawMatch)
-		iter  = c.client.Scan(0, match, 0).Iterator()
-	)
-	if err := iter.Err(); err != nil {
-		ERROR(err)
-		return
-	}
-	values = make(map[string]string)
-	for iter.Next() {
-		key := iter.Val()
-		value := c.client.Get(key).Val()
-		if filter(key, value) {
-			values[key] = value
-		}
-	}
-	return
+	return c.scan(0, pattern, int64(limit))
 }
 
 // SetInt
@@ -185,24 +168,6 @@ func (c *CacheRedis) Del(keys ...string) {
 	if err := cmd.Err(); err != nil {
 		ERROR(err)
 	}
-}
-
-// DelLike
-func (c *CacheRedis) DelLike(keys ...string) {
-	if len(keys) == 0 {
-		return
-	}
-	var delKeys []string
-	_ = c.Search("", func(key string, value string) bool {
-		for _, k := range keys {
-			if strings.Contains(key, k) {
-				delKeys = append(delKeys, key)
-				return true
-			}
-		}
-		return false
-	})
-	c.Del(delKeys...)
 }
 
 // Close

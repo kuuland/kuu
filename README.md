@@ -151,7 +151,6 @@ List of preset config:
 - `prefix` - Global routes prefix for `kuu.Mod`'s Routes.
 - `gorm:migrate` - Enable GORM's auto migration for Mod's Models.
 - `audit:callbacks` - Register audit callbacks, default is `true`.
-- `audit:format` - Formatted output audit info.
 - `db` - DB configs.
 - `redis` - Redis configs.
 - `cors` - Attaches the official [CORS](https://github.com/gin-contrib/cors) gin's middleware.

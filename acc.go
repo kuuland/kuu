@@ -135,7 +135,7 @@ func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 		err = ErrSecretNotFound
 		return
 	}
-	if secret.Method == "LOGOUT" {
+	if secret.Method == SignMethodLogout {
 		err = ErrInvalidToken
 		return
 	}

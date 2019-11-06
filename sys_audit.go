@@ -2,9 +2,6 @@ package kuu
 
 import (
 	"github.com/jinzhu/gorm"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 var (
@@ -15,27 +12,6 @@ var (
 	// AuditDeleteCallback
 	AuditDeleteCallback = auditDeleteCallback
 )
-
-type AuditInfo struct {
-	Time           string      `json:",omitempty"`
-	Model          string      `json:",omitempty"`
-	RequestMethod  string      `json:",omitempty"`
-	RequestPath    string      `json:",omitempty"`
-	RequestHeaders http.Header `json:",omitempty"`
-	RequestQuery   url.Values  `json:",omitempty"`
-	UID            uint        `json:",omitempty"`
-	SubDocID       uint        `json:",omitempty"`
-	Token          string      `json:",omitempty"`
-	Op             string      `json:",omitempty"`
-	SQL            interface{} `json:",omitempty"`
-	SQLVars        interface{} `json:",omitempty"`
-}
-
-// Output
-func (info *AuditInfo) Output() {
-	content := Stringify(info, C().DefaultGetBool("audit:format", true))
-	INFO("KUU AUDIT: %s", content)
-}
 
 func registerAuditCallbacks(callback *gorm.Callback) {
 	if callback.Create().Get("kuu:audit_create") == nil {
@@ -49,37 +25,28 @@ func registerAuditCallbacks(callback *gorm.Callback) {
 	}
 }
 
-// NewAuditInfo
-func NewAuditInfo(scope *gorm.Scope, op string) *AuditInfo {
-	info := AuditInfo{
-		Time:    time.Now().Format("2006-01-02 15:04:05"),
-		SQL:     scope.SQL,
-		SQLVars: scope.SQLVars,
-		Op:      op,
+// NewAuditLog
+func NewAuditLog(scope *gorm.Scope, auditType string) {
+	info := NewLog(LogTypeAudit)
+	info.AuditType = auditType
+	info.AuditTag = "system"
+	info.AuditSQL = scope.SQL
+	info.AuditSQLVars = Stringify(scope.SQLVars, false)
+	if meta := Meta(scope.Value); meta != nil {
+		info.AuditModel = meta.Name
 	}
-	if c := GetRoutineRequestContext(); c != nil {
-		info.RequestHeaders = c.Request.Header
-		info.RequestQuery = c.Request.URL.Query()
-		info.RequestMethod = c.Request.Method
-		info.RequestPath = c.Request.URL.Path
-	}
-	if desc := GetRoutinePrivilegesDesc(); desc != nil && desc.SignInfo != nil {
-		info.UID = desc.UID
-		info.SubDocID = desc.SignInfo.SubDocID
-		info.Token = desc.SignInfo.Token
-	}
-	return &info
+	info.Save2Cache()
 }
 
 func auditCreateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		NewAuditInfo(scope, "CREATE").Output()
+		NewAuditLog(scope, AuditTypeCreate)
 	}
 }
 
 func auditUpdateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		NewAuditInfo(scope, "UPDATE").Output()
+		NewAuditLog(scope, AuditTypeUpdate)
 	}
 }
 
@@ -88,10 +55,10 @@ func auditDeleteCallback(scope *gorm.Scope) {
 		var op string
 		_, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		if !scope.Search.Unscoped && hasDeletedAtField {
-			op = "UPDATE"
+			op = AuditTypeUpdate
 		} else {
-			op = "DELETE"
+			op = AuditTypeRemove
 		}
-		NewAuditInfo(scope, op).Output()
+		NewAuditLog(scope, op)
 	}
 }

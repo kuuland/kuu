@@ -105,22 +105,14 @@ func initSys() {
 			PANIC("failed to initialize preset data: %s", err.Error())
 		}
 	}
-	//// 启动日志序列化任务
-	//_, _ = AddTask("@every 15m", func() {
-	//
-	//})
-	//// 启动历史日志清除任务
-	//_, _ = AddTask("@midnight", func() {
-	//	day := 24 * time.Hour
-	//	dest := day * 30 * 6
-	//	time.Now().Add(-dest)
-	//	//
-	//	//time.Now().Sub()
-	//	//DB().Model(&Log{}).Where("created_at < (now() - interval '30 minute')  and order_status = ?", models.OrderStatusPend).
-	//	//	Updates(&models.Order{
-	//	//		OrderStatus: models.OrderStatusCancel,
-	//	//	})
-	//})
+	// 启动日志序列化任务
+	_, _ = AddTask("@every 5m", func() {
+		LogPersistenceTask()
+	})
+	// 启动历史日志清除任务
+	_, _ = AddTask("@midnight", func() {
+		LogCleanupTask()
+	})
 }
 
 func createRootUser(tx *gorm.DB) {
@@ -887,7 +879,7 @@ func Sys() *Mod {
 			&Route{},
 			&Language{},
 			&LanguageMessage{},
-			//&Log{},
+			&Log{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
