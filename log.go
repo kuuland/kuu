@@ -87,8 +87,9 @@ type Log struct {
 	ActOrgCode string `name:"当前组织编码"`
 	ActOrgName string `name:"当前组织名称"`
 	// 认证信息
-	SignMethod string `name:"登录/登出"`
-	SignType   string `name:"令牌类型"`
+	SignMethod  string `name:"登录/登出"`
+	SignType    string `name:"令牌类型"`
+	SignPayload string `name:"登录数据"`
 	// 请求信息
 	RequestUserAgent                  string        `name:"原始User-Agent"`
 	RequestMethod                     string        `name:"请求方法" sql:"index"`
@@ -171,14 +172,23 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 		if kc := GetRoutineRequestContext(); kc != nil {
 			c = kc.Context
 
-			log.UID = kc.SignInfo.UID
-			log.SubDocID = kc.SignInfo.SubDocID
-			log.Token = kc.SignInfo.Token
-			log.SignType = kc.SignInfo.Type
+			signContext := kc.SignInfo
+			if signContext == nil {
+				if v, exists := c.Get(SignContextKey); exists {
+					signContext = v.(*SignContext)
+				}
+			}
 
-			user := GetUserFromCache(kc.SignInfo.UID)
-			log.Username = user.Username
-			log.RealName = user.Name
+			if signContext != nil {
+				user := GetUserFromCache(signContext.UID)
+				log.UID = signContext.UID
+				log.SubDocID = signContext.SubDocID
+				log.Token = signContext.Token
+				log.SignType = signContext.Type
+				log.SignPayload = Stringify(signContext.Payload)
+				log.Username = user.Username
+				log.RealName = user.Name
+			}
 
 			if desc := kc.PrisDesc; desc != nil {
 				log.ActOrgID = desc.ActOrgID

@@ -38,6 +38,7 @@ func LogMiddleware(c *gin.Context) {
 		log.SubDocID = signContext.SubDocID
 		log.Token = signContext.Token
 		log.SignType = signContext.Type
+		log.SignPayload = Stringify(signContext.Payload)
 		log.Username = user.Username
 		log.RealName = user.Name
 	}

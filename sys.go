@@ -848,7 +848,7 @@ func GetUserFromCache(uid uint) (user User) {
 	if info := GetCacheString(cacheKey); info != "" {
 		Parse(info, &user)
 	} else {
-		if err := DB().First(uid, &User{ID: uid}); err != nil {
+		if err := DB().First(&user, &User{ID: uid}); err != nil {
 			SetCacheString(cacheKey, Stringify(user))
 		}
 	}
