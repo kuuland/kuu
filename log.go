@@ -72,34 +72,34 @@ func initEnums() {
 // Log
 type Log struct {
 	gorm.Model   `rest:"*" displayName:"系统日志"`
-	UUID         string `name:"数据ID（UUID）" sql:"index" rest:"*" displayName:"系统日志"`
+	UUID         string `name:"数据ID（UUID）" rest:"*" displayName:"系统日志"`
 	Time         int64  `name:"记录时间（Unix时间戳）"`
 	Type         string `name:"日志类型" enum:"LogType"`
 	ContentHuman string `name:"日志内容（可读描述）"`
-	ContentData  string `name:"日志详情（完整JSON）"`
+	ContentData  string `name:"日志详情（完整JSON）" gorm:"type:text"`
 	// 用户信息
 	UID        uint   `name:"用户ID" sql:"index"`
-	SubDocID   uint   `name:"用户子档案ID" sql:"index"`
-	Username   string `name:"用户账号" sql:"index"`
-	RealName   string `name:"姓名" sql:"index"`
-	Token      string `name:"使用令牌"`
+	SubDocID   uint   `name:"用户子档案ID"`
+	Username   string `name:"用户账号"`
+	RealName   string `name:"姓名"`
+	Token      string `name:"使用令牌" gorm:"type:text"`
 	ActOrgID   uint   `name:"当前组织ID"`
 	ActOrgCode string `name:"当前组织编码"`
 	ActOrgName string `name:"当前组织名称"`
 	// 认证信息
 	SignMethod  string `name:"登录/登出"`
 	SignType    string `name:"令牌类型"`
-	SignPayload string `name:"登录数据"`
+	SignPayload string `name:"登录数据" gorm:"type:text"`
 	// 请求信息
 	RequestUserAgent                  string        `name:"原始User-Agent"`
-	RequestMethod                     string        `name:"请求方法" sql:"index"`
-	RequestPath                       string        `name:"请求接口" sql:"index"`
+	RequestMethod                     string        `name:"请求方法"`
+	RequestPath                       string        `name:"请求接口"`
 	RequestContentLength              int64         `name:"请求体大小"`
 	RequestReferer                    string        `name:"请求Referer"`
 	RequestIsWebsocket                bool          `name:"是否websocket请求"`
 	RequestIsMobile                   bool          `name:"是否移动端请求"`
 	RequestContentType                string        `name:"原始Content-Type"`
-	RequestHeaders                    string        `name:"请求头"`
+	RequestHeaders                    string        `name:"请求头" gorm:"type:text"`
 	RequestQuery                      string        `name:"查询参数"`
 	RequestCost                       time.Duration `name:"调用耗时"`
 	RequestIP                         string        `name:"调用IP"`
@@ -118,11 +118,11 @@ type Log struct {
 	ResponseStatusCode                int           `name:"响应状态码"`
 	ResponseBodySize                  int           `name:"响应体大小"`
 	// 审计信息
-	AuditType    string `name:"操作类型" enum:"AuditType" sql:"index"`
-	AuditTag     string `name:"审计标记（自定义扩展，默认为system）" sql:"index"`
+	AuditType    string `name:"操作类型" enum:"AuditType"`
+	AuditTag     string `name:"审计标记（自定义扩展，默认为system）"`
 	AuditModel   string `name:"模型名称"`
-	AuditSQL     string `name:"SQL"`
-	AuditSQLVars string `name:"SQL参数"`
+	AuditSQL     string `name:"SQL" gorm:"type:text"`
+	AuditSQLVars string `name:"SQL参数" gorm:"type:text"`
 	// 业务日志
 	Level string `name:"日志级别"`
 }
@@ -244,9 +244,14 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 func LogPersistenceTask() {
 	err := WithTransaction(func(tx *gorm.DB) error {
 		data := HasPrefixCache(BuildKey("log"), 5000)
+
+		if len(data) == 0 {
+			return nil
+		}
+
 		var (
 			totalKeys  []string
-			insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES ",
+			insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES ",
 				tx.Dialect().Quote("sys_Log"),
 				tx.Dialect().Quote("uuid"),
 				tx.Dialect().Quote("time"),
@@ -262,6 +267,7 @@ func LogPersistenceTask() {
 				// 认证信息
 				tx.Dialect().Quote("sign_method"),
 				tx.Dialect().Quote("sign_type"),
+				tx.Dialect().Quote("sign_payload"),
 				// 请求信息
 				tx.Dialect().Quote("request_user_agent"),
 				tx.Dialect().Quote("request_method"),
@@ -305,7 +311,7 @@ func LogPersistenceTask() {
 			var item Log
 			if err := Parse(value, &item); err == nil && item.UUID != "" {
 				insertItems = append(insertItems, BatchInsertItem{
-					SQL: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+					SQL: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Vars: []interface{}{
 						item.UUID,
 						item.Time,
@@ -321,6 +327,7 @@ func LogPersistenceTask() {
 						// 认证信息
 						item.SignMethod,
 						item.SignType,
+						item.SignPayload,
 						// 请求信息
 						item.RequestUserAgent,
 						item.RequestMethod,
@@ -329,6 +336,7 @@ func LogPersistenceTask() {
 						item.RequestReferer,
 						item.RequestIsWebsocket,
 						item.RequestIsMobile,
+						item.RequestContentType,
 						item.RequestHeaders,
 						item.RequestQuery,
 						item.RequestCost,

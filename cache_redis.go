@@ -20,7 +20,16 @@ func GetRedisClient() redis.UniversalClient {
 
 // BuildKey
 func BuildKey(keys ...string) string {
-	return fmt.Sprintf("%s_%s", GetAppName(), strings.Join(keys, "_"))
+	var (
+		rawKey    = strings.Join(keys, "_")
+		appPrefix = GetAppName()
+	)
+
+	if strings.HasPrefix(rawKey, appPrefix) {
+		return rawKey
+	}
+
+	return fmt.Sprintf("%s_%s", appPrefix, rawKey)
 }
 
 func (c *CacheRedis) buildKeyAndExp(key string, expiration []time.Duration) (string, time.Duration) {
