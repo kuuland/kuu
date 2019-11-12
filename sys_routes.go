@@ -244,18 +244,21 @@ var MetaRoute = RouteInfo{
 		json := c.Query("json")
 		name := c.Query("name")
 		mod := c.Query("mod")
-		filters := strings.Split(name, ",")
 
 		var list []*Metadata
 		if name != "" {
-			for _, name := range filters {
+			for _, name := range strings.Split(name, ",") {
 				if v, ok := metadataMap[name]; ok && v != nil {
 					list = append(list, v)
 				}
 			}
 		} else if mod != "" {
+			var codes = make(map[string]bool)
+			for _, item := range strings.Split(mod, ",") {
+				codes[item] = true
+			}
 			for _, item := range metadataList {
-				if item.ModCode == mod {
+				if codes[item.ModCode] {
 					list = append(list, item)
 				}
 			}
@@ -270,7 +273,7 @@ var MetaRoute = RouteInfo{
 			c.STD(list)
 		} else {
 			var (
-				hashKey = fmt.Sprintf("meta_%s", filters)
+				hashKey = fmt.Sprintf("meta_%s_%s", name, mod)
 				result  string
 			)
 			if v, ok := valueCacheMap.Load(hashKey); ok {
