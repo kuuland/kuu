@@ -9,7 +9,8 @@ var (
 type EnumDesc struct {
 	ClassCode string
 	ClassName string
-	Values    map[interface{}]string
+	Values    map[interface{}]string `json:"-"`
+	Items     []EnumItem             `json:"Values"`
 }
 
 // EnumItem
@@ -38,8 +39,10 @@ func Enum(classCode string, className ...string) *EnumDesc {
 func (d *EnumDesc) Add(value interface{}, label ...string) *EnumDesc {
 	if len(label) > 0 {
 		d.Values[value] = label[0]
+		d.Items = append(d.Items, EnumItem{Value: value, Label: label[0]})
 	} else {
 		d.Values[value] = "-"
+		d.Items = append(d.Items, EnumItem{Value: value})
 	}
 	return d
 }

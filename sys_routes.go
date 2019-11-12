@@ -286,7 +286,12 @@ var MetaRoute = RouteInfo{
 							buffer.WriteString(fmt.Sprintf("%s {\n", m.Name))
 						}
 						for index, field := range m.Fields {
-							buffer.WriteString(fmt.Sprintf("\t%s(%s) %s", field.Code, field.Name, field.Type))
+							if field.Enum != "" {
+								buffer.WriteString(fmt.Sprintf("\t%s %s ENUM(%s)", field.Code, field.Name, field.Enum))
+							} else {
+								buffer.WriteString(fmt.Sprintf("\t%s %s %s", field.Code, field.Name, field.Type))
+							}
+
 							if index != len(m.Fields)-1 {
 								buffer.WriteString("\n")
 							}
@@ -309,18 +314,30 @@ var EnumRoute = RouteInfo{
 	Method: "GET",
 	HandlerFunc: func(c *Context) {
 		json := c.Query("json")
+		name := c.Query("name")
+
+		var list []*EnumDesc
+		if name != "" {
+			for _, name := range strings.Split(name, ",") {
+				if v, ok := enumMap[name]; ok && v != nil {
+					list = append(list, v)
+				}
+			}
+		} else {
+			list = enumList
+		}
 		if json != "" {
-			c.STD(enumList)
+			c.STD(list)
 		} else {
 			var (
-				hashKey = "enum"
+				hashKey = fmt.Sprintf("enum_%s_%s", name)
 				result  string
 			)
 			if v, ok := valueCacheMap.Load(hashKey); ok {
 				result = v.(string)
 			} else {
 				var buffer bytes.Buffer
-				for _, desc := range enumList {
+				for _, desc := range list {
 					if desc.ClassName != "" {
 						buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.ClassCode, desc.ClassName))
 					} else {
