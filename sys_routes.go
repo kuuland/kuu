@@ -253,13 +253,11 @@ var MetaRoute = RouteInfo{
 				}
 			}
 		} else if mod != "" {
-			var codes = make(map[string]bool)
 			for _, item := range strings.Split(mod, ",") {
-				codes[item] = true
-			}
-			for _, item := range metadataList {
-				if codes[item.ModCode] {
-					list = append(list, item)
+				for _, meta := range metadataList {
+					if meta.ModCode == item {
+						list = append(list, meta)
+					}
 				}
 			}
 		} else {
