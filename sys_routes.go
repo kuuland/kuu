@@ -243,6 +243,7 @@ var MetaRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		json := c.Query("json")
 		name := c.Query("name")
+		mod := c.Query("mod")
 		filters := strings.Split(name, ",")
 
 		var list []*Metadata
@@ -250,6 +251,12 @@ var MetaRoute = RouteInfo{
 			for _, name := range filters {
 				if v, ok := metadataMap[name]; ok && v != nil {
 					list = append(list, v)
+				}
+			}
+		} else if mod != "" {
+			for _, item := range metadataList {
+				if item.ModCode == mod {
+					list = append(list, item)
 				}
 			}
 		} else {
