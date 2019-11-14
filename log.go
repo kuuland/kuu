@@ -91,7 +91,7 @@ type Log struct {
 	SignType    string `name:"令牌类型"`
 	SignPayload string `name:"登录数据" gorm:"type:text"`
 	// 请求信息
-	RequestUserAgent                  string        `name:"原始User-Agent"`
+	RequestUserAgent                  string        `name:"原始User-Agent" gorm:"type:text"`
 	RequestMethod                     string        `name:"请求方法"`
 	RequestPath                       string        `name:"请求接口"`
 	RequestContentLength              int64         `name:"请求体大小"`
