@@ -39,12 +39,12 @@ type PrivilegesDesc struct {
 	FullReadableOrgIDMap     map[uint]Org
 	WritableOrgIDs           []uint
 	WritableOrgIDMap         map[uint]Org
-	LoginableOrgIDs          []uint
-	LoginableOrgIDMap        map[uint]Org
 	PersonalReadableOrgIDs   []uint
 	PersonalReadableOrgIDMap map[uint]Org
 	PersonalWritableOrgIDs   []uint
 	PersonalWritableOrgIDMap map[uint]Org
+	LoginableOrgIDs          []uint
+	LoginableOrgIDMap        map[uint]Org
 	Valid                    bool
 	SignInfo                 *SignContext
 	ActOrgID                 uint
@@ -85,6 +85,25 @@ func (desc *PrivilegesDesc) IsValid() bool {
 // NotRootUser
 func (desc *PrivilegesDesc) NotRootUser() bool {
 	return desc.IsValid() && desc.UID != RootUID()
+}
+
+func (desc *PrivilegesDesc) addEmptyOrgs() {
+	zeroOrg := Org{ID: 0}
+
+	desc.ReadableOrgIDs = append(desc.ReadableOrgIDs, 0)
+	desc.ReadableOrgIDMap[0] = zeroOrg
+
+	desc.FullReadableOrgIDs = append(desc.FullReadableOrgIDs, 0)
+	desc.FullReadableOrgIDMap[0] = zeroOrg
+
+	desc.WritableOrgIDs = append(desc.WritableOrgIDs, 0)
+	desc.WritableOrgIDMap[0] = zeroOrg
+
+	desc.PersonalReadableOrgIDs = append(desc.PersonalReadableOrgIDs, 0)
+	desc.PersonalReadableOrgIDMap[0] = zeroOrg
+
+	desc.PersonalWritableOrgIDs = append(desc.PersonalWritableOrgIDs, 0)
+	desc.PersonalWritableOrgIDMap[0] = zeroOrg
 }
 
 // AuthProcessor
@@ -266,6 +285,12 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 				scope.Quote(dbName),
 			))
 			attrs = append(attrs, orgIDs)
+
+			// 空组织
+			sqls = append(sqls, fmt.Sprintf("(%v.%v IS NULL)",
+				scope.QuotedTableName(),
+				scope.Quote(dbName),
+			))
 		}
 		if len(personalOrgIDMap) > 0 && personalOrgIDMap[desc.ActOrgID].ID != 0 {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {
@@ -295,6 +320,11 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 						scope.Quote(f.DBName),
 					))
 					attrs = append(attrs, orgIDs)
+					// 空组织
+					sqls = append(sqls, fmt.Sprintf("(%v.%v IS NULL)",
+						scope.QuotedTableName(),
+						scope.Quote(f.DBName),
+					))
 				}
 			}
 		}
@@ -494,5 +524,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 	}
 	desc.ReadableOrgIDMap = filteredReadableOrgIDs
 	desc.ReadableOrgIDs = keys(filteredReadableOrgIDs)
+
+	desc.addEmptyOrgs()
+
 	return
 }
