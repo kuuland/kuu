@@ -397,10 +397,9 @@ var CaptchaRoute = RouteInfo{
 
 // ModelDocsRoute
 var ModelDocsRoute = RouteInfo{
-	Name:         "查询默认接口文档",
-	Method:       "GET",
-	IgnorePrefix: true,
-	Path:         "/model/docs",
+	Name:   "查询默认接口文档",
+	Method: "GET",
+	Path:   "/model/docs",
 	HandlerFunc: func(c *Context) {
 		var (
 			hashKeyYAML = "model_docs_yaml"
