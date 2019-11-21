@@ -57,6 +57,10 @@ func (h *LogBizHook) Levels() []logrus.Level {
 
 // Fire
 func (h *LogBizHook) Fire(entry *logrus.Entry) error {
+	if !strings.HasPrefix(entry.Message, "biz") {
+		return nil
+	}
+
 	now := fmt.Sprintf("kuu-%s.log", time.Now().Format("2006-01-02"))
 	if now != DailyFileName || DailyFile == nil {
 		DailyFileName = now
@@ -64,8 +68,9 @@ func (h *LogBizHook) Fire(entry *logrus.Entry) error {
 	}
 	info := NewLog(LogTypeBiz)
 	info.Level = entry.Level.String()
-	info.ContentHuman = entry.Message
-	info.ContentData = entry.Message
+
+	info.ContentHuman = strings.TrimSpace(strings.Replace(entry.Message, "biz", "", 1))
+	info.ContentData = info.ContentHuman
 	info.Save2Cache()
 	return nil
 }

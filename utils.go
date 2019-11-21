@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -136,18 +137,14 @@ func Stringify(v interface{}, format ...bool) (ret string) {
 
 // Parse
 func Parse(v string, r interface{}) error {
-	err := json.Unmarshal([]byte(v), r)
-	if err != nil {
-		ERROR(err)
-	}
-	return err
+	return json.Unmarshal([]byte(v), r)
 }
 
 // EnsureDir
 func EnsureDir(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			ERROR(err)
+			log.Println(err)
 		}
 	}
 }
@@ -155,7 +152,7 @@ func EnsureDir(dir string) {
 // ParseID
 func ParseID(id string) uint {
 	if v, err := strconv.ParseUint(id, 10, 0); err != nil {
-		ERROR(err)
+		log.Println(err)
 	} else {
 		return uint(v)
 	}
@@ -169,7 +166,7 @@ func Copy(src interface{}, dest interface{}) (err error) {
 		err = json.Unmarshal(data, dest)
 	}
 	if err != nil {
-		ERROR(err)
+		log.Println(err)
 	}
 	return
 }
