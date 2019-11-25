@@ -173,18 +173,6 @@ func (e *Engine) RunTLS(addr, certFile, keyFile string) {
 	shutdown(srv)
 }
 
-// RESTful
-func (e *Engine) RESTful(values ...interface{}) {
-	if len(values) == 0 {
-		return
-	}
-	for _, v := range values {
-		if v != nil {
-			RESTful(e, v)
-		}
-	}
-}
-
 // ConvertKuuHandlers
 var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) {
 	handlers = make(gin.HandlersChain, len(chain))
