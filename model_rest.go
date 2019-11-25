@@ -27,7 +27,7 @@ func (r *RestDesc) IsValid() bool {
 }
 
 // RESTful
-func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
+func RESTful(r *Engine, routePrefix string, value interface{}) (desc *RestDesc) {
 	desc = new(RestDesc)
 	// Scope value can't be nil
 	if value == nil {
@@ -44,7 +44,6 @@ func RESTful(r *Engine, value interface{}) (desc *RestDesc) {
 	}
 
 	structName := reflectType.Name()
-	routePrefix := C().GetString("prefix")
 	routePath := fmt.Sprintf("%s/%s", routePrefix, strings.ToLower(structName))
 
 	// Get all fields

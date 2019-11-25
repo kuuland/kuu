@@ -51,6 +51,7 @@ func (e *Engine) Import(mods ...*Mod) {
 				PANIC("模块编码不能为空")
 			}
 			mod.Code = strings.ToLower(mod.Code)
+			routePrefix := path.Join(C().GetString("prefix"), mod.Prefix)
 			for _, route := range mod.Routes {
 				if route.Path == "" || route.HandlerFunc == nil {
 					PANIC("Route path and handler can't be nil")
@@ -65,7 +66,7 @@ func (e *Engine) Import(mods ...*Mod) {
 				if route.IgnorePrefix {
 					routePath = path.Join(route.Path)
 				} else {
-					routePath = path.Join(C().GetString("prefix"), mod.Prefix, route.Path)
+					routePath = path.Join(routePrefix, route.Path)
 				}
 				if route.Method == "*" {
 					e.Any(routePath, route.HandlerFunc)
@@ -74,7 +75,7 @@ func (e *Engine) Import(mods ...*Mod) {
 				}
 			}
 			for _, model := range mod.Models {
-				desc := RESTful(e, model)
+				desc := RESTful(e, routePrefix, model)
 				if meta := parseMetadata(model); meta != nil {
 					meta.RestDesc = desc
 					meta.ModCode = mod.Code
