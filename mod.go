@@ -28,7 +28,8 @@ func init() {
 // Mod
 type Mod struct {
 	Code        string
-	Middlewares gin.HandlersChain
+	Prefix      string
+	Middleware  gin.HandlersChain
 	Routes      RoutesInfo
 	Models      []interface{}
 	AfterImport func()
@@ -39,7 +40,7 @@ func (e *Engine) Import(mods ...*Mod) {
 	if err := CatchError(func() {
 		migrate := C().GetBool("gorm:migrate")
 		for _, mod := range mods {
-			for _, middleware := range mod.Middlewares {
+			for _, middleware := range mod.Middleware {
 				if middleware != nil {
 					e.Engine.Use(middleware)
 				}
@@ -64,7 +65,7 @@ func (e *Engine) Import(mods ...*Mod) {
 				if route.IgnorePrefix {
 					routePath = path.Join(route.Path)
 				} else {
-					routePath = path.Join(C().GetString("prefix"), route.Path)
+					routePath = path.Join(C().GetString("prefix"), mod.Prefix, route.Path)
 				}
 				if route.Method == "*" {
 					e.Any(routePath, route.HandlerFunc)

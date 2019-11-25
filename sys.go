@@ -858,8 +858,8 @@ func GetUserFromCache(uid uint) (user User) {
 // Sys
 func Sys() *Mod {
 	return &Mod{
-		Code:        "sys",
-		Middlewares: gin.HandlersChain{
+		Code:       "sys",
+		Middleware: gin.HandlersChain{
 			//LogMiddleware,
 		},
 		Models: []interface{}{
