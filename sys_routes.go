@@ -555,7 +555,7 @@ var ModelDocsRoute = RouteInfo{
 					},
 				}
 				for _, m := range validMeta {
-					key := strings.ToLower(fmt.Sprintf("/%s", m.Name))
+					key := strings.ToLower(path.Join(GetModPrefix(m.ModCode), fmt.Sprintf("/%s", m.Name)))
 					items := make(DocPathItems)
 					displayName := m.DisplayName
 					if displayName == "" {

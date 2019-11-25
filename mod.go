@@ -10,7 +10,10 @@ import (
 	"github.com/jinzhu/inflection"
 )
 
-var tableNames = make(map[string]string)
+var (
+	tableNames = make(map[string]string)
+	ModMap     = make(map[string]*Mod)
+)
 
 func init() {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
@@ -93,8 +96,18 @@ func (e *Engine) Import(mods ...*Mod) {
 			if mod.AfterImport != nil {
 				mod.AfterImport()
 			}
+			ModMap[mod.Code] = mod
 		}
 	}); err != nil {
 		panic(err)
 	}
+}
+
+// GetModPrefix
+func GetModPrefix(modCode string) string {
+	mod, ok := ModMap[modCode]
+	if ok {
+		return mod.Prefix
+	}
+	return ""
 }
