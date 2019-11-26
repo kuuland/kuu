@@ -4,106 +4,113 @@ import (
 	"errors"
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"time"
+	uuid "github.com/satori/go.uuid"
+	"strconv"
 )
 
-// ImportCallbackArgs
-type ImportCallbackArgs struct {
-	Channel        string
-	FirstSheetRows [][]string
-	File           *excelize.File
-	Context        *Context
-}
+var importCallback = make(map[string]*ImportCallbackProcessor)
 
 // ImportCallbackResult
 type ImportCallbackResult struct {
-	ImportData   [][]string
-	FeedbackData [][]string
-	Message      string
-	Error        error
-	Extra        map[string]interface{}
+	Feedback [][]string
+	Message  string
+	Error    error
+	Extra    map[string]interface{}
 }
 
-// ImportLog
-type ImportLog struct {
-	Model    `rest:"*" displayName:"系统导入日志"`
+const (
+	ImportStatusImporting = "importing"
+	ImportStatusSuccess   = "success"
+	ImportStatusFailed    = "failed"
+)
+
+func init() {
+	Enum("ImportStatus", "导入状态").
+		Add(ImportStatusImporting, "importing").
+		Add(ImportStatusSuccess, "success").
+		Add(ImportStatusFailed, "failed")
+}
+
+// ImportRecord
+type ImportRecord struct {
+	Model    `rest:"*" displayName:"导入记录"`
+	ImportSn string `name:"批次编号" sql:"index"`
 	Channel  string `name:"导入渠道"`
 	Data     string `name:"导入数据（[][]string）" gorm:"type:text"`
 	Feedback string `name:"反馈记录（[][]string）" gorm:"type:text"`
+	Status   string `name:"导入状态" enum:"ImportStatus"`
 	Message  string `name:"导入结果"`
 	Error    string `name:"错误详情"`
 	Extra    string `name:"额外数据（JSON）" gorm:"type:text"`
 }
 
-// ImportCallbackProcessor
-type ImportCallbackProcessor func(*ImportCallbackArgs) *ImportCallbackResult
+// BeforeCreate
+func (imp *ImportRecord) BeforeCreate() {
+	imp.ImportSn = uuid.NewV4().String()
+	imp.Status = ImportStatusImporting
+}
 
-// ImportCallbacks
-var ImportCallbacks = make(map[string][]*ImportCallbackProcessor)
+// ImportCallbackProcessor
+type ImportCallbackProcessor func(rows [][]string) *ImportCallbackResult
 
 // RegisterImportCallback 注册导入回调
 func RegisterImportCallback(channel string, processor ImportCallbackProcessor) {
-	ImportCallbacks[channel] = append(ImportCallbacks[channel], &processor)
+	importCallback[channel] = &processor
 }
 
-func callImportCallback(args *ImportCallbackArgs) {
-	if args == nil {
+// ReimportRecord
+func ReimportRecord(importSn string) error {
+	var record ImportRecord
+	if err := DB().Where(&ImportRecord{ImportSn: importSn}).First(&record).Error; err != nil {
+		return err
+	}
+	db := DB().Model(&ImportRecord{}).Where(&ImportRecord{Model: Model{ID: record.ID}})
+	if err := db.Update(&ImportRecord{Status: ImportStatusImporting}).Error; err != nil {
+		return err
+	}
+	go CallImportCallback(&record)
+	return nil
+}
+
+// CallImportCallback
+func CallImportCallback(info *ImportRecord) {
+	if info == nil {
 		return
 	}
 
-	callbacks := ImportCallbacks[args.Channel]
-	for _, fn := range callbacks {
-		result := (*fn)(args)
-		if result == nil {
-			continue
-		}
-		info := &ImportLog{
-			Channel: args.Channel,
-			Message: result.Message,
-		}
-		if result.Error != nil {
-			if info.Message == "" {
-				info.Message = args.Context.L("import_failed", "Import failed").Render()
-			}
-			info.Error = result.Error.Error()
-		} else {
-			if info.Message == "" {
-				info.Message = args.Context.L("import_success", "Imported successfully").Render()
-			}
-		}
-		if len(result.ImportData) > 0 {
-			info.Data = Stringify(result.ImportData)
-		} else if len(args.FirstSheetRows) > 0 {
-			info.Data = Stringify(args.FirstSheetRows)
-		}
-		if len(result.FeedbackData) > 0 {
-			info.Feedback = Stringify(result.FeedbackData)
-		}
-		if len(result.Extra) > 0 {
-			info.Extra = Stringify(result.Extra)
-		}
-		info.Model.CreatedAt = time.Now()
-		info.Model.UpdatedAt = time.Now()
-		if args.Context != nil {
-			signInfo := args.Context.SignInfo
-			prisDesc := args.Context.PrisDesc
-			if signInfo != nil {
-				if info.Model.CreatedByID == 0 {
-					info.Model.CreatedByID = signInfo.UID
-				}
-				if info.Model.UpdatedByID == 0 {
-					info.Model.UpdatedByID = signInfo.UID
-				}
-			}
-			if prisDesc != nil {
-				if info.Model.OrgID == 0 {
-					info.Model.OrgID = prisDesc.ActOrgID
-				}
-			}
-		}
-		if err := DB().Create(&info).Error; err != nil {
-			ERROR(err)
-		}
+	var rows [][]string
+	if err := Parse(info.Data, &rows); err != nil {
+		ERROR(err)
+		return
+	}
+
+	callback := importCallback[info.Channel]
+	if callback == nil {
+		ERROR("no import callback registered for this channel: %s", info.Channel)
+		return
+	}
+
+	result := (*callback)(rows)
+	if result == nil {
+		ERROR("import callback result is nil: %s", info.ImportSn)
+		return
+	}
+	db := DB().Model(&ImportRecord{}).Where(&ImportRecord{Model: Model{ID: info.ID}})
+	doc := ImportRecord{Message: result.Message}
+	if result.Error != nil {
+		doc.Error = result.Error.Error()
+		doc.Status = ImportStatusFailed
+	} else {
+		doc.Status = ImportStatusSuccess
+	}
+	if len(result.Feedback) > 0 {
+		doc.Feedback = Stringify(result.Feedback)
+	}
+	if len(result.Extra) > 0 {
+		doc.Extra = Stringify(result.Extra)
+	}
+	if err := db.Update(&doc).Error; err != nil {
+		ERROR(err)
 	}
 }
 
@@ -125,8 +132,8 @@ var ImportRoute = RouteInfo{
 			c.STDErr(failedMessage, errors.New("no 'channel' key in form-data"))
 			return
 		}
-		if len(ImportCallbacks[channel]) == 0 {
-			c.STDErr(failedMessage, fmt.Errorf("no callback registered for this channel: %s", channel))
+		if importCallback[channel] == nil {
+			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
 			return
 		}
 		src, err := file.Open()
@@ -141,21 +148,68 @@ var ImportRoute = RouteInfo{
 			c.STDErr(failedMessage, err)
 			return
 		}
-		activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
-		if activeSheetName == "" {
-			activeSheetName = f.GetSheetName(1)
+		// 选择工作表
+		var sheetName string
+		if v := c.PostForm("sheet_name"); v != "" {
+			sheetName = v
 		}
-		rows, err := f.GetRows(activeSheetName)
+		if v := c.PostForm("sheet_idx"); sheetName == "" && v != "" {
+			idx, err := strconv.Atoi(v)
+			if err == nil {
+				sheetName = f.GetSheetName(idx)
+			}
+		}
+		if sheetName == "" {
+			sheetName = f.GetSheetName(f.GetActiveSheetIndex())
+		}
+		if sheetName == "" {
+			sheetName = f.GetSheetName(1)
+		}
+		// 读取当前工作表所有行
+		rows, err := f.GetRows(sheetName)
 		if err != nil {
 			c.STDErr(failedMessage, err)
 			return
 		}
-		go callImportCallback(&ImportCallbackArgs{
-			Channel:        channel,
-			FirstSheetRows: rows,
-			File:           f,
-			Context:        c,
-		})
+		if len(rows) == 0 {
+			c.STDErr(c.L("import_empty", "Import data is empty"))
+			return
+		}
+		// 创建导入记录
+		record := ImportRecord{
+			Channel: channel,
+			Data:    Stringify(rows),
+		}
+		if err := c.DB().Create(&record).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		// 触发导入回调
+		go CallImportCallback(&record)
+		// 响应请求
+		c.STD("ok")
+	},
+}
+
+// ReimportRoute
+var ReimportRoute = RouteInfo{
+	Name:   "重新导入路由",
+	Method: "GET",
+	Path:   "/reimport",
+	HandlerFunc: func(c *Context) {
+		var (
+			failedMessage = c.L("reimport_failed", "Reimport failed")
+			importSn      = c.Query("import_sn")
+		)
+		if importSn == "" {
+			c.STDErr(failedMessage, errors.New("'import_sn' is required"))
+			return
+		}
+
+		if err := ReimportRecord(importSn); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
 		c.STD("ok")
 	},
 }

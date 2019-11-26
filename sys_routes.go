@@ -330,7 +330,7 @@ var EnumRoute = RouteInfo{
 			c.STD(list)
 		} else {
 			var (
-				hashKey = fmt.Sprintf("enum_%s_%s", name)
+				hashKey = fmt.Sprintf("enum_%s", name)
 				result  string
 			)
 			if v, ok := valueCacheMap.Load(hashKey); ok {

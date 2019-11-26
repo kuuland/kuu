@@ -213,6 +213,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("user_menus_failed").Add("User menus query failed", "用户菜单查询失败", "用戶菜單查詢失敗")
 	register.SetKey("upload_failed").Add("Upload file failed", "文件上传失败", "文件上傳失敗")
 	register.SetKey("import_failed").Add("Import failed", "导入失败", "導入失敗")
+	register.SetKey("reimport_failed").Add("Reimport failed", "重新导入失败", "重新導入失敗")
+	register.SetKey("import_empty").Add("Import data is empty", "导入数据为空", "導入數據為空")
 	register.SetKey("import_success").Add("Imported successfully", "导入成功", "導入成功")
 	register.SetKey("auth_failed").Add("Authentication failed", "鉴权失败", "鑒權失敗")
 	register.SetKey("model_docs_failed").Add("Model document query failed", "默认接口文档查询失败", "默認接口文檔查詢失敗")
@@ -860,14 +862,14 @@ func GetUserFromCache(uid uint) (user User) {
 // Sys
 func Sys() *Mod {
 	return &Mod{
-		Code:       "sys",
+		Code: "sys",
 		Middleware: gin.HandlersChain{
-			//LogMiddleware,
+			LogMiddleware,
 		},
 		Models: []interface{}{
 			&ExcelTemplate{},
 			&ExcelTemplateHeader{},
-			&ImportLog{},
+			&ImportRecord{},
 			&User{},
 			&Org{},
 			&RoleAssign{},
@@ -891,6 +893,7 @@ func Sys() *Mod {
 			UserMenusRoute,
 			UploadRoute,
 			ImportRoute,
+			ReimportRoute,
 			AuthRoute,
 			MetaRoute,
 			EnumRoute,
