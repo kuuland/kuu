@@ -212,6 +212,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("role_assigns_failed").Add("User roles query failed", "用户角色查询失败", "用戶角色查詢失敗")
 	register.SetKey("user_menus_failed").Add("User menus query failed", "用户菜单查询失败", "用戶菜單查詢失敗")
 	register.SetKey("upload_failed").Add("Upload file failed", "文件上传失败", "文件上傳失敗")
+	register.SetKey("import_failed").Add("Import failed", "导入失败", "導入失敗")
+	register.SetKey("import_success").Add("Imported successfully", "导入成功", "導入成功")
 	register.SetKey("auth_failed").Add("Authentication failed", "鉴权失败", "鑒權失敗")
 	register.SetKey("model_docs_failed").Add("Model document query failed", "默认接口文档查询失败", "默認接口文檔查詢失敗")
 	register.SetKey("lang_switch_failed").Add("Language switching failed", "语言切换失败", "語言切換失敗")
@@ -865,6 +867,7 @@ func Sys() *Mod {
 		Models: []interface{}{
 			&ExcelTemplate{},
 			&ExcelTemplateHeader{},
+			&ImportLog{},
 			&User{},
 			&Org{},
 			&RoleAssign{},
@@ -887,6 +890,7 @@ func Sys() *Mod {
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,
+			ImportRoute,
 			AuthRoute,
 			MetaRoute,
 			EnumRoute,
