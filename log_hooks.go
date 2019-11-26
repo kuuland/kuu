@@ -57,7 +57,7 @@ func (h *LogBizHook) Levels() []logrus.Level {
 
 // Fire
 func (h *LogBizHook) Fire(entry *logrus.Entry) error {
-	if !strings.HasPrefix(entry.Message, "biz") {
+	if !strings.HasPrefix(entry.Message, "biz:") {
 		return nil
 	}
 
@@ -69,7 +69,7 @@ func (h *LogBizHook) Fire(entry *logrus.Entry) error {
 	info := NewLog(LogTypeBiz)
 	info.Level = entry.Level.String()
 
-	info.ContentHuman = strings.TrimSpace(strings.Replace(entry.Message, "biz", "", 1))
+	info.ContentHuman = strings.TrimSpace(strings.Replace(entry.Message, "biz:", "", 1))
 	info.ContentData = info.ContentHuman
 	info.Save2Cache()
 	return nil
