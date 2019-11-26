@@ -5,18 +5,13 @@ import (
 	"net/http"
 )
 
-// AuthHandler
-var AuthHandler = func(c *gin.Context) bool {
-	return true
-}
-
 // AuthMiddleware
 func AuthMiddleware(c *gin.Context) {
 	if c.Request.Method == "OPTIONS" {
 		c.AbortWithStatus(http.StatusNoContent)
 		return
 	}
-	if InWhitelist(c) == true || AuthHandler(c) {
+	if InWhitelist(c) == true {
 		c.Next()
 	} else {
 		// 从请求参数中解码令牌
