@@ -240,13 +240,15 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("menu_role_doc").Add("Role Management", "角色管理", "角色管理")
 	register.SetKey("menu_sys_settings").Add("System Settings", "系统设置", "系統設置")
 	register.SetKey("menu_menu_doc").Add("Menu Management", "菜单管理", "菜單管理")
+	register.SetKey("menu_import_doc").Add("Import Management", "导入记录", "導入記錄")
+	register.SetKey("menu_authority_doc").Add("Authority Management", "权限管理", "權限管理")
 	register.SetKey("menu_param_doc").Add("Parameter Management", "参数管理", "參數管理")
 	register.SetKey("menu_audit_logs").Add("Audit Logs", "系统审计", "系統審計")
 	register.SetKey("menu_sys_monitor").Add("System Monitor", "系统监控", "系統監控")
 	register.SetKey("menu_file_doc").Add("File Management", "文件管理", "文件管理")
 	register.SetKey("menu_i18n").Add("Internationalization", "国际化", "國際化")
 	register.SetKey("menu_message").Add("Message Center", "消息中心", "消息中心")
-	register.SetKey("menu_metadata").Add("Metadata", "元数据", "元數據")
+	register.SetKey("menu_metadata").Add("Metadata Management", "元数据", "元數據")
 	// Fano
 	register.SetKey("fano_table_actions_add").Add("Add", "新增", "新增")
 	register.SetKey("fano_table_actions_del").Add("Del", "删除", "刪除")
@@ -521,7 +523,7 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       orgMenu.ID,
-		Name:      "User",
+		Name:      "User Management",
 		LocaleKey: "menu_user_doc",
 		Icon:      "user",
 		URI:       null.NewString("/sys/user", true),
@@ -534,7 +536,7 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       orgMenu.ID,
-		Name:      "Organization",
+		Name:      "Organization Management",
 		LocaleKey: "menu_org_doc",
 		Icon:      "cluster",
 		URI:       null.NewString("/sys/org", true),
@@ -559,7 +561,7 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       permissionMenu.ID,
-		Name:      "Role",
+		Name:      "Role Management",
 		LocaleKey: "menu_role_doc",
 		Icon:      "team",
 		URI:       null.NewString("/sys/role", true),
@@ -584,24 +586,50 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       settingMenu.ID,
-		Name:      "Menu",
+		Name:      "Menu Management",
 		LocaleKey: "menu_menu_doc",
 		Icon:      "bars",
 		URI:       null.NewString("/sys/menu", true),
 		Sort:      100,
 	}
 	tx.Create(&menuMenu)
+	importMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
+		Pid:       settingMenu.ID,
+		Name:      "Import Management",
+		LocaleKey: "menu_import_doc",
+		Icon:      "import",
+		URI:       null.NewString("/sys/import", true),
+		Sort:      200,
+	}
+	tx.Create(&importMenu)
+	authorityMenu := Menu{
+		ModelExOrg: ModelExOrg{
+			CreatedByID: RootUID(),
+			UpdatedByID: RootUID(),
+		},
+		Pid:       settingMenu.ID,
+		Name:      "Authority Management",
+		LocaleKey: "menu_authority_doc",
+		Icon:      "key",
+		URI:       null.NewString("/sys/permission", true),
+		Sort:      300,
+	}
+	tx.Create(&authorityMenu)
 	paramMenu := Menu{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
 		},
 		Pid:       settingMenu.ID,
-		Name:      "Parameter",
+		Name:      "Parameter Management",
 		LocaleKey: "menu_param_doc",
 		Icon:      "profile",
 		URI:       null.NewString("/sys/param", true),
-		Sort:      200,
+		Sort:      400,
 	}
 	tx.Create(&paramMenu)
 	monitorMenu := Menu{
@@ -614,7 +642,7 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_sys_monitor",
 		Icon:      "monitor",
 		URI:       null.NewString("/sys/statics", true),
-		Sort:      300,
+		Sort:      500,
 	}
 	tx.Create(&monitorMenu)
 	auditMenu := Menu{
@@ -627,7 +655,7 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_audit_logs",
 		Icon:      "book",
 		URI:       null.NewString("/sys/audit", true),
-		Sort:      400,
+		Sort:      600,
 	}
 	tx.Create(&auditMenu)
 	fileMenu := Menu{
@@ -636,11 +664,11 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       settingMenu.ID,
-		Name:      "File",
+		Name:      "File Management",
 		LocaleKey: "menu_file_doc",
 		Icon:      "file",
 		URI:       null.NewString("/sys/file", true),
-		Sort:      500,
+		Sort:      700,
 	}
 	tx.Create(&fileMenu)
 	i18nMenu := Menu{
@@ -653,7 +681,7 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_i18n",
 		Icon:      "global",
 		URI:       null.NewString("/sys/i18n", true),
-		Sort:      600,
+		Sort:      800,
 	}
 	tx.Create(&i18nMenu)
 	messageMenu := Menu{
@@ -662,11 +690,11 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       settingMenu.ID,
-		Name:      "Message",
+		Name:      "Message Center",
 		LocaleKey: "menu_message",
 		Icon:      "message",
 		URI:       null.NewString("/sys/message", true),
-		Sort:      700,
+		Sort:      900,
 	}
 	tx.Create(&messageMenu)
 	metadataMenu := Menu{
@@ -675,11 +703,11 @@ func createPresetMenus(tx *gorm.DB) {
 			UpdatedByID: RootUID(),
 		},
 		Pid:       settingMenu.ID,
-		Name:      "Metadata",
+		Name:      "Metadata Management",
 		LocaleKey: "menu_metadata",
 		Icon:      "appstore",
 		URI:       null.NewString("/sys/metadata", true),
-		Sort:      700,
+		Sort:      1000,
 	}
 	tx.Create(&metadataMenu)
 }
