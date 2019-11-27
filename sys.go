@@ -380,9 +380,16 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_menu_code").Add("Permission Code", "权限编码", "權限編碼")
 	register.SetKey("kuu_menu_parent").Add("Parent Menu", "父级菜单", "父級菜單")
 	register.SetKey("kuu_menu_localekey").Add("Locale Key", "国际化键", "國際化鍵")
-	register.SetKey("kuu_menu_localekey").Add("Locale Key", "国际化键", "國際化鍵")
 	register.SetKey("kuu_menu_icon").Add("Icon", "图标", "圖標")
 	register.SetKey("kuu_menu_add_submenu").Add("Add Submenu", "添加子级", "添加子級")
+	// Kuu Permission
+	register.SetKey("kuu_permission_name").Add("Name", "权限名称", "權限名稱")
+	register.SetKey("kuu_permission_name_required").Add("Please enter a permission name", "请输入权限名称", "請輸入權限名稱")
+	register.SetKey("kuu_permission_sort").Add("Sort", "权限排序", "權限排序")
+	register.SetKey("kuu_permission_disable").Add("Disable", "是否禁用", "是否禁用")
+	register.SetKey("kuu_permission_code").Add("Permission Code", "权限编码", "權限編碼")
+	register.SetKey("kuu_permission_parent").Add("Parent", "父级权限", "父級權限")
+	register.SetKey("kuu_permission_add_sub").Add("Add Sub", "添加子级", "添加子級")
 	// Kuu Param
 	register.SetKey("kuu_param_name").Add("Name", "参数名称", "參數名稱")
 	register.SetKey("kuu_param_code").Add("Code", "参数编码", "參數編碼")
