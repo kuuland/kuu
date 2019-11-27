@@ -454,6 +454,22 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_file_createdat").Add("Created At", "上传时间", "上傳時間")
 	register.SetKey("kuu_file_actions_upload").Add("Upload", "上传文件", "上傳文件")
 	register.SetKey("kuu_common_org").Add("Organization", "所属组织", "所屬組織")
+	// Kuu Import
+	register.SetKey("kuu_import_status_importing").Add("Importing", "导入中", "導入中")
+	register.SetKey("kuu_import_status_success").Add("Success", "导入成功", "導入成功")
+	register.SetKey("kuu_import_status_failed").Add("Failed", "导入失败", "導入失敗")
+	register.SetKey("kuu_import_importsn").Add("Serial No", "序列号", "序列號")
+	register.SetKey("kuu_import_channel").Add("Channel", "导入渠道", "導入渠道")
+	register.SetKey("kuu_import_status").Add("Status", "导入状态", "導入狀態")
+	register.SetKey("kuu_import_message").Add("Message", "导入提示", "導入提示")
+	register.SetKey("kuu_import_createdat").Add("Import Time", "导入时间", "導入時間")
+	register.SetKey("kuu_import_data").Add("View Imported", "导入预览", "導入預覽")
+	register.SetKey("kuu_import_feedback").Add("View Feedback", "反馈预览", "反饋預覽")
+	register.SetKey("kuu_import_reimport").Add("Reimport", "重新导入", "重新導入")
+	register.SetKey("kuu_import_download").Add("Download", "下载", "下載")
+	register.SetKey("import_failed").Add("Import failed", "导入失败", "導入失敗")
+	register.SetKey("import_empty").Add("Import data is empty", "导入记录为空", "導入記錄為空")
+	register.SetKey("reimport_failed").Add("Reimport failed", "重新导入失败", "重新導入失敗")
 	_ = register.Exec(true)
 }
 
