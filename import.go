@@ -26,9 +26,9 @@ const (
 
 func init() {
 	Enum("ImportStatus", "导入状态").
-		Add(ImportStatusImporting, "importing").
-		Add(ImportStatusSuccess, "success").
-		Add(ImportStatusFailed, "failed")
+		Add(ImportStatusImporting, "Importing").
+		Add(ImportStatusSuccess, "Success").
+		Add(ImportStatusFailed, "Failed")
 }
 
 // ImportRecord
@@ -63,6 +63,15 @@ func ReimportRecord(importSn string) error {
 	var record ImportRecord
 	if err := DB().Where(&ImportRecord{ImportSn: importSn}).First(&record).Error; err != nil {
 		return err
+	}
+	if record.Status == ImportStatusImporting {
+		return fmt.Errorf("record are being imported: %s", importSn)
+	}
+	if importCallback[record.Channel] == nil {
+		return fmt.Errorf("no import callback registered for this channel: %s", record.Channel)
+	}
+	if record.Status == ImportStatusImporting {
+		return fmt.Errorf("record are being imported: %s", importSn)
 	}
 	db := DB().Model(&ImportRecord{}).Where(&ImportRecord{Model: Model{ID: record.ID}})
 	if err := db.Update(&ImportRecord{Status: ImportStatusImporting}).Error; err != nil {
