@@ -466,7 +466,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Name:      "Default",
 		LocaleKey: "menu_default",
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&rootMenu)
 	sysMenu := Menu{
@@ -479,7 +478,6 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_sys_mgr",
 		Icon:      "setting",
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&sysMenu)
 	orgMenu := Menu{
@@ -492,7 +490,6 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_org_mgr",
 		Icon:      "apartment",
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&orgMenu)
 	userMenu := Menu{
@@ -506,7 +503,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "user",
 		URI:       null.NewString("/sys/user", true),
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&userMenu)
 	sysOrgMenu := Menu{
@@ -520,7 +516,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "cluster",
 		URI:       null.NewString("/sys/org", true),
 		Sort:      200,
-		Type:      "menu",
 	}
 	tx.Create(&sysOrgMenu)
 	permissionMenu := Menu{
@@ -533,7 +528,6 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_auth_mgr",
 		Icon:      "dropbox",
 		Sort:      200,
-		Type:      "menu",
 	}
 	tx.Create(&permissionMenu)
 	roleMenu := Menu{
@@ -547,7 +541,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "team",
 		URI:       null.NewString("/sys/role", true),
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&roleMenu)
 	settingMenu := Menu{
@@ -560,7 +553,6 @@ func createPresetMenus(tx *gorm.DB) {
 		LocaleKey: "menu_sys_settings",
 		Icon:      "tool",
 		Sort:      300,
-		Type:      "menu",
 	}
 	tx.Create(&settingMenu)
 	menuMenu := Menu{
@@ -574,7 +566,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "bars",
 		URI:       null.NewString("/sys/menu", true),
 		Sort:      100,
-		Type:      "menu",
 	}
 	tx.Create(&menuMenu)
 	paramMenu := Menu{
@@ -588,7 +579,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "profile",
 		URI:       null.NewString("/sys/param", true),
 		Sort:      200,
-		Type:      "menu",
 	}
 	tx.Create(&paramMenu)
 	monitorMenu := Menu{
@@ -602,7 +592,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "monitor",
 		URI:       null.NewString("/sys/statics", true),
 		Sort:      300,
-		Type:      "menu",
 	}
 	tx.Create(&monitorMenu)
 	auditMenu := Menu{
@@ -616,7 +605,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "book",
 		URI:       null.NewString("/sys/audit", true),
 		Sort:      400,
-		Type:      "menu",
 	}
 	tx.Create(&auditMenu)
 	fileMenu := Menu{
@@ -630,7 +618,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "file",
 		URI:       null.NewString("/sys/file", true),
 		Sort:      500,
-		Type:      "menu",
 	}
 	tx.Create(&fileMenu)
 	i18nMenu := Menu{
@@ -644,7 +631,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "global",
 		URI:       null.NewString("/sys/i18n", true),
 		Sort:      600,
-		Type:      "menu",
 	}
 	tx.Create(&i18nMenu)
 	messageMenu := Menu{
@@ -658,7 +644,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "message",
 		URI:       null.NewString("/sys/message", true),
 		Sort:      700,
-		Type:      "menu",
 	}
 	tx.Create(&messageMenu)
 	metadataMenu := Menu{
@@ -672,7 +657,6 @@ func createPresetMenus(tx *gorm.DB) {
 		Icon:      "appstore",
 		URI:       null.NewString("/sys/metadata", true),
 		Sort:      700,
-		Type:      "menu",
 	}
 	tx.Create(&metadataMenu)
 }

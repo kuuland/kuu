@@ -283,8 +283,7 @@ type Menu struct {
 	IsDefaultOpen null.Bool   `name:"是否默认打开"`
 	Closeable     null.Bool   `name:"是否可关闭"`
 	LocaleKey     string      `name:"国际化语言键"`
-	IsVirtual     null.Bool
-	Type          string
+	IsVirtual     null.Bool   `name:"是否虚菜单"`
 }
 
 func updatePresetRolePrivileges(tx *gorm.DB, deleteBefore bool, ignoreAuth bool) {
