@@ -31,8 +31,8 @@ func init() {
 type PrivilegesDesc struct {
 	UID                      uint
 	OrgID                    uint
-	Codes                    []string
-	Permissions              map[string]int64
+	Permissions              []string
+	PermissionMap            map[string]int64
 	ReadableOrgIDs           []uint
 	ReadableOrgIDMap         map[uint]Org
 	FullReadableOrgIDs       []uint
@@ -254,7 +254,7 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 						scope.Quote(codeField.DBName),
 						scope.QuotedTableName(),
 						scope.Quote(createdByIDField.DBName),
-					), desc.Codes, desc.UID)
+					), desc.Permissions, desc.UID)
 				}
 			}
 			return
@@ -365,11 +365,11 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		return
 	}
 	desc = &PrivilegesDesc{
-		UID:         sign.UID,
-		OrgID:       user.OrgID,
-		Permissions: make(map[string]int64),
-		Valid:       true,
-		SignInfo:    sign,
+		UID:           sign.UID,
+		OrgID:         user.OrgID,
+		PermissionMap: make(map[string]int64),
+		Valid:         true,
+		SignInfo:      sign,
 	}
 	type orange struct {
 		readable string
@@ -395,7 +395,7 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		roleIDs = append(roleIDs, strconv.Itoa(int(assign.Role.ID)))
 		for _, op := range assign.Role.OperationPrivileges {
 			if op.MenuCode != "" {
-				desc.Permissions[op.MenuCode] = assign.ExpireUnix
+				desc.PermissionMap[op.MenuCode] = assign.ExpireUnix
 			}
 		}
 		for _, dp := range assign.Role.DataPrivileges {
@@ -481,8 +481,8 @@ func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
 		return
 	}
 
-	for code, _ := range desc.Permissions {
-		desc.Codes = append(desc.Codes, code)
+	for code := range desc.PermissionMap {
+		desc.Permissions = append(desc.Permissions, code)
 	}
 	desc.FullReadableOrgIDMap = readableOrgIDMap
 	desc.FullReadableOrgIDs = keys(readableOrgIDMap)

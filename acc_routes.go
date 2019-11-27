@@ -154,6 +154,10 @@ var ValidRoute = RouteInfo{
 			c.SignInfo.Payload["ActOrgCode"] = c.PrisDesc.ActOrgCode
 			c.SignInfo.Payload["ActOrgName"] = c.PrisDesc.ActOrgName
 			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
+			if c.PrisDesc != nil {
+				c.SignInfo.Payload["Permissions"] = c.PrisDesc.Permissions
+				c.SignInfo.Payload["RolesCode"] = c.PrisDesc.RolesCode
+			}
 			c.STD(c.SignInfo.Payload)
 		} else {
 			c.STDErrHold(c.L("acc_token_expired", "Token has expired")).Code(555).Render()

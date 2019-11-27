@@ -227,7 +227,7 @@ var AuthRoute = RouteInfo{
 
 		ret := make(map[string]bool)
 		for _, s := range split {
-			_, has := c.PrisDesc.Permissions[s]
+			_, has := c.PrisDesc.PermissionMap[s]
 			ret[s] = has
 		}
 
