@@ -36,7 +36,7 @@ func NewAuditLog(scope *gorm.Scope, auditType string) {
 	}
 
 	logTableName := scope.DB().NewScope(&Log{}).TableName()
-	reg := regexp.MustCompile(fmt.Sprintf(`/INSERT\s*INTO\s*%s/i`, logTableName))
+	reg := regexp.MustCompile(fmt.Sprintf(`/INSERT\s*INTO.*%s/i`, logTableName))
 	if reg.MatchString(scope.SQL) {
 		return
 	}
