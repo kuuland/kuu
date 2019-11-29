@@ -151,8 +151,12 @@ var UploadRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		// 检查上传目录
 		uploadDir := C().GetString("uploadDir")
+		uploadPrefix := C().GetString("uploadPrefix")
 		if uploadDir == "" {
 			uploadDir = "assets/upload"
+		}
+		if uploadPrefix == "" {
+			uploadPrefix = uploadDir
 		}
 		EnsureDir(uploadDir)
 		failedMessage := c.L("upload_failed", "Upload file failed")
@@ -172,9 +176,7 @@ var UploadRoute = RouteInfo{
 		md5 := fmt.Sprintf("%x", md5.Sum(body))
 
 		//保存文件
-		temps := strings.Split(file.Filename, ".")
-		temps[0] = md5
-		md5Name := strings.Join(temps, ".")
+		md5Name := fmt.Sprintf("%s%s", md5, path.Ext(file.Filename))
 		dst := path.Join(uploadDir, md5Name)
 		if err := c.SaveUploadedFile(file, dst); err != nil {
 			c.STDErr(failedMessage, err)
@@ -193,17 +195,17 @@ var UploadRoute = RouteInfo{
 			}
 			refid = (uint)(temp)
 		}
-		f := new(File)
-		f.Class = class
-		f.RefID = refid
-		f.UID = uuid.NewV4().String()
-		f.Type = file.Header["Content-Type"][0]
-		f.Size = file.Size
-		f.Name = file.Filename
-		f.Status = "done"
-		f.URL = "/assets/" + md5Name
-		f.Path = dst
-
+		f := &File{
+			Class:  class,
+			RefID:  refid,
+			UID:    uuid.NewV4().String(),
+			Type:   file.Header["Content-Type"][0],
+			Size:   file.Size,
+			Name:   file.Filename,
+			Status: "done",
+			URL:    fmt.Sprintf("/%s/%s", strings.Trim(uploadPrefix, "/"), md5Name),
+			Path:   dst,
+		}
 		if err := DB().Create(&f).Error; err != nil {
 			c.STDErr(failedMessage, err)
 		} else {
