@@ -197,10 +197,12 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 			if id == 0 {
 				continue
 			}
-			sql := `UPDATE "sys_LanguageMessage" SET updated_at = ?, value = ? WHERE id = ?`
-			if r.DB.Dialect().GetName() == "mysql" {
-				sql = "UPDATE sys_LanguageMessage SET updated_at = ?, value = ? WHERE id = ?"
-			}
+			sql := fmt.Sprintf("UPDATE %s SET %s = ?, %s = ? WHERE %s = ?",
+				DB().Dialect().Quote("sys_LanguageMessage"),
+				DB().Dialect().Quote("updated_at"),
+				DB().Dialect().Quote("value"),
+				DB().Dialect().Quote("id"),
+			)
 			if err := r.DB.Exec(sql, now, item.Value, id).Error; err != nil {
 				r.Reset()
 				return err

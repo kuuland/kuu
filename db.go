@@ -21,6 +21,10 @@ type datasource struct {
 	Args    string
 }
 
+type DBTypeRepairer interface {
+	RepairDBTypes()
+}
+
 type dbLogger struct {
 	gorm.LogWriter
 }

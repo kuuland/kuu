@@ -1,7 +1,9 @@
 package kuu
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
+	"regexp"
 )
 
 var (
@@ -27,6 +29,18 @@ func registerAuditCallbacks(callback *gorm.Callback) {
 
 // NewAuditLog
 func NewAuditLog(scope *gorm.Scope, auditType string) {
+	if !IsNil(scope.Value) {
+		if _, ok := scope.Value.(LogIgnorer); ok {
+			return
+		}
+	}
+
+	logTableName := scope.DB().NewScope(&Log{}).TableName()
+	reg := regexp.MustCompile(fmt.Sprintf(`/INSERT\s*INTO\s*%s/i`, logTableName))
+	if reg.MatchString(scope.SQL) {
+		return
+	}
+
 	info := NewLog(LogTypeAudit)
 	info.AuditType = auditType
 	info.AuditTag = "system"

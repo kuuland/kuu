@@ -45,12 +45,11 @@ func init() {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 		Logger.SetFormatter(&logrus.JSONFormatter{})
 		log.Println("==> 生产环境自动启用文件模式存储日志")
-		LogDir = C().DefaultGetString("logs", "logs")
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{})
 		Logger.SetFormatter(&logrus.TextFormatter{})
-		LogDir = C().GetString("logs")
 	}
+	LogDir = C().DefaultGetString("logs", "logs")
 	if LogDir != "" {
 		Logger.AddHook(&LogDailyFileHook{})
 		Logger.AddHook(&LogBizHook{})
@@ -68,6 +67,10 @@ func initEnums() {
 		Add(AuditTypeCreate, "新增操作").
 		Add(AuditTypeUpdate, "修改操作").
 		Add(AuditTypeRemove, "删除操作")
+}
+
+type LogIgnorer interface {
+	IgnoreLog()
 }
 
 // Log
@@ -135,6 +138,34 @@ func (log *Log) BeforeCreate() {
 	}
 	if log.Type == LogTypeAudit && log.AuditTag == "" {
 		log.AuditTag = "system"
+	}
+}
+
+// IgnoreLog
+func (log *Log) IgnoreLog() {}
+
+// BeforeCreate
+func (log *Log) RepairDBTypes() {
+	var (
+		db        = DB()
+		scope     = db.NewScope(log)
+		tableName = scope.QuotedTableName()
+		textType  = C().DefaultGetString("logs:textType", "MEDIUMTEXT")
+	)
+	if db.Dialect().GetName() == "mysql" {
+		fields := []string{
+			"content_data",
+			"token",
+			"sign_payload",
+			"request_user_agent",
+			"request_headers",
+			"audit_sql",
+			"audit_sql_vars",
+		}
+		for _, item := range fields {
+			sql := fmt.Sprintf("ALTER TABLE %s MODIFY %s %s NULL", tableName, scope.Quote(item), textType)
+			ERROR(db.Exec(sql).Error)
+		}
 	}
 }
 

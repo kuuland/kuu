@@ -91,6 +91,10 @@ func (e *Engine) Import(mods ...*Mod) {
 				}
 				if migrate {
 					DB().AutoMigrate(model)
+
+					if v, ok := model.(DBTypeRepairer); ok {
+						v.RepairDBTypes()
+					}
 				}
 			}
 			if mod.AfterImport != nil {
