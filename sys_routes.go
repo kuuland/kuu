@@ -152,7 +152,7 @@ var UploadRoute = RouteInfo{
 		// 检查上传目录
 		uploadDir := C().GetString("uploadDir")
 		if uploadDir == "" {
-			uploadDir = "assets"
+			uploadDir = "assets/upload"
 		}
 		EnsureDir(uploadDir)
 		failedMessage := c.L("upload_failed", "Upload file failed")

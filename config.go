@@ -7,16 +7,16 @@ import (
 )
 
 var (
-	pairs map[string]interface{}
+	pairs = make(map[string]interface{})
 	inst  *Config
 )
 
-func parseKuuJSON() {
+func parseKuuJSON() (values map[string]interface{}) {
 	filePath := os.Getenv("CONFIG_FILE")
 	if IsBlank(filePath) {
 		filePath = "kuu.json"
 	}
-	pairs = make(map[string]interface{})
+	values = make(map[string]interface{})
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return
 	}
@@ -24,11 +24,12 @@ func parseKuuJSON() {
 	if err != nil {
 		ERROR(err)
 	} else {
-		err := json.Unmarshal(data, &pairs)
+		err := json.Unmarshal(data, &values)
 		if err != nil {
 			ERROR(err)
 		}
 	}
+	return
 }
 
 type Config struct {
@@ -40,10 +41,11 @@ func C(newConfig ...map[string]interface{}) *Config {
 		for k, v := range newConfig[0] {
 			pairs[k] = v
 		}
-		inst = nil
 	}
 	if inst == nil {
-		parseKuuJSON()
+		for k, v := range parseKuuJSON() {
+			pairs[k] = v
+		}
 		inst = &Config{Keys: pairs}
 	}
 	return inst

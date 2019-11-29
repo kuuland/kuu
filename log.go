@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -400,10 +401,20 @@ func LogCleanupTask() {
 }
 
 func split(args ...interface{}) (string, []interface{}) {
-	format := args[0].(string)
-	var a []interface{}
+	var (
+		format string
+		a      []interface{}
+	)
+	if v, ok := args[0].(string); ok {
+		format = v
+	} else {
+		data, err := json.Marshal(v)
+		if err == nil {
+			format = string(data)
+		}
+	}
 	if len(args) > 1 {
-		a = args[1:len(args)]
+		a = args[1:]
 	}
 	return format, a
 }
@@ -421,7 +432,9 @@ func PRINT(args ...interface{}) {
 		return
 	}
 	format, a := split(args...)
-	Logger.Printf(format, a...)
+	if format != "" {
+		Logger.Printf(format, a...)
+	}
 }
 
 // DEBUG
@@ -430,7 +443,9 @@ func DEBUG(args ...interface{}) {
 		return
 	}
 	format, a := split(args...)
-	Logger.Debugf(format, a...)
+	if format != "" {
+		Logger.Debugf(format, a...)
+	}
 }
 
 // WARN
@@ -439,7 +454,9 @@ func WARN(args ...interface{}) {
 		return
 	}
 	format, a := split(args...)
-	Logger.Warnf(format, a...)
+	if format != "" {
+		Logger.Warnf(format, a...)
+	}
 }
 
 // INFO
@@ -448,7 +465,9 @@ func INFO(args ...interface{}) {
 		return
 	}
 	format, a := split(args...)
-	Logger.Infof(format, a...)
+	if format != "" {
+		Logger.Infof(format, a...)
+	}
 }
 
 // ERROR
@@ -466,7 +485,9 @@ func ERROR(args ...interface{}) {
 		return
 	}
 	format, a := split(args...)
-	Logger.Errorf(format, a...)
+	if format != "" {
+		Logger.Errorf(format, a...)
+	}
 }
 
 // FATAL
@@ -479,7 +500,9 @@ func FATAL(args ...interface{}) {
 		args[0] = args[0].(error).Error()
 	}
 	format, a := split(args...)
-	Logger.Fatalf(format, a...)
+	if format != "" {
+		Logger.Fatalf(format, a...)
+	}
 }
 
 // PANIC
@@ -492,5 +515,7 @@ func PANIC(args ...interface{}) {
 		args[0] = args[0].(error).Error()
 	}
 	format, a := split(args...)
-	Logger.Panicf(format, a...)
+	if format != "" {
+		Logger.Panicf(format, a...)
+	}
 }
