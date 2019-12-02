@@ -1175,3 +1175,171 @@ var LangSwitchRoute = RouteInfo{
 		}
 	},
 }
+
+// LogOverviewRoute
+var LogOverviewRoute = RouteInfo{
+	Name:   "日志汇总概览接口",
+	Method: "GET",
+	Path:   "/log/overview",
+	HandlerFunc: func(c *Context) {
+		var (
+			failedMessage = c.L("log_overview_failed", "Query log failed")
+			body          struct {
+				TimeStart int64 `json:"time_start" binding:"required"`
+				TimeEnd   int64 `json:"time_end" binding:"required"`
+			}
+		)
+		if err := c.ShouldBindQuery(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		c.STD(M{
+			"sign": M{
+				"today": 2251,
+				"total": 8832,
+				"list": []M{
+					{
+						"time": 1574218843,
+						"data": 10,
+					},
+					{
+						"time": 1574218839,
+						"data": 5,
+					},
+					{
+						"time": 1574218829,
+						"data": 7,
+					},
+					{
+						"time": 1574218820,
+						"data": 34,
+					},
+					{
+						"time": 1574218832,
+						"data": 2,
+					},
+				},
+			},
+			"session": M{
+				"current": 2251,
+				"total":   8832,
+				"list": []M{
+					{
+						"time": 1574218843,
+						"data": 10,
+					},
+					{
+						"time": 1574218839,
+						"data": 5,
+					},
+					{
+						"time": 1574218829,
+						"data": 7,
+					},
+					{
+						"time": 1574218820,
+						"data": 34,
+					},
+					{
+						"time": 1574218832,
+						"data": 2,
+					},
+				},
+			},
+			"api": M{
+				"current": 251,
+				"total":   12411,
+				"list": []M{
+					{
+						"time": 1574218843,
+						"data": 10,
+					},
+					{
+						"time": 1574218839,
+						"data": 5,
+					},
+					{
+						"time": 1574218829,
+						"data": 7,
+					},
+					{
+						"time": 1574218820,
+						"data": 34,
+					},
+					{
+						"time": 1574218832,
+						"data": 2,
+					},
+				},
+			},
+			"audit": M{
+				"current": 51,
+				"total":   232,
+				"list": []M{
+					{
+						"time": 1574218843,
+						"data": 10,
+					},
+					{
+						"time": 1574218839,
+						"data": 5,
+					},
+					{
+						"time": 1574218829,
+						"data": 7,
+					},
+					{
+						"time": 1574218820,
+						"data": 34,
+					},
+					{
+						"time": 1574218832,
+						"data": 2,
+					},
+				},
+			},
+			"summary": []M{
+				{
+					"time": 1574218843,
+					"data": 10,
+				},
+				{
+					"time": 1574218839,
+					"data": 5,
+				},
+				{
+					"time": 1574218829,
+					"data": 7,
+				},
+				{
+					"time": 1574218820,
+					"data": 34,
+				},
+				{
+					"time": 1574218832,
+					"data": 2,
+				},
+				{
+					"time": 1574218843,
+					"data": 10,
+				},
+				{
+					"time": 1574218839,
+					"data": 5,
+				},
+				{
+					"time": 1574218829,
+					"data": 7,
+				},
+				{
+					"time": 1574218820,
+					"data": 34,
+				},
+				{
+					"time": 1574218832,
+					"data": 2,
+				},
+			},
+		})
+	},
+}

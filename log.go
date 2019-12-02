@@ -75,12 +75,10 @@ type LogIgnorer interface {
 
 // Log
 type Log struct {
-	gorm.Model   `rest:"*" displayName:"系统日志"`
-	UUID         string `name:"数据ID（UUID）" rest:"*" displayName:"系统日志"`
-	Time         int64  `name:"记录时间（Unix时间戳）"`
-	Type         string `name:"日志类型" enum:"LogType"`
-	ContentHuman string `name:"日志内容（可读描述）"`
-	ContentData  string `name:"日志详情（完整JSON）" gorm:"type:text"`
+	gorm.Model `rest:"*" displayName:"系统日志"`
+	UUID       string `name:"数据ID（UUID）" rest:"*" displayName:"系统日志"`
+	Time       int64  `name:"记录时间（Unix时间戳）"`
+	Type       string `name:"日志类型" enum:"LogType"`
 	// 用户信息
 	UID        uint   `name:"用户ID" sql:"index"`
 	SubDocID   uint   `name:"用户子档案ID"`
@@ -128,27 +126,29 @@ type Log struct {
 	AuditSQL     string `name:"SQL" gorm:"type:text"`
 	AuditSQLVars string `name:"SQL参数" gorm:"type:text"`
 	// 业务日志
-	Level string `name:"日志级别"`
+	Level        string `name:"日志级别"`
+	ContentHuman string `name:"日志内容（可读描述）"`
+	ContentData  string `name:"日志详情（完整JSON）" gorm:"type:text"`
 }
 
 // BeforeCreate
-func (log *Log) BeforeCreate() {
-	if log.UUID == "" {
-		log.UUID = uuid.NewV4().String()
+func (l *Log) BeforeCreate() {
+	if l.UUID == "" {
+		l.UUID = uuid.NewV4().String()
 	}
-	if log.Type == LogTypeAudit && log.AuditTag == "" {
-		log.AuditTag = "system"
+	if l.Type == LogTypeAudit && l.AuditTag == "" {
+		l.AuditTag = "system"
 	}
 }
 
 // IgnoreLog
-func (log *Log) IgnoreLog() {}
+func (l *Log) IgnoreLog() {}
 
 // BeforeCreate
-func (log *Log) RepairDBTypes() {
+func (l *Log) RepairDBTypes() {
 	var (
 		db        = DB()
-		scope     = db.NewScope(log)
+		scope     = db.NewScope(l)
 		tableName = scope.QuotedTableName()
 		textType  = C().DefaultGetString("logs:textType", "MEDIUMTEXT")
 	)
@@ -170,19 +170,19 @@ func (log *Log) RepairDBTypes() {
 }
 
 // CacheKey
-func (log *Log) CacheKey() string {
+func (l *Log) CacheKey() string {
 	return BuildKey(
 		"log",
-		time.Unix(log.Time, 0).Format("20060102"),
-		log.Type,
-		log.UUID,
+		time.Unix(l.Time, 0).Format("20060102"),
+		l.Type,
+		l.UUID,
 	)
 }
 
 // Save2Cache
-func (log *Log) Save2Cache() {
-	if key := log.CacheKey(); key != "" {
-		SetCacheString(key, Stringify(log))
+func (l *Log) Save2Cache() {
+	if key := l.CacheKey(); key != "" {
+		SetCacheString(key, Stringify(l))
 	}
 }
 

@@ -31,10 +31,22 @@ func init() {
 		Add(ImportStatusFailed, "Failed")
 }
 
+type ImportContext struct {
+	Token      string
+	SignType   string
+	Lang       string
+	UID        uint
+	SubDocID   uint
+	ActOrgID   uint
+	ActOrgCode string
+	ActOrgName string
+}
+
 // ImportRecord
 type ImportRecord struct {
 	Model    `rest:"*" displayName:"导入记录"`
 	ImportSn string `name:"批次编号" sql:"index"`
+	Context  string `name:"导入时上下文数据"`
 	Channel  string `name:"导入渠道"`
 	Data     string `name:"导入数据（[][]string）" gorm:"type:text"`
 	Feedback string `name:"反馈记录（[][]string）" gorm:"type:text"`
@@ -51,7 +63,7 @@ func (imp *ImportRecord) BeforeCreate() {
 }
 
 // ImportCallbackProcessor
-type ImportCallbackProcessor func(rows [][]string) *ImportCallbackResult
+type ImportCallbackProcessor func(context *ImportContext, rows [][]string) *ImportCallbackResult
 
 // RegisterImportCallback 注册导入回调
 func RegisterImportCallback(channel string, processor ImportCallbackProcessor) {
@@ -99,7 +111,9 @@ func CallImportCallback(info *ImportRecord) {
 		return
 	}
 
-	result := (*callback)(rows)
+	context := &ImportContext{}
+	_ = Parse(info.Context, context)
+	result := (*callback)(context, rows)
 	if result == nil {
 		ERROR("import callback result is nil: %s", info.ImportSn)
 		return
@@ -188,6 +202,16 @@ var ImportRoute = RouteInfo{
 		record := ImportRecord{
 			Channel: channel,
 			Data:    Stringify(rows),
+			Context: Stringify(&ImportContext{
+				Token:      c.SignInfo.Token,
+				SignType:   c.SignInfo.Type,
+				Lang:       c.SignInfo.Lang,
+				UID:        c.SignInfo.UID,
+				SubDocID:   c.SignInfo.SubDocID,
+				ActOrgID:   c.PrisDesc.ActOrgID,
+				ActOrgCode: c.PrisDesc.ActOrgCode,
+				ActOrgName: c.PrisDesc.ActOrgName,
+			}),
 		}
 		if err := c.DB().Create(&record).Error; err != nil {
 			c.STDErr(failedMessage, err)

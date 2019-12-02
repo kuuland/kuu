@@ -459,6 +459,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_file_type").Add("Type", "文件类型", "文件類型")
 	register.SetKey("kuu_file_size").Add("Size", "文件大小", "文件大小")
 	register.SetKey("kuu_file_name").Add("Name", "文件名称", "文件名稱")
+	register.SetKey("kuu_file_preview").Add("Preview", "文件预览", "文件預覽")
 	register.SetKey("kuu_file_url").Add("URL", "文件地址", "文件地址")
 	register.SetKey("kuu_file_createdat").Add("Created At", "上传时间", "上傳時間")
 	register.SetKey("kuu_file_actions_upload").Add("Upload", "上传文件", "上傳文件")
@@ -941,6 +942,7 @@ func Sys() *Mod {
 			LanglistPostRoute,
 			LangtransImportRoute,
 			LangSwitchRoute,
+			LogOverviewRoute,
 		},
 		AfterImport: initSys,
 	}
