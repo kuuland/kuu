@@ -46,7 +46,7 @@ type ImportContext struct {
 type ImportRecord struct {
 	Model    `rest:"*" displayName:"导入记录"`
 	ImportSn string `name:"批次编号" sql:"index"`
-	Context  string `name:"导入时上下文数据"`
+	Context  string `name:"导入时上下文数据" gorm:"type:text"`
 	Channel  string `name:"导入渠道"`
 	Data     string `name:"导入数据（[][]string）" gorm:"type:text"`
 	Feedback string `name:"反馈记录（[][]string）" gorm:"type:text"`
