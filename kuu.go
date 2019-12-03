@@ -184,7 +184,7 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 				SignInfo:      GetSignContext(c),
 			}
 			if kc.SignInfo.IsValid() {
-				desc := GetPrivilegesDesc(c)
+				desc := GetPrivilegesDesc(kc.SignInfo)
 				kc.PrisDesc = desc
 			}
 			glsVals := make(gls.Values)

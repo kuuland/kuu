@@ -734,7 +734,7 @@ func GetLoginableOrgs(c *gin.Context, uid uint) ([]Org, error) {
 		data []Org
 		db   *gorm.DB
 	)
-	if desc := GetPrivilegesDesc(c); desc != nil {
+	if desc := GetPrivilegesDesc(GetSignContext(c)); desc != nil {
 		db = DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data)
 	}
 	return data, db.Error

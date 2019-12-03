@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"strconv"
 	"strings"
@@ -349,12 +348,7 @@ func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
 }
 
 // GetPrivilegesDesc
-func GetPrivilegesDesc(c *gin.Context) (desc *PrivilegesDesc) {
-	if c == nil {
-		return
-	}
-
-	sign := GetSignContext(c)
+func GetPrivilegesDesc(sign *SignContext) (desc *PrivilegesDesc) {
 	if sign == nil {
 		return
 	}
