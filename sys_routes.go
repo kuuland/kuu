@@ -2,15 +2,12 @@ package kuu
 
 import (
 	"bytes"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
-	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"reflect"
@@ -143,74 +140,50 @@ var UserMenusRoute = RouteInfo{
 	},
 }
 
+func getFileExtraData(c *Context) (*File, error) {
+	class := c.PostForm("class")
+	refid := (uint)(0)
+	if v := c.PostForm("refid"); v != "" {
+		temp, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		refid = (uint)(temp)
+	}
+	return &File{Class: class, RefID: refid}, nil
+}
+
 // UploadRoute
 var UploadRoute = RouteInfo{
 	Name:   "默认文件上传接口",
 	Method: "POST",
 	Path:   "/upload",
 	HandlerFunc: func(c *Context) {
-		// 检查上传目录
-		uploadDir := C().GetString("uploadDir")
-		uploadPrefix := C().GetString("uploadPrefix")
-		if uploadDir == "" {
-			uploadDir = "assets/upload"
+		var (
+			save2db       = true
+			failedMessage = c.L("upload_failed", "Upload file failed")
+		)
+		if v, ok := c.GetPostForm("save2db"); ok {
+			if b, err := strconv.ParseBool(v); err == nil {
+				save2db = b
+			}
 		}
-		if uploadPrefix == "" {
-			uploadPrefix = uploadDir
-		}
-		EnsureDir(uploadDir)
-		failedMessage := c.L("upload_failed", "Upload file failed")
-		//	MD5
-		file, _ := c.FormFile("file")
-		src, err := file.Open()
+		extra, err := getFileExtraData(c)
 		if err != nil {
 			c.STDErr(failedMessage, err)
 			return
 		}
-		defer func() {
-			if err := src.Close(); err != nil {
-				ERROR(err)
-			}
-		}()
-		body, err := ioutil.ReadAll(src)
-		md5 := fmt.Sprintf("%x", md5.Sum(body))
-
-		//保存文件
-		md5Name := fmt.Sprintf("%s%s", md5, path.Ext(file.Filename))
-		dst := path.Join(uploadDir, md5Name)
-		if err := c.SaveUploadedFile(file, dst); err != nil {
+		fh, err := c.FormFile("file")
+		if err != nil {
 			c.STDErr(failedMessage, err)
 			return
 		}
-		INFO(fmt.Sprintf("'%s' uploaded!", dst))
-
-		class := c.PostForm("class")
-		refidstr := c.PostForm("refid")
-		refid := (uint)(0)
-		if refidstr != "" {
-			temp, err := strconv.ParseUint(refidstr, 10, 64)
-			if err != nil {
-				c.STDErr(failedMessage, err)
-				return
-			}
-			refid = (uint)(temp)
-		}
-		f := &File{
-			Class:  class,
-			RefID:  refid,
-			UID:    uuid.NewV4().String(),
-			Type:   file.Header["Content-Type"][0],
-			Size:   file.Size,
-			Name:   file.Filename,
-			Status: "done",
-			URL:    fmt.Sprintf("/%s/%s", strings.Trim(uploadPrefix, "/"), md5Name),
-			Path:   dst,
-		}
-		if err := DB().Create(&f).Error; err != nil {
+		file, err := SaveUploadedFile(fh, save2db, extra)
+		if err != nil {
 			c.STDErr(failedMessage, err)
-		} else {
-			c.STD(f)
+			return
 		}
+		c.STD(file)
 	},
 }
 

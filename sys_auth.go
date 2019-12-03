@@ -348,18 +348,33 @@ func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
 }
 
 // GetPrivilegesDesc
-func GetPrivilegesDesc(sign *SignContext) (desc *PrivilegesDesc) {
-	if sign == nil {
+func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
+	var (
+		sign *SignContext
+		uid  uint
+	)
+	if v, ok := signOrContextOrUID.(*Context); ok {
+		sign = v.SignInfo
+	} else if v, ok := signOrContextOrUID.(*SignContext); ok {
+		sign = v
+	} else if v, ok := signOrContextOrUID.(uint); ok {
+		uid = v
+	} else {
+		ERROR("unsupported parameter: %v", signOrContextOrUID)
 		return
 	}
+	if sign == nil && uid == 0 {
+		return
+	} else if sign != nil {
+		uid = sign.UID
+	}
 	// 重新计算
-	user, err := GetUserWithRoles(sign.UID)
+	user, err := GetUserWithRoles(uid)
 	if err != nil {
-		//ERROR(err)
 		return
 	}
 	desc = &PrivilegesDesc{
-		UID:           sign.UID,
+		UID:           uid,
 		OrgID:         user.OrgID,
 		PermissionMap: make(map[string]int64),
 		Valid:         true,
