@@ -106,13 +106,9 @@ func initSys() {
 		}
 	}
 	// 启动日志序列化任务
-	_, _ = AddTask("@every 5m", func() {
-		LogPersistenceTask()
-	})
+	_, _ = AddJob("@every 5m", LogPersisJob)
 	// 启动历史日志清除任务
-	_, _ = AddTask("@midnight", func() {
-		LogCleanupTask()
-	})
+	_, _ = AddJob("@midnight", LogCleanupJob)
 }
 
 func createRootUser(tx *gorm.DB) {
