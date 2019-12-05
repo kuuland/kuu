@@ -8,7 +8,12 @@ import (
 	"strconv"
 )
 
-var importCallback = make(map[string]*ImportCallbackProcessor)
+var importCallback = make(map[string]*ImportCallbackArgs)
+
+type ImportCallbackArgs struct {
+	Validator *ImportCallbackValidator
+	Processor *ImportCallbackProcessor
+}
 
 // ImportCallbackResult
 type ImportCallbackResult struct {
@@ -62,12 +67,18 @@ func (imp *ImportRecord) BeforeCreate() {
 	imp.Status = ImportStatusImporting
 }
 
+// ImportCallbackValidator
+type ImportCallbackValidator func(c *Context, rows [][]string) (*LanguageMessage, error)
+
 // ImportCallbackProcessor
 type ImportCallbackProcessor func(context *ImportContext, rows [][]string) *ImportCallbackResult
 
 // RegisterImportCallback 注册导入回调
-func RegisterImportCallback(channel string, processor ImportCallbackProcessor) {
-	importCallback[channel] = &processor
+func RegisterImportCallback(channel string, validator ImportCallbackValidator, processor ImportCallbackProcessor) {
+	importCallback[channel] = &ImportCallbackArgs{
+		Processor: &processor,
+		Validator: &validator,
+	}
 }
 
 // ReimportRecord
@@ -113,7 +124,8 @@ func CallImportCallback(info *ImportRecord) {
 
 	context := &ImportContext{}
 	_ = Parse(info.Context, context)
-	result := (*callback)(context, rows)
+	args := callback
+	result := (*args.Processor)(context, rows)
 	if result == nil {
 		ERROR("import callback result is nil: %s", info.ImportSn)
 		return
@@ -197,6 +209,18 @@ var ImportRoute = RouteInfo{
 		if len(rows) == 0 {
 			c.STDErr(c.L("import_empty", "Import data is empty"))
 			return
+		}
+		// 调用导入验证
+		args := importCallback[channel]
+		if args.Validator != nil {
+			msg, err := (*args.Validator)(c, rows)
+			if err != nil {
+				if msg == nil {
+					msg = failedMessage
+				}
+				c.STDErr(msg, err)
+				return
+			}
 		}
 		// 创建导入记录
 		record := ImportRecord{
