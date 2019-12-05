@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
@@ -286,4 +287,20 @@ func BatchInsert(tx *gorm.DB, insertBase string, items []BatchInsertItem, batchS
 		}
 	}
 	return nil
+}
+
+// EncodeURIComponent
+func EncodeURIComponent(str string) string {
+	r := url.QueryEscape(str)
+	r = strings.Replace(r, "+", "%20", -1)
+	return r
+}
+
+// DecodeURIComponent
+func DecodeURIComponent(str string) string {
+	r, err := url.QueryUnescape(str)
+	if err != nil {
+		ERROR(err)
+	}
+	return r
 }
