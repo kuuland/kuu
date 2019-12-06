@@ -127,8 +127,7 @@ func CallImportCallback(info *ImportRecord) {
 	args := callback
 	result := (*args.Processor)(context, rows)
 	if result == nil {
-		ERROR("import callback result is nil: %s", info.ImportSn)
-		return
+		result = &ImportCallbackResult{Message: "success"}
 	}
 	db := DB().Model(&ImportRecord{}).Where(&ImportRecord{Model: Model{ID: info.ID}})
 	doc := ImportRecord{Message: result.Message}
