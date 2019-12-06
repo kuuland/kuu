@@ -899,8 +899,6 @@ func Sys() *Mod {
 			LogMiddleware,
 		},
 		Models: []interface{}{
-			&ExcelTemplate{},
-			&ExcelTemplateHeader{},
 			&ImportRecord{},
 			&User{},
 			&Org{},

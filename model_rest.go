@@ -58,7 +58,6 @@ func RESTful(r *Engine, routePrefix string, value interface{}) (desc *RestDesc) 
 			}
 			var (
 				createMethod = "POST"
-				importMethod = "POST"
 				deleteMethod = "DELETE"
 				queryMethod  = "GET"
 				updateMethod = "PUT"
@@ -75,8 +74,6 @@ func RESTful(r *Engine, routePrefix string, value interface{}) (desc *RestDesc) 
 					queryMethod = val
 				case "U", "UPDATE":
 					updateMethod = val
-				case "IMP", "IMPORT":
-					importMethod = val
 				}
 			}
 
@@ -85,7 +82,6 @@ func RESTful(r *Engine, routePrefix string, value interface{}) (desc *RestDesc) 
 				deleteMethod = "-"
 				queryMethod = "-"
 				updateMethod = "-"
-				importMethod = "-"
 			}
 
 			// Method conflict
@@ -112,10 +108,6 @@ func RESTful(r *Engine, routePrefix string, value interface{}) (desc *RestDesc) 
 				if updateMethod != "-" {
 					desc.Update = true
 					r.Handle(updateMethod, routePath, restUpdateHandler(reflectType))
-				}
-				if importMethod != "-" {
-					desc.Import = true
-					r.Handle(importMethod, fmt.Sprintf("%s/import", routePath), restImportHandler(reflectType))
 				}
 			}
 			break
@@ -543,18 +535,6 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			}
 			return
 		}
-		if v := c.Query("export"); v != "" {
-			if v == "true" {
-				v = "excel"
-			}
-			switch v {
-			case "excel":
-				ExcelExport(c, ret, reflectType)
-			default:
-				c.STDErr(c.L("rest_query_failed", "Query failed"), fmt.Errorf("unsupported export type: %s", v))
-			}
-			return
-		}
 		c.STD(ret)
 	}
 }
@@ -705,13 +685,6 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		}
 	}
 }
-
-func restImportHandler(reflectType reflect.Type) func(c *Context) {
-	return func(c *Context) {
-		ExcelImport(c, reflectType)
-	}
-}
-
 func methodConflict(arr []string) bool {
 	for i, s := range arr {
 		if s == "-" {
