@@ -18,7 +18,7 @@ type Model struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注"`
+	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	Org       *Org  `gorm:"foreignkey:id;association_foreignkey:org_id"`
@@ -36,7 +36,7 @@ type ModelExOrg struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注"`
+	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	CreatedBy *User `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
@@ -47,7 +47,7 @@ type ModelExOrg struct {
 // ExtendField
 type ExtendField struct {
 	Def1 uint   `name:"扩展字段1（默认字段）"`
-	Def2 string `name:"扩展字段2（默认字段）"`
+	Def2 string `name:"扩展字段2（默认字段）" gorm:"text"`
 	Def3 string `name:"扩展字段3（默认字段）"`
 	Def4 string `name:"扩展字段4（默认字段）"`
 	Def5 string `name:"扩展字段5（默认字段）"`
@@ -72,7 +72,7 @@ type User struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注"`
+	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
@@ -129,7 +129,7 @@ type Org struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注"`
+	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
@@ -229,7 +229,7 @@ type Role struct {
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注"`
+	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
 	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
