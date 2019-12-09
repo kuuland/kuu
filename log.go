@@ -102,7 +102,7 @@ type Log struct {
 	RequestIsMobile                   bool          `name:"是否移动端请求"`
 	RequestContentType                string        `name:"原始Content-Type"`
 	RequestHeaders                    string        `name:"请求头" gorm:"type:text"`
-	RequestQuery                      string        `name:"查询参数"`
+	RequestQuery                      string        `name:"查询参数" gorm:"type:text"`
 	RequestCost                       time.Duration `name:"调用耗时"`
 	RequestIP                         string        `name:"调用IP"`
 	RequestCountry                    string        `name:"调用国家"`
@@ -157,6 +157,7 @@ func (l *Log) RepairDBTypes() {
 			"content_data",
 			"token",
 			"sign_payload",
+			"request_query",
 			"request_user_agent",
 			"request_headers",
 			"audit_sql",
