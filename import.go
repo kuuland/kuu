@@ -17,7 +17,7 @@ type ImportCallbackArgs struct {
 
 // ImportCallbackResult
 type ImportCallbackResult struct {
-	Feedback [][]string
+	Feedback []string
 	Message  string
 	Error    error
 	Extra    map[string]interface{}
@@ -50,11 +50,12 @@ type ImportContext struct {
 // ImportRecord
 type ImportRecord struct {
 	Model    `rest:"*" displayName:"导入记录"`
+	Sync     bool   `name:"是否同步执行"`
 	ImportSn string `name:"批次编号" sql:"index"`
 	Context  string `name:"导入时上下文数据" gorm:"type:text"`
 	Channel  string `name:"导入渠道"`
 	Data     string `name:"导入数据（[][]string）" gorm:"type:text"`
-	Feedback string `name:"反馈记录（[][]string）" gorm:"type:text"`
+	Feedback string `name:"反馈记录（[]string）" gorm:"type:text"`
 	Status   string `name:"导入状态" enum:"ImportStatus"`
 	Message  string `name:"导入结果"`
 	Error    string `name:"错误详情"`
@@ -100,7 +101,11 @@ func ReimportRecord(importSn string) error {
 	if err := db.Update(&ImportRecord{Status: ImportStatusImporting}).Error; err != nil {
 		return err
 	}
-	go CallImportCallback(&record)
+	if record.Sync {
+		CallImportCallback(&record)
+	} else {
+		go CallImportCallback(&record)
+	}
 	return nil
 }
 
@@ -225,6 +230,7 @@ var ImportRoute = RouteInfo{
 		record := ImportRecord{
 			Channel: channel,
 			Data:    Stringify(rows),
+			Sync:    c.PostForm("sync") != "",
 			Context: Stringify(&ImportContext{
 				Token:      c.SignInfo.Token,
 				SignType:   c.SignInfo.Type,
@@ -241,9 +247,13 @@ var ImportRoute = RouteInfo{
 			return
 		}
 		// 触发导入回调
-		go CallImportCallback(&record)
+		if record.Sync {
+			CallImportCallback(&record)
+		} else {
+			go CallImportCallback(&record)
+		}
 		// 响应请求
-		c.STD("ok")
+		c.STD(record.ImportSn)
 	},
 }
 
