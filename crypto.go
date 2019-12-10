@@ -6,21 +6,29 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"golang.org/x/crypto/bcrypt"
+	"strings"
 )
 
 // MD5 加密
-func MD5(p string) (v string) {
+func MD5(p string, upper ...bool) (v string) {
 	h := md5.New()
 	h.Write([]byte(p))
 	v = hex.EncodeToString(h.Sum(nil))
+	if len(upper) > 0 && upper[0] {
+		v = strings.ToUpper(v)
+	}
 	return
 }
 
 // Sha1 加密
-func Sha1(p string) string {
+func Sha1(p string, upper ...bool) (v string) {
 	d := sha1.New()
 	d.Write([]byte(p))
-	return hex.EncodeToString(d.Sum([]byte(nil)))
+	v = hex.EncodeToString(d.Sum([]byte(nil)))
+	if len(upper) > 0 && upper[0] {
+		v = strings.ToUpper(v)
+	}
+	return
 }
 
 // GenerateFromPassword 生成新密码
