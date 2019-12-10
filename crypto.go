@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"golang.org/x/crypto/bcrypt"
@@ -13,6 +14,13 @@ func MD5(p string) (v string) {
 	h.Write([]byte(p))
 	v = hex.EncodeToString(h.Sum(nil))
 	return
+}
+
+// Sha1 加密
+func Sha1(p string) string {
+	d := sha1.New()
+	d.Write([]byte(p))
+	return hex.EncodeToString(d.Sum([]byte(nil)))
 }
 
 // GenerateFromPassword 生成新密码
