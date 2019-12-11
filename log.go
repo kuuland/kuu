@@ -127,7 +127,7 @@ type Log struct {
 	AuditSQLVars string `name:"SQL参数" gorm:"type:text"`
 	// 业务日志
 	Level        string `name:"日志级别"`
-	ContentHuman string `name:"日志内容（可读描述）"`
+	ContentHuman string `name:"日志内容（可读描述）" gorm:"type:text"`
 	ContentData  string `name:"日志详情（完整JSON）" gorm:"type:text"`
 }
 
@@ -154,6 +154,7 @@ func (l *Log) RepairDBTypes() {
 	)
 	if db.Dialect().GetName() == "mysql" {
 		fields := []string{
+			"content_human",
 			"content_data",
 			"token",
 			"sign_payload",
