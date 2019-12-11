@@ -3,7 +3,6 @@ package kuu
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -506,18 +505,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		rawRange := strings.ToUpper(c.DefaultQuery("range", "PAGE"))
 		ret.Range = rawRange
 		// 处理page、size
-		var (
-			page int
-			size int
-		)
-		rawPage := c.DefaultQuery("page", "1")
-		rawSize := c.DefaultQuery("size", "30")
-		if v, err := strconv.Atoi(rawPage); err == nil {
-			page = v
-		}
-		if v, err := strconv.Atoi(rawSize); err == nil {
-			size = v
-		}
+		page, size := c.GetPagination()
 		if rawRange == "PAGE" {
 			db = db.Offset((page - 1) * size).Limit(size)
 			ret.Page = page

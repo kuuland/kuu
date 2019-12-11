@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"strconv"
 )
 
 // Context
@@ -24,6 +25,32 @@ func (c *Context) L(key string, defaultMessage string, formattedContext ...inter
 // DB
 func (c *Context) DB() *gorm.DB {
 	return DB()
+}
+
+// GetPagination
+func (c *Context) GetPagination() (int, int) {
+	return GetPagination(c)
+}
+
+// Pagination
+func GetPagination(ginContextOrKuuContext interface{}) (page int, size int) {
+	var c *gin.Context
+	if v, ok := ginContextOrKuuContext.(*gin.Context); ok {
+		c = v
+	} else if v, ok := ginContextOrKuuContext.(*Context); ok {
+		c = v.Context
+	} else {
+		return
+	}
+	rawPage := c.DefaultQuery("page", "1")
+	rawSize := c.DefaultQuery("size", "30")
+	if v, err := strconv.Atoi(rawPage); err == nil {
+		page = v
+	}
+	if v, err := strconv.Atoi(rawSize); err == nil {
+		size = v
+	}
+	return
 }
 
 // WithTransaction

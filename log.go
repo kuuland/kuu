@@ -97,7 +97,7 @@ type Log struct {
 	RequestMethod                     string        `name:"请求方法"`
 	RequestPath                       string        `name:"请求接口"`
 	RequestContentLength              int64         `name:"请求体大小"`
-	RequestReferer                    string        `name:"请求Referer"`
+	RequestReferer                    string        `name:"请求Referer" gorm:"type:text"`
 	RequestIsWebsocket                bool          `name:"是否websocket请求"`
 	RequestIsMobile                   bool          `name:"是否移动端请求"`
 	RequestContentType                string        `name:"原始Content-Type"`
