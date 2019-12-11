@@ -10,16 +10,16 @@ import (
 
 // Model
 type Model struct {
-	ID          uint       `gorm:"primary_key"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注" gorm:"text"`
-	Ts          time.Time  `name:"时间戳"`
+	ID          uint        `gorm:"primary_key"`
+	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	OrgID       uint        `name:"所属组织ID（默认字段）"`
+	CreatedByID uint        `name:"创建人ID（默认字段）"`
+	UpdatedByID uint        `name:"修改人ID（默认字段）"`
+	DeletedByID uint        `name:"删除人ID（默认字段）"`
+	Remark      null.String `name:"备注" gorm:"text"`
+	Ts          time.Time   `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	Org       *Org  `gorm:"foreignkey:id;association_foreignkey:org_id"`
 	CreatedBy *User `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
@@ -29,15 +29,15 @@ type Model struct {
 
 // ModelExOrg
 type ModelExOrg struct {
-	ID          uint       `gorm:"primary_key"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注" gorm:"text"`
-	Ts          time.Time  `name:"时间戳"`
+	ID          uint        `gorm:"primary_key"`
+	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	CreatedByID uint        `name:"创建人ID（默认字段）"`
+	UpdatedByID uint        `name:"修改人ID（默认字段）"`
+	DeletedByID uint        `name:"删除人ID（默认字段）"`
+	Remark      null.String `name:"备注" gorm:"text"`
+	Ts          time.Time   `name:"时间戳"`
 	//ExAttrs     ExAttrs    `name:"扩展属性" gorm:"size:4096"`
 	CreatedBy *User `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy *User `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
