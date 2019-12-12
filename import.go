@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-var importCallback = make(map[string]*ImportCallbackArgs)
+var importCallbackMap = make(map[string]*ImportCallbackArgs)
 
 type ImportCallbackArgs struct {
 	Validator *ImportCallbackValidator
@@ -17,7 +17,7 @@ type ImportCallbackArgs struct {
 
 // ImportCallbackResult
 type ImportCallbackResult struct {
-	Feedback []string
+	Feedback []ImportFeedback
 	Message  string
 	Error    error
 	Extra    map[string]interface{}
@@ -45,6 +45,18 @@ type ImportContext struct {
 	ActOrgID   uint
 	ActOrgCode string
 	ActOrgName string
+}
+
+type ImportCallback struct {
+	Channel           string
+	TemplateGenerator func(*Context) []string
+	Validator         ImportCallbackValidator
+	Processor         ImportCallbackProcessor
+}
+
+type ImportFeedback struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 // ImportRecord
@@ -75,10 +87,14 @@ type ImportCallbackValidator func(c *Context, rows [][]string) (*LanguageMessage
 type ImportCallbackProcessor func(context *ImportContext, rows [][]string) *ImportCallbackResult
 
 // RegisterImportCallback 注册导入回调
-func RegisterImportCallback(channel string, validator ImportCallbackValidator, processor ImportCallbackProcessor) {
-	importCallback[channel] = &ImportCallbackArgs{
-		Processor: &processor,
-		Validator: &validator,
+func RegisterImportCallback(callback *ImportCallback) {
+	if callback == nil {
+		return
+	}
+
+	importCallbackMap[callback.Channel] = &ImportCallbackArgs{
+		Processor: &callback.Processor,
+		Validator: &callback.Validator,
 	}
 }
 
@@ -91,7 +107,7 @@ func ReimportRecord(importSn string) error {
 	if record.Status == ImportStatusImporting {
 		return fmt.Errorf("record are being imported: %s", importSn)
 	}
-	if importCallback[record.Channel] == nil {
+	if importCallbackMap[record.Channel] == nil {
 		return fmt.Errorf("no import callback registered for this channel: %s", record.Channel)
 	}
 	if record.Status == ImportStatusImporting {
@@ -121,7 +137,7 @@ func CallImportCallback(info *ImportRecord) {
 		return
 	}
 
-	callback := importCallback[info.Channel]
+	callback := importCallbackMap[info.Channel]
 	if callback == nil {
 		ERROR("no import callback registered for this channel: %s", info.Channel)
 		return
@@ -171,7 +187,7 @@ var ImportRoute = RouteInfo{
 			c.STDErr(failedMessage, errors.New("no 'channel' key in form-data"))
 			return
 		}
-		if importCallback[channel] == nil {
+		if importCallbackMap[channel] == nil {
 			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
 			return
 		}
@@ -215,7 +231,7 @@ var ImportRoute = RouteInfo{
 			return
 		}
 		// 调用导入验证
-		args := importCallback[channel]
+		args := importCallbackMap[channel]
 		if args.Validator != nil {
 			msg, err := (*args.Validator)(c, rows)
 			if err != nil {
