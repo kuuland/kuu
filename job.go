@@ -2,8 +2,8 @@ package kuu
 
 import "github.com/robfig/cron/v3"
 
-// DefaultCron
-var DefaultCron = cron.New()
+// DefaultCron (set option 5 cron to convet 6 cron)
+var DefaultCron = cron.New(cron.WithSeconds())
 
 // Job
 type Job struct {
