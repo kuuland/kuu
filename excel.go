@@ -6,11 +6,16 @@ import (
 )
 
 // ParseExcelFromFileHeader
-func ParseExcelFromFileHeader(fh *multipart.FileHeader, index int, sheetName string) (rows [][]string, err error) {
+func ParseExcelFromFileHeader(fh *multipart.FileHeader, index int, sheetName ...string) (rows [][]string, err error) {
 	var (
 		file multipart.File
 		f    *excelize.File
+		name string
 	)
+
+	if len(sheetName) > 0 && sheetName[0] != "" {
+		name = sheetName[0]
+	}
 
 	// 解析Excel
 	if file, err = fh.Open(); err != nil {
@@ -21,16 +26,16 @@ func ParseExcelFromFileHeader(fh *multipart.FileHeader, index int, sheetName str
 		return rows, err
 	}
 	// 选择工作表
-	if sheetName == "" && index > 0 {
-		sheetName = f.GetSheetName(index)
+	if name == "" && index > 0 {
+		name = f.GetSheetName(index)
 	}
-	if sheetName == "" {
-		sheetName = f.GetSheetName(f.GetActiveSheetIndex())
+	if name == "" {
+		name = f.GetSheetName(f.GetActiveSheetIndex())
 	}
-	if sheetName == "" {
-		sheetName = f.GetSheetName(1)
+	if name == "" {
+		name = f.GetSheetName(1)
 	}
 	// 读取行
-	rows, err = f.GetRows(sheetName)
+	rows, err = f.GetRows(name)
 	return
 }
