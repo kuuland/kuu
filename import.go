@@ -3,7 +3,6 @@ package kuu
 import (
 	"errors"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	uuid "github.com/satori/go.uuid"
 	"strconv"
 )
@@ -191,37 +190,18 @@ var ImportRoute = RouteInfo{
 			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
 			return
 		}
-		src, err := file.Open()
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		defer ERROR(src.Close())
-		// 解析Excel
-		f, err := excelize.OpenReader(src)
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		// 选择工作表
-		var sheetName string
-		if v := c.PostForm("sheet_name"); v != "" {
-			sheetName = v
-		}
-		if v := c.PostForm("sheet_idx"); sheetName == "" && v != "" {
+		var (
+			sheetIndex int
+			sheetName  string
+		)
+		sheetName = c.PostForm("sheet_name")
+		if v := c.PostForm("sheet_idx"); v != "" {
 			idx, err := strconv.Atoi(v)
 			if err == nil {
-				sheetName = f.GetSheetName(idx)
+				sheetIndex = idx
 			}
 		}
-		if sheetName == "" {
-			sheetName = f.GetSheetName(f.GetActiveSheetIndex())
-		}
-		if sheetName == "" {
-			sheetName = f.GetSheetName(1)
-		}
-		// 读取当前工作表所有行
-		rows, err := f.GetRows(sheetName)
+		rows, err := ParseExcelFromFileHeader(file, sheetIndex, sheetName)
 		if err != nil {
 			c.STDErr(failedMessage, err)
 			return
