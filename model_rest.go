@@ -481,7 +481,11 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 			ms := db.NewScope(reflect.New(reflectType).Interface())
 			split := strings.Split(rawPreload, ",")
 			for _, item := range split {
-				if v, ok := ms.FieldByName(item); ok {
+				tmp := item
+				if strings.Contains(item, ".") {
+					tmp = strings.Split(item, ".")[0]
+				}
+				if v, ok := ms.FieldByName(tmp); ok {
 					preloaded := false
 					if v.Relationship.Kind == "many_to_many" {
 						if deletedAtField, hasDeletedAt := ms.FieldByName("DeletedAt"); hasDeletedAt {
@@ -493,7 +497,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 						}
 					}
 					if !preloaded {
-						db = db.Preload(v.Name)
+						// db = db.Preload(v.Name)
+						// 二级联查
+						db = db.Preload(item)
 					}
 				}
 			}
