@@ -318,3 +318,12 @@ func SetUrlQuery(rawUrl string, values map[string]interface{}, replace ...bool) 
 	u.RawQuery = query.Encode()
 	return u.String()
 }
+
+// OmitFields
+func OmitFields(src interface{}, fieldNames []string) (omitted map[string]interface{}) {
+	_ = Copy(src, &omitted)
+	for _, fieldName := range fieldNames {
+		delete(omitted, fieldName)
+	}
+	return
+}
