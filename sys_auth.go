@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -504,6 +505,13 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	desc.PersonalReadableOrgIDs = keys(personalReadableOrgIDMap)
 	desc.PersonalWritableOrgIDMap = personalWritableOrgIDMap
 	desc.PersonalWritableOrgIDs = keys(personalWritableOrgIDMap)
+
+	// 排序
+	sortIDs(&desc.FullReadableOrgIDs)
+	sortIDs(&desc.WritableOrgIDs)
+	sortIDs(&desc.LoginableOrgIDs)
+	sortIDs(&desc.PersonalReadableOrgIDs)
+	sortIDs(&desc.PersonalWritableOrgIDs)
 	// 计算ActOrgID
 	var actOrg Org
 	if user.ActOrgID != 0 && desc.IsLoginableOrgID(user.ActOrgID) {
@@ -537,4 +545,15 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	desc.addEmptyOrgs()
 
 	return
+}
+
+func sortIDs(arr *[]uint) {
+	newIDs := make([]int, len(*arr))
+	for index, item := range *arr {
+		newIDs[index] = int(item)
+	}
+	sort.Ints(newIDs)
+	for index, item := range newIDs {
+		(*arr)[index] = uint(item)
+	}
 }
