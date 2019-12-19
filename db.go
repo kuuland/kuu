@@ -1,7 +1,6 @@
 package kuu
 
 import (
-	"log"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -38,8 +37,7 @@ func (logger dbLogger) Print(values ...interface{}) {
 func (logger dbLogger) Println(values ...interface{}) {
 	messages := gorm.LogFormatter(values...)
 	if len(messages) > 0 {
-		INFO(messages...)
-		log.Println(messages...)
+		Logger.Info(messages...)
 	}
 }
 
@@ -103,7 +101,7 @@ func initDataSources() {
 				dataSourcesMap.Store(ds.Name, db)
 				if gin.IsDebugging() {
 					db.LogMode(true)
-					//db.SetLogger(dbLogger{})
+					db.SetLogger(dbLogger{})
 				}
 			}
 		}

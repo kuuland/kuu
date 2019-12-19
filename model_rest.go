@@ -265,7 +265,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	)
 	switch cond.(type) {
 	case string:
-		Parse(cond.(string), data)
+		_ = Parse(cond.(string), data)
 	case map[string]interface{}:
 		data = cond.(map[string]interface{})
 	default:
@@ -275,6 +275,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	if len(data) > 0 {
 		for key, val := range data {
 			if v, ok := val.([]interface{}); ok {
+				// 处理顶级$and、$or
 				var (
 					sqls  []string
 					attrs []interface{}
@@ -300,6 +301,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 					desc.OrAttrs = append(desc.OrAttrs, attrs...)
 				}
 			} else {
+				// 处理普通键值对
 				var (
 					field, hasField = scope.FieldByName(key)
 					columnName      string
@@ -307,13 +309,24 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 				if hasField {
 					columnName = field.DBName
 				}
-
-				ss, as := parseField(columnName, val)
-				if len(ss) > 0 {
-					desc.AndSQLs = append(desc.AndSQLs, ss...)
-				}
-				if len(as) > 0 {
-					desc.AndAttrs = append(desc.AndAttrs, as...)
+				if refFilter, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
+					refModel := reflect.New(field.Struct.Type).Interface()
+					refScope := DB().NewScope(refModel)
+					ss, as := parseObject(refFilter, refModel)
+					for _, foreignDBName := range field.Relationship.ForeignDBNames {
+						associationForeignDBName := field.Relationship.AssociationForeignDBNames[0]
+						refDB := DB().Table(refScope.TableName()).Select(associationForeignDBName).Where(strings.Join(ss, " AND "), as...)
+						desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(foreignDBName)))
+						desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
+					}
+				} else {
+					ss, as := parseField(columnName, val)
+					if len(ss) > 0 {
+						desc.AndSQLs = append(desc.AndSQLs, ss...)
+					}
+					if len(as) > 0 {
+						desc.AndAttrs = append(desc.AndAttrs, as...)
+					}
 				}
 			}
 		}
@@ -423,9 +436,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		var cond map[string]interface{}
 		rawCond := c.Query("cond")
 		if rawCond != "" {
-			Parse(rawCond, &cond)
+			_ = Parse(rawCond, &cond)
 			var retCond map[string]interface{}
-			Parse(rawCond, &retCond)
+			_ = Parse(rawCond, &retCond)
 			ret.Cond = retCond
 		}
 		_, db := ParseCond(cond, modelValue, DB().Model(modelValue))
