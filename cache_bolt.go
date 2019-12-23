@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/boltdb/bolt"
 	"time"
 )
@@ -121,7 +122,7 @@ func (c *CacheBolt) GetInt(key string) (val int) {
 // Incr
 func (c *CacheBolt) Incr(key string) (val int) {
 	ERROR(c.db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
+		bucket, err := tx.CreateBucketIfNotExists([]byte(fmt.Sprintf("incr_%s", key)))
 		if err != nil {
 			return err
 		}
