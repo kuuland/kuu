@@ -501,16 +501,23 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 				if v, ok := ms.FieldByName(tmp); ok {
 					preloaded := false
 					if v.Relationship.Kind == "many_to_many" {
-						if deletedAtField, hasDeletedAt := ms.FieldByName("DeletedAt"); hasDeletedAt {
+						refTableName := v.Relationship.JoinTableHandler.Table(db)
+						refMeta := tableNameMetaMap[refTableName]
+						if refMeta == nil {
+							continue
+						}
+
+						refScope := db.NewScope(reflect.New(refMeta.reflectType).Interface())
+						deletedAtField, hasDeletedAt := refScope.FieldByName("DeletedAt")
+						if hasDeletedAt {
 							db = db.Preload(v.Name, fmt.Sprintf("%v.%v IS NULL",
-								ms.Quote(v.Relationship.JoinTableHandler.Table(db)),
+								ms.Quote(refTableName),
 								ms.Quote(deletedAtField.DBName),
 							))
 							preloaded = true
 						}
 					}
 					if !preloaded {
-						// db = db.Preload(v.Name)
 						// 二级联查
 						db = db.Preload(item)
 					}

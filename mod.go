@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	tableNames = make(map[string]string)
-	ModMap     = make(map[string]*Mod)
+	tableNames       = make(map[string]string)
+	tableNameMetaMap = make(map[string]*Metadata)
+	ModMap           = make(map[string]*Mod)
 )
 
 func init() {
@@ -88,6 +89,13 @@ func (e *Engine) Import(mods ...*Mod) {
 					tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
 					tableNames[defaultTableName] = tableName
 					tableNames[pluralTableName] = tableName
+
+					db := DB()
+					tn := db.NewScope(model).GetModelStruct().TableName(db)
+					if tn != "" {
+						tableNameMetaMap[tn] = meta
+					}
+
 				}
 				if migrate {
 					DB().AutoMigrate(model)
