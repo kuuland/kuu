@@ -493,7 +493,16 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		if rawPreload != "" {
 			ms := db.NewScope(reflect.New(reflectType).Interface())
 			split := strings.Split(rawPreload, ",")
+			handlers := make(map[string]func(*gorm.DB) *gorm.DB)
+			if v, ok := ms.Value.(BizPreloadInterface); ok {
+				handlers = v.BizPreloadHandlers()
+			}
 			for _, item := range split {
+				if handler, has := handlers[item]; has {
+					db = handler(db)
+					continue
+				}
+
 				tmp := item
 				if strings.Contains(item, ".") {
 					tmp = strings.Split(item, ".")[0]

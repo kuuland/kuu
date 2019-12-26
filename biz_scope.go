@@ -41,6 +41,10 @@ type BizQueryResult struct {
 	List         interface{}            `json:"list,omitempty"`
 }
 
+type BizPreloadInterface interface {
+	BizPreloadHandlers() map[string]func(*gorm.DB) *gorm.DB
+}
+
 // NewBizScope
 func NewBizScope(c *Context, value interface{}, db *gorm.DB) *Scope {
 	reflectType := reflect.ValueOf(value).Type()
