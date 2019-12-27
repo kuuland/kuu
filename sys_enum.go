@@ -35,6 +35,19 @@ func Enum(classCode string, className ...string) *EnumDesc {
 	return desc
 }
 
+// GetEnumItem
+func GetEnumItem(classCode string) *EnumDesc {
+	return enumMap[classCode]
+}
+
+// GetEnumLabel
+func GetEnumLabel(classCode string, value interface{}) (label string) {
+	if v, has := enumMap[classCode]; has && v != nil {
+		label = v.Values[value]
+	}
+	return
+}
+
 // Add
 func (d *EnumDesc) Add(value interface{}, label ...string) *EnumDesc {
 	if len(label) > 0 {
