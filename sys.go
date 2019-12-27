@@ -295,6 +295,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("fano_table_reset").Add("Reset", "重置", "重置")
 	register.SetKey("fano_table_more").Add("More", "更多", "更多")
 	register.SetKey("fano_table_less").Add("Less", "收起", "收起")
+	register.SetKey("fano_table_select_all").Add("Select All", "全选", "全選")
+	register.SetKey("fano_table_deselect_all").Add("Deselect All", "反选", "反選")
 	register.SetKey("fano_placeholder_choose").Add("Please choose {{name}}", "请选择{{name}}", "請選擇{{name}}")
 	register.SetKey("fano_placeholder_input").Add("Please input {{name}}", "请输入{{name}}", "請輸入{{name}}")
 	register.SetKey("fano_placeholder_keyword").Add("Please enter a keyword", "请输入关键字", "請輸入關鍵字")

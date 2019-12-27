@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
@@ -940,23 +939,7 @@ var LangtransImportRoute = RouteInfo{
 			c.STDErr(failedMessage, errors.New("no 'file' key in form-data"))
 			return
 		}
-		src, err := file.Open()
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		defer src.Close()
-		// 解析Excel
-		f, err := excelize.OpenReader(src)
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
-		if activeSheetName == "" {
-			activeSheetName = f.GetSheetName(0)
-		}
-		rows, err := f.GetRows(activeSheetName)
+		rows, err := ParseExcelFromFileHeader(file, 0)
 		if err != nil {
 			c.STDErr(failedMessage, err)
 			return
