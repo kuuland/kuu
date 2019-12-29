@@ -100,8 +100,7 @@ func saveHistory(secretData *SignSecret) {
 // ParseToken
 var ParseToken = func(c *gin.Context) string {
 	// querystring > header > cookie
-	var token string
-	token = c.Query(TokenKey)
+	token := QueryCI(c, TokenKey)
 	if token == "" {
 		token = c.GetHeader(TokenKey)
 		if token == "" {

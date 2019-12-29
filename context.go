@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"regexp"
 	"strconv"
 )
 
@@ -49,6 +50,24 @@ func GetPagination(ginContextOrKuuContext interface{}) (page int, size int) {
 	}
 	if v, err := strconv.Atoi(rawSize); err == nil {
 		size = v
+	}
+	return
+}
+
+// QueryCI
+func (c *Context) QueryCI(key string) string {
+	return QueryCI(c.Context, key)
+}
+
+// QueryCI means to get case-insensitive query value
+func QueryCI(c *gin.Context, key string) (v string) {
+	query := c.Request.URL.Query()
+	reg := regexp.MustCompile(fmt.Sprintf("(?i)%s", key))
+	for key, values := range query {
+		if reg.MatchString(key) {
+			v = values[0]
+			break
+		}
 	}
 	return
 }
