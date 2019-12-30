@@ -313,11 +313,49 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 					refModel := reflect.New(field.Struct.Type).Interface()
 					refScope := DB().NewScope(refModel)
 					ss, as := parseObject(refFilter, refModel)
-					for _, foreignDBName := range field.Relationship.ForeignDBNames {
-						associationForeignDBName := field.Relationship.AssociationForeignDBNames[0]
-						refDB := DB().Table(refScope.TableName()).Select(associationForeignDBName).Where(strings.Join(ss, " AND "), as...)
-						desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(foreignDBName)))
-						desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
+
+					switch field.Relationship.Kind {
+					case "belongs_to", "has_many", "has_one":
+						var (
+							srcNames  []string
+							destNames []string
+						)
+						if field.Relationship.Kind == "belongs_to" {
+							srcNames = field.Relationship.ForeignDBNames
+							destNames = field.Relationship.AssociationForeignDBNames
+						} else {
+							srcNames = field.Relationship.AssociationForeignDBNames
+							destNames = field.Relationship.ForeignDBNames
+						}
+						if len(srcNames) > 0 && len(destNames) > 0 {
+							for _, srcName := range srcNames {
+								for _, destName := range destNames {
+									handler := field.Relationship.JoinTableHandler
+									tableName := refScope.TableName()
+									if handler != nil {
+										tableName = handler.Table(refScope.DB())
+									}
+									refDB := DB().Table(tableName).Select(destName).Where(strings.Join(ss, " AND "), as...)
+									desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(srcName)))
+									desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
+								}
+							}
+						}
+					case "many_to_many":
+						if handler := field.Relationship.JoinTableHandler; handler != nil {
+							tableName := handler.Table(refScope.DB())
+
+							foreignFieldName := field.Relationship.ForeignFieldNames[0]
+							foreignDBName := field.Relationship.ForeignDBNames[0]
+							assForeignFieldName := field.Relationship.AssociationForeignFieldNames[0]
+							assForeignDBName := field.Relationship.AssociationForeignDBNames[0]
+
+							destDB := DB().Table(refScope.TableName()).Select(assForeignFieldName).Where(strings.Join(ss, " AND "), as...)
+							refDB := DB().Table(tableName).Select(foreignDBName).Where(fmt.Sprintf("%s IN (?)", destDB.Dialect().Quote(assForeignDBName)), destDB.QueryExpr())
+
+							desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(foreignFieldName)))
+							desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
+						}
 					}
 				} else {
 					ss, as := parseField(columnName, val)
