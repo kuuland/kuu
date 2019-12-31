@@ -47,7 +47,7 @@ type ModelExOrg struct {
 // ExtendField
 type ExtendField struct {
 	Def1 uint   `name:"扩展字段1（默认字段）"`
-	Def2 string `name:"扩展字段2（默认字段）" gorm:"text"`
+	Def2 string `name:"扩展字段2（默认字段）" gorm:"type:text"`
 	Def3 string `name:"扩展字段3（默认字段）"`
 	Def4 string `name:"扩展字段4（默认字段）"`
 	Def5 string `name:"扩展字段5（默认字段）"`
