@@ -123,7 +123,7 @@ type CondDesc struct {
 	OrAttrs  []interface{}
 }
 
-func parseField(name string, value interface{}) (sqls []string, attrs []interface{}) {
+func parseSlimField(name string, value interface{}) (sqls []string, attrs []interface{}) {
 	if name == "" || value == nil {
 		return
 	}
@@ -221,6 +221,7 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 	if len(filter) == 0 {
 		return
 	}
+
 	for key, val := range filter {
 		if v, ok := val.([]interface{}); ok {
 			for _, item := range v {
@@ -239,12 +240,17 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 				scope           = DB().NewScope(model)
 				field, hasField = scope.FieldByName(key)
 				columnName      string
+				ss              []string
+				as              []interface{}
 			)
 			if hasField {
 				columnName = field.DBName
 			}
-
-			ss, as := parseField(columnName, val)
+			if refCond, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
+				ss, as = parseRefField(field, refCond)
+			} else {
+				ss, as = parseSlimField(columnName, val)
+			}
 			if len(ss) > 0 {
 				sqls = append(sqls, ss...)
 			}
@@ -283,7 +289,11 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 				for _, item := range v {
 					if obj, ok := item.(map[string]interface{}); ok {
 						// 只处理对象值
-						ss, as := parseObject(obj, model)
+						var (
+							ss []string
+							as []interface{}
+						)
+						ss, as = parseObject(obj, model)
 						if len(ss) > 0 {
 							sqls = append(sqls, ss...)
 						}
@@ -301,70 +311,26 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 					desc.OrAttrs = append(desc.OrAttrs, attrs...)
 				}
 			} else {
-				// 处理普通键值对
+				// 处理字段键值对
 				var (
 					field, hasField = scope.FieldByName(key)
 					columnName      string
+					ss              []string
+					as              []interface{}
 				)
 				if hasField {
 					columnName = field.DBName
 				}
-				if refFilter, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
-					refModel := reflect.New(field.Struct.Type).Interface()
-					refScope := DB().NewScope(refModel)
-					ss, as := parseObject(refFilter, refModel)
-
-					switch field.Relationship.Kind {
-					case "belongs_to", "has_many", "has_one":
-						var (
-							srcNames  []string
-							destNames []string
-						)
-						if field.Relationship.Kind == "belongs_to" {
-							srcNames = field.Relationship.ForeignDBNames
-							destNames = field.Relationship.AssociationForeignDBNames
-						} else {
-							srcNames = field.Relationship.AssociationForeignDBNames
-							destNames = field.Relationship.ForeignDBNames
-						}
-						if len(srcNames) > 0 && len(destNames) > 0 {
-							for _, srcName := range srcNames {
-								for _, destName := range destNames {
-									handler := field.Relationship.JoinTableHandler
-									tableName := refScope.TableName()
-									if handler != nil {
-										tableName = handler.Table(refScope.DB())
-									}
-									refDB := DB().Table(tableName).Select(destName).Where(strings.Join(ss, " AND "), as...)
-									desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(srcName)))
-									desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
-								}
-							}
-						}
-					case "many_to_many":
-						if handler := field.Relationship.JoinTableHandler; handler != nil {
-							tableName := handler.Table(refScope.DB())
-
-							foreignFieldName := field.Relationship.ForeignFieldNames[0]
-							foreignDBName := field.Relationship.ForeignDBNames[0]
-							assForeignFieldName := field.Relationship.AssociationForeignFieldNames[0]
-							assForeignDBName := field.Relationship.AssociationForeignDBNames[0]
-
-							destDB := DB().Table(refScope.TableName()).Select(assForeignFieldName).Where(strings.Join(ss, " AND "), as...)
-							refDB := DB().Table(tableName).Select(foreignDBName).Where(fmt.Sprintf("%s IN (?)", destDB.Dialect().Quote(assForeignDBName)), destDB.QueryExpr())
-
-							desc.AndSQLs = append(desc.AndSQLs, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(foreignFieldName)))
-							desc.AndAttrs = append(desc.AndAttrs, refDB.QueryExpr())
-						}
-					}
+				if refCond, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
+					ss, as = parseRefField(field, refCond)
 				} else {
-					ss, as := parseField(columnName, val)
-					if len(ss) > 0 {
-						desc.AndSQLs = append(desc.AndSQLs, ss...)
-					}
-					if len(as) > 0 {
-						desc.AndAttrs = append(desc.AndAttrs, as...)
-					}
+					ss, as = parseSlimField(columnName, val)
+				}
+				if len(ss) > 0 {
+					desc.AndSQLs = append(desc.AndSQLs, ss...)
+				}
+				if len(as) > 0 {
+					desc.AndAttrs = append(desc.AndAttrs, as...)
 				}
 			}
 		}
@@ -383,12 +349,63 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	return
 }
 
+func parseRefField(field *gorm.Field, refCond map[string]interface{}) (sqls []string, attrs []interface{}) {
+	refModel := reflect.New(field.Struct.Type).Interface()
+	refScope := DB().NewScope(refModel)
+	ss, as := parseObject(refCond, refModel)
+
+	switch field.Relationship.Kind {
+	case "belongs_to", "has_many", "has_one":
+		var (
+			srcNames  []string
+			destNames []string
+		)
+		if field.Relationship.Kind == "belongs_to" {
+			srcNames = field.Relationship.ForeignDBNames
+			destNames = field.Relationship.AssociationForeignDBNames
+		} else {
+			srcNames = field.Relationship.AssociationForeignDBNames
+			destNames = field.Relationship.ForeignDBNames
+		}
+		if len(srcNames) > 0 && len(destNames) > 0 {
+			for _, srcName := range srcNames {
+				for _, destName := range destNames {
+					handler := field.Relationship.JoinTableHandler
+					tableName := refScope.TableName()
+					if handler != nil {
+						tableName = handler.Table(refScope.DB())
+					}
+					refDB := DB().Table(tableName).Select(destName).Where(strings.Join(ss, " AND "), as...)
+					sqls = append(sqls, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(srcName)))
+					attrs = append(attrs, refDB.QueryExpr())
+				}
+			}
+		}
+	case "many_to_many":
+		if handler := field.Relationship.JoinTableHandler; handler != nil {
+			tableName := handler.Table(refScope.DB())
+
+			foreignFieldName := field.Relationship.ForeignFieldNames[0]
+			foreignDBName := field.Relationship.ForeignDBNames[0]
+			assForeignFieldName := field.Relationship.AssociationForeignFieldNames[0]
+			assForeignDBName := field.Relationship.AssociationForeignDBNames[0]
+
+			destDB := DB().Table(refScope.TableName()).Select(assForeignFieldName).Where(strings.Join(ss, " AND "), as...)
+			refDB := DB().Table(tableName).Select(foreignDBName).Where(fmt.Sprintf("%s IN (?)", destDB.Dialect().Quote(assForeignDBName)), destDB.QueryExpr())
+
+			sqls = append(sqls, fmt.Sprintf("%s IN (?)", refDB.Dialect().Quote(foreignFieldName)))
+			attrs = append(attrs, refDB.QueryExpr())
+		}
+	}
+	return
+}
+
 func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
 		var (
 			result     interface{}
 			err        error
-			modelValue = reflect.New(reflectType).Interface()
+			modelValue = reflect.New(reflectType).Elem().Addr().Interface()
 		)
 		// 事务执行
 		err = c.WithTransaction(func(tx *gorm.DB) error {
@@ -466,7 +483,7 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 	return func(c *Context) {
 		var (
-			modelValue = reflect.New(reflectType).Interface()
+			modelValue = reflect.New(reflectType).Elem().Addr().Interface()
 			ret        = new(BizQueryResult)
 			scope      = DB().NewScope(modelValue)
 		)
@@ -607,7 +624,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		var (
 			result     interface{}
 			err        error
-			modelValue = reflect.New(reflectType).Interface()
+			modelValue = reflect.New(reflectType).Elem().Addr().Interface()
 		)
 		// 事务执行
 		err = c.WithTransaction(func(tx *gorm.DB) error {
