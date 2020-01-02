@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -326,36 +325,5 @@ func OmitFields(src interface{}, fieldNames []string) (omitted map[string]interf
 	for _, fieldName := range fieldNames {
 		delete(omitted, fieldName)
 	}
-	return
-}
-
-// ASCIISort
-func ASCIISort(data interface{}, omitKeys ...[]string) (sortedKeys []string) {
-	params := make(map[string]interface{})
-
-	if v, ok := data.(map[string]interface{}); ok {
-		params = v
-	} else {
-		b, _ := json.Marshal(data)
-		_ = json.Unmarshal(b, &params)
-	}
-
-	omitKeyMap := make(map[string]bool)
-	if len(omitKeys) > 0 {
-		for _, omitKey := range omitKeys[0] {
-			omitKeyMap[omitKey] = true
-		}
-	}
-
-	for k, v := range params {
-		if omitKeyMap[k] {
-			continue
-		}
-		if vv, ok := v.(string); ok && vv == "" {
-			continue
-		}
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
 	return
 }
