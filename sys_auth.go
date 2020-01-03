@@ -383,7 +383,7 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	}
 	desc = &PrivilegesDesc{
 		UID:           uid,
-		OrgID:         user.OrgID,
+		OrgID:         uint(user.OrgID.Int64),
 		PermissionMap: make(map[string]int64),
 		Valid:         true,
 		SignInfo:      sign,
