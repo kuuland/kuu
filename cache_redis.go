@@ -56,7 +56,7 @@ func NewCacheRedis() *CacheRedis {
 		PANIC(err)
 	}
 	c.client = cmd
-	connectedPrint(Capitalize("redis"), strings.Join(opts.Addrs, ","))
+	connectedPrint(strings.Title("redis"), strings.Join(opts.Addrs, ","))
 	return c
 }
 

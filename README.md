@@ -1083,7 +1083,6 @@ func main() {
 }
 ```
 - `IsBlank` - Check if value is empty
-- `Capitalize` - Capitalize first letter
 - `Stringify` - Converts value to a JSON string 
 - `Parse` - Parses a JSON string to the value
 - `EnsureDir` - Ensures that the directory exists
