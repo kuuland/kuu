@@ -5,6 +5,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v3"
 	"reflect"
 	"regexp"
 	"strings"
@@ -159,7 +160,15 @@ func createCallback(scope *gorm.Scope) {
 						return
 					}
 				}
-				orgID = field.Field.Interface().(uint)
+				if v, ok := field.Field.Interface().(uint); ok {
+					orgID = v
+				} else if v, ok := field.Field.Interface().(int); ok {
+					orgID = uint(v)
+				} else if v, ok := field.Field.Interface().(int64); ok {
+					orgID = uint(v)
+				} else if v, ok := field.Field.Interface().(null.Int); ok {
+					orgID = uint(v.Int64)
+				}
 			}
 
 			// 有忽略标记时
