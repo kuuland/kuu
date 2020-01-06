@@ -33,6 +33,12 @@ func (c *Context) GetPagination() (int, int) {
 	return GetPagination(c)
 }
 
+// ParseCond
+func (c *Context) ParseCond(cond interface{}, model interface{}) CondDesc {
+	desc, _ := ParseCond(cond, model)
+	return desc
+}
+
 // Pagination
 func GetPagination(ginContextOrKuuContext interface{}) (page int, size int) {
 	var c *gin.Context
