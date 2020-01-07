@@ -142,7 +142,7 @@ func createRootPrivileges(tx *gorm.DB) {
 	rootRole := &Role{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
-		OrgID:       RootOrgID(),
+		OrgID:       null.NewInt(int64(RootOrgID()), true),
 		Code:        "root_role",
 		Name:        "Default",
 		IsBuiltIn:   null.NewBool(true, true),
