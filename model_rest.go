@@ -245,6 +245,8 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 			)
 			if hasField {
 				columnName = field.DBName
+			} else {
+				columnName = gorm.ToColumnName(key)
 			}
 			if refCond, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
 				ss, as = parseRefField(field, refCond)
