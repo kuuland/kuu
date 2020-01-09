@@ -115,7 +115,7 @@ func createRootUser(tx *gorm.DB) {
 	root := User{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
-		OrgID:       null.NewInt(int64(RootOrgID()), true),
+		OrgID:       RootOrgID(),
 		Username:    "root",
 		Name:        "Default",
 		Password:    MD5("kuu"),
@@ -142,7 +142,7 @@ func createRootPrivileges(tx *gorm.DB) {
 	rootRole := &Role{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
-		OrgID:       null.NewInt(int64(RootOrgID()), true),
+		OrgID:       RootOrgID(),
 		Code:        "root_role",
 		Name:        "Default",
 		IsBuiltIn:   null.NewBool(true, true),
@@ -153,7 +153,7 @@ func createRootPrivileges(tx *gorm.DB) {
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
-			OrgID:       null.NewInt(int64(RootOrgID()), true),
+			OrgID:       RootOrgID(),
 		},
 		RoleID:        rootRole.ID,
 		TargetOrgID:   RootOrgID(),

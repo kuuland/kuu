@@ -14,7 +14,7 @@ type Model struct {
 	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       null.Int    `name:"所属组织ID（默认字段）"`
+	OrgID       uint        `name:"所属组织ID（默认字段）"`
 	CreatedByID uint        `name:"创建人ID（默认字段）"`
 	UpdatedByID uint        `name:"修改人ID（默认字段）"`
 	DeletedByID uint        `name:"删除人ID（默认字段）"`
@@ -68,7 +68,7 @@ type User struct {
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       null.Int   `name:"所属组织ID（默认字段）"`
+	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
@@ -125,7 +125,7 @@ type Org struct {
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       null.Int   `name:"所属组织ID（默认字段）"`
+	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
@@ -225,7 +225,7 @@ type Role struct {
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       null.Int   `name:"所属组织ID（默认字段）"`
+	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
