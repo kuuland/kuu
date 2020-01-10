@@ -29,6 +29,12 @@ func init() {
 	}
 }
 
+// HandlerFunc defines the handler used by ok middleware as return value.
+type HandlerFunc func(*Context)
+
+// HandlersChain defines a HandlerFunc array.
+type HandlersChain []HandlerFunc
+
 // Mod
 type Mod struct {
 	Code        string

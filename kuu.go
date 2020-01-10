@@ -38,24 +38,6 @@ var (
 // M is a shortcut for map[string]interface{}
 type M map[string]interface{}
 
-// HandlerFunc defines the handler used by ok middleware as return value.
-type HandlerFunc func(*Context)
-
-// HandlersChain defines a HandlerFunc array.
-type HandlersChain []HandlerFunc
-
-// RouteInfo represents a request route's specification which contains method and path and its handler.
-type RouteInfo struct {
-	Method       string
-	Path         string
-	Name         string
-	HandlerFunc  HandlerFunc
-	IgnorePrefix bool
-}
-
-// RoutesInfo defines a RouteInfo array.
-type RoutesInfo []RouteInfo
-
 // Engine
 type Engine struct {
 	*gin.Engine
