@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 	"log"
 	"math/rand"
 	"net/http"
