@@ -888,10 +888,10 @@ var SetPayloadAttrs = func(payload jwt.MapClaims, user *User) jwt.MapClaims {
 func GetUserFromCache(uid uint) (user User) {
 	cacheKey := fmt.Sprintf("user_%d", uid)
 	if info := GetCacheString(cacheKey); info != "" {
-		_ = Parse(info, &user)
+		_ = JSONParse(info, &user)
 	} else {
 		if err := DB().First(&user, &User{ID: uid}); err != nil {
-			SetCacheString(cacheKey, Stringify(user))
+			SetCacheString(cacheKey, JSONStringify(user))
 		}
 	}
 	return

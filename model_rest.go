@@ -273,7 +273,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	)
 	switch cond.(type) {
 	case string:
-		_ = Parse(cond.(string), data)
+		_ = JSONParse(cond.(string), data)
 	case map[string]interface{}:
 		data = cond.(map[string]interface{})
 	default:
@@ -493,9 +493,9 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		var cond map[string]interface{}
 		rawCond := c.Query("cond")
 		if rawCond != "" {
-			_ = Parse(rawCond, &cond)
+			_ = JSONParse(rawCond, &cond)
 			var retCond map[string]interface{}
-			_ = Parse(rawCond, &retCond)
+			_ = JSONParse(rawCond, &retCond)
 			ret.Cond = retCond
 		}
 		_, db := ParseCond(cond, modelValue, DB().Model(modelValue))
@@ -638,7 +638,7 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 			}
 			if c.Query("cond") != "" {
 				var retCond map[string]interface{}
-				Parse(c.Query("cond"), &retCond)
+				JSONParse(c.Query("cond"), &retCond)
 				params.Cond = retCond
 
 				if c.Query("multi") != "" || c.Query("all") != "" {

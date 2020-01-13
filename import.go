@@ -131,7 +131,7 @@ func CallImportCallback(info *ImportRecord) {
 	}
 
 	var rows [][]string
-	if err := Parse(info.Data, &rows); err != nil {
+	if err := JSONParse(info.Data, &rows); err != nil {
 		ERROR(err)
 		return
 	}
@@ -143,7 +143,7 @@ func CallImportCallback(info *ImportRecord) {
 	}
 
 	context := &ImportContext{}
-	_ = Parse(info.Context, context)
+	_ = JSONParse(info.Context, context)
 	args := callback
 	result := (*args.Processor)(context, rows)
 	if result == nil {
@@ -158,10 +158,10 @@ func CallImportCallback(info *ImportRecord) {
 		doc.Status = ImportStatusSuccess
 	}
 	if len(result.Feedback) > 0 {
-		doc.Feedback = Stringify(result.Feedback)
+		doc.Feedback = JSONStringify(result.Feedback)
 	}
 	if len(result.Extra) > 0 {
-		doc.Extra = Stringify(result.Extra)
+		doc.Extra = JSONStringify(result.Extra)
 	}
 	if err := db.Update(&doc).Error; err != nil {
 		ERROR(err)
@@ -225,9 +225,9 @@ var ImportRoute = RouteInfo{
 		// 创建导入记录
 		record := ImportRecord{
 			Channel: channel,
-			Data:    Stringify(rows),
+			Data:    JSONStringify(rows),
 			Sync:    c.PostForm("sync") != "",
-			Context: Stringify(&ImportContext{
+			Context: JSONStringify(&ImportContext{
 				Token:      c.SignInfo.Token,
 				SignType:   c.SignInfo.Type,
 				Lang:       c.SignInfo.Lang,

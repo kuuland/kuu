@@ -104,8 +104,8 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Stringify
-func Stringify(v interface{}, format ...bool) string {
+// JSONStringify
+func JSONStringify(v interface{}, format ...bool) string {
 	var (
 		data []byte
 		err  error
@@ -121,8 +121,8 @@ func Stringify(v interface{}, format ...bool) string {
 	return ""
 }
 
-// Parse
-func Parse(v string, r interface{}) error {
+// JSONParse
+func JSONParse(v string, r interface{}) error {
 	return json.Unmarshal([]byte(v), r)
 }
 

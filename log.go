@@ -183,7 +183,7 @@ func (l *Log) CacheKey() string {
 // Save2Cache
 func (l *Log) Save2Cache() {
 	if key := l.CacheKey(); key != "" {
-		SetCacheString(key, Stringify(l))
+		SetCacheString(key, JSONStringify(l))
 	}
 }
 
@@ -218,7 +218,7 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 				log.SubDocID = signContext.SubDocID
 				log.Token = signContext.Token
 				log.SignType = signContext.Type
-				log.SignPayload = Stringify(signContext.Payload)
+				log.SignPayload = JSONStringify(signContext.Payload)
 				log.Username = user.Username
 				log.RealName = user.Name
 			}
@@ -251,7 +251,7 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 		log.RequestIsWebsocket = c.IsWebsocket()
 		log.RequestIsMobile = ua.Mobile()
 		log.RequestContentType = c.ContentType()
-		log.RequestHeaders = Stringify(c.Request.Header)
+		log.RequestHeaders = JSONStringify(c.Request.Header)
 		log.RequestQuery = c.Request.URL.RawQuery
 		log.RequestCost = 0 // 请求补全
 		log.RequestIP = c.ClientIP()
@@ -342,7 +342,7 @@ func LogPersisJob() {
 		for key, value := range data {
 			totalKeys = append(totalKeys, key)
 			var item Log
-			if err := Parse(value, &item); err == nil && item.UUID != "" {
+			if err := JSONParse(value, &item); err == nil && item.UUID != "" {
 				insertItems = append(insertItems, BatchInsertItem{
 					SQL: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Vars: []interface{}{

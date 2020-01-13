@@ -45,7 +45,7 @@ func NewAuditLog(scope *gorm.Scope, auditType string) {
 	info.AuditType = auditType
 	info.AuditTag = "system"
 	info.AuditSQL = scope.SQL
-	info.AuditSQLVars = Stringify(scope.SQLVars, false)
+	info.AuditSQLVars = JSONStringify(scope.SQLVars, false)
 	if meta := Meta(scope.Value); meta != nil {
 		info.AuditModel = meta.Name
 	}
