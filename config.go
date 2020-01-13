@@ -4,8 +4,6 @@ import (
 	"github.com/buger/jsonparser"
 	"io/ioutil"
 	"os"
-	"regexp"
-	"strings"
 	"sync"
 )
 
@@ -13,8 +11,6 @@ var (
 	configData     []byte
 	configInst     *Config
 	parsePathCache sync.Map
-	//pairs = make(map[string]interface{})
-	//inst  *Config
 )
 
 func parseKuuJSON(filePath ...string) (data []byte) {
@@ -72,29 +68,8 @@ func C(newConfig ...map[string]interface{}) *Config {
 	return configInst
 }
 
-func (c *Config) ParseKeys(path string) []string {
-	if v, has := parsePathCache.Load(path); has {
-		return v.([]string)
-	}
-
-	var reg *regexp.Regexp
-
-	reg = regexp.MustCompile(`(\[\d+\])`)
-	path = reg.ReplaceAllString(path, ".$1.")
-
-	reg = regexp.MustCompile(`\.+`)
-	path = reg.ReplaceAllString(path, ".")
-
-	path = strings.Trim(path, ".")
-
-	keys := strings.Split(path, ".")
-	parsePathCache.Store(path, keys)
-
-	return keys
-}
-
 func (c *Config) Get(path string) (val []byte, exists bool) {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	if v, _, _, err := jsonparser.Get(c.data, keys...); err == nil {
 		exists = true
 		val = v
@@ -103,14 +78,14 @@ func (c *Config) Get(path string) (val []byte, exists bool) {
 }
 
 func (c *Config) Has(path string) bool {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	_, _, _, err := jsonparser.Get(c.data, keys...)
 	return err == nil
 }
 
 // GetInterface returns the value associated with the key.
 func (c *Config) GetInterface(path string, out interface{}) {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	value, _, _, err := jsonparser.Get(c.data, keys...)
 	if err == nil {
 		_ = json.Unmarshal(value, out)
@@ -119,14 +94,14 @@ func (c *Config) GetInterface(path string, out interface{}) {
 
 // GetString returns the value associated with the key as a string.
 func (c *Config) GetString(path string) (s string) {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	s, _ = jsonparser.GetString(c.data, keys...)
 	return
 }
 
 // DefaultGetString returns the value associated with the key as a string.
 func (c *Config) DefaultGetString(path string, defaultValue string) string {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	if v, err := jsonparser.GetString(c.data, keys...); err != nil {
 		return defaultValue
 	} else {
@@ -136,7 +111,7 @@ func (c *Config) DefaultGetString(path string, defaultValue string) string {
 
 // GetInt64 returns the value associated with the key as an integer.
 func (c *Config) GetInt64(path string) int64 {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	value, _ := jsonparser.GetInt(c.data, keys...)
 	return value
 }
@@ -155,7 +130,7 @@ func (c *Config) GetInt32(path string) int32 {
 
 // DefaultGetInt returns the value associated with the key as a integer.
 func (c *Config) DefaultGetInt(path string, defaultValue int) int {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	if v, err := jsonparser.GetInt(c.data, keys...); err != nil {
 		return defaultValue
 	} else {
@@ -165,7 +140,7 @@ func (c *Config) DefaultGetInt(path string, defaultValue int) int {
 
 // GetFloat64 returns the value associated with the key as a float64.
 func (c *Config) GetFloat64(path string) (f64 float64) {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	f64, _ = jsonparser.GetFloat(c.data, keys...)
 	return
 }
@@ -178,7 +153,7 @@ func (c *Config) GetFloat32(path string) float32 {
 
 // DefaultGetInt returns the value associated with the key as a float64.
 func (c *Config) DefaultGetFloat64(path string, defaultValue float64) float64 {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	if v, err := jsonparser.GetFloat(c.data, keys...); err != nil {
 		return defaultValue
 	} else {
@@ -188,14 +163,14 @@ func (c *Config) DefaultGetFloat64(path string, defaultValue float64) float64 {
 
 // GetBool returns the value associated with the key as a boolean.
 func (c *Config) GetBool(path string) (b bool) {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	b, _ = jsonparser.GetBoolean(c.data, keys...)
 	return
 }
 
 // DefaultGetBool returns the value associated with the key as a boolean.
 func (c *Config) DefaultGetBool(path string, defaultValue bool) bool {
-	keys := c.ParseKeys(path)
+	keys := ParseJSONPath(path)
 	if v, err := jsonparser.GetBoolean(c.data, keys...); err != nil {
 		return defaultValue
 	} else {

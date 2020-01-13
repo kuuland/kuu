@@ -314,3 +314,25 @@ func OmitFields(src interface{}, fieldNames []string) (omitted map[string]interf
 func JSON() jsoniter.API {
 	return json
 }
+
+// ParseJSONPath
+func ParseJSONPath(path string) []string {
+	if v, has := parsePathCache.Load(path); has {
+		return v.([]string)
+	}
+
+	var reg *regexp.Regexp
+
+	reg = regexp.MustCompile(`(\[\d+\])`)
+	path = reg.ReplaceAllString(path, ".$1.")
+
+	reg = regexp.MustCompile(`\.+`)
+	path = reg.ReplaceAllString(path, ".")
+
+	path = strings.Trim(path, ".")
+
+	keys := strings.Split(path, ".")
+	parsePathCache.Store(path, keys)
+
+	return keys
+}
