@@ -3,6 +3,7 @@ package kuu
 import (
 	"context"
 	"fmt"
+	"github.com/json-iterator/go"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,7 @@ var (
 	RunTime time.Time
 	// IsProduction
 	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_ENV") == "prod"
+	json         = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 // M is a shortcut for map[string]interface{}
@@ -299,7 +301,7 @@ func IgnoreAuth(cancel ...bool) (success bool) {
 }
 
 func (e *Engine) initConfigs() {
-	if _, exists := C().Get("cors"); exists {
+	if C().Has("cors") {
 		if C().GetBool("cors") {
 			config := cors.DefaultConfig()
 			config.AllowAllOrigins = true
@@ -312,7 +314,7 @@ func (e *Engine) initConfigs() {
 		}
 	}
 
-	if _, exists := C().Get("gzip"); exists {
+	if C().Has("gzip") {
 		if C().GetBool("gzip") {
 			e.Use(gzip.Gzip(gzip.DefaultCompression))
 		} else {
@@ -325,28 +327,23 @@ func (e *Engine) initConfigs() {
 }
 
 func (e *Engine) initStatics() {
-	statics, exists := C().Get("statics")
-	if !exists {
+	statics := make(map[string]string)
+	C().GetInterface("statics", &statics)
+	if statics == nil || len(statics) == 0 {
 		return
 	}
-	if m, ok := statics.(map[string]interface{}); ok {
-		for key, val := range m {
-			str, ok := val.(string)
-			if !ok {
-				continue
-			}
-			stat, err := os.Lstat(str)
-			if err != nil {
-				ERROR("Static failed: %s", err.Error())
-				continue
-			}
-			if stat.IsDir() {
-				e.Static(key, str)
-			} else {
-				e.StaticFile(key, str)
-			}
-			AddWhitelist(regexp.MustCompile(fmt.Sprintf(`^GET\s%s`, key)))
+	for key, val := range statics {
+		stat, err := os.Lstat(val)
+		if err != nil {
+			ERROR("Static failed: %s", err.Error())
+			continue
 		}
+		if stat.IsDir() {
+			e.Static(key, val)
+		} else {
+			e.StaticFile(key, val)
+		}
+		AddWhitelist(regexp.MustCompile(fmt.Sprintf(`^GET\s%s`, key)))
 	}
 }
 

@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"

@@ -2,9 +2,9 @@ package kuu
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	jsoniter "github.com/json-iterator/go"
 	"log"
 	"math/rand"
 	"net/http"
@@ -105,18 +105,20 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 // Stringify
-func Stringify(v interface{}, format ...bool) (ret string) {
-	if b, err := json.Marshal(v); err == nil {
-		if len(format) > 0 && format[0] {
-			var out bytes.Buffer
-			if err = json.Indent(&out, b, "", "  "); err == nil {
-				ret = string(out.Bytes())
-			}
-		} else {
-			ret = string(b)
-		}
+func Stringify(v interface{}, format ...bool) string {
+	var (
+		data []byte
+		err  error
+	)
+	if len(format) > 0 && format[0] {
+		data, err = json.MarshalIndent(v, "", "  ")
+	} else {
+		data, err = json.Marshal(v)
 	}
-	return
+	if err == nil {
+		return string(data)
+	}
+	return ""
 }
 
 // Parse
@@ -306,4 +308,9 @@ func OmitFields(src interface{}, fieldNames []string) (omitted map[string]interf
 		delete(omitted, fieldName)
 	}
 	return
+}
+
+// JSON
+func JSON() jsoniter.API {
+	return json
 }

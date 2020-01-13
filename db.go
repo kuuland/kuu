@@ -15,10 +15,14 @@ var (
 	singleDSName   = "kuu_default_db"
 )
 
-type datasource struct {
+type dataSource struct {
 	Name    string
 	Dialect string
 	Args    string
+}
+
+func (ds *dataSource) isBlank() bool {
+	return !(ds != nil && ds.Dialect != "" && ds.Args != "")
 }
 
 type DBTypeRepairer interface {
@@ -43,68 +47,46 @@ func (logger dbLogger) Println(values ...interface{}) {
 }
 
 func initDataSources() {
-	pairs := C().Keys
-	dbConfig, has := pairs["db"]
+	raw, has := C().Get("db")
 	if !has {
 		return
 	}
-	if _, ok := dbConfig.([]interface{}); ok {
-		// Multiple data sources
-		var dsArr []datasource
-		if err := Copy(dbConfig, &dsArr); err != nil {
-			ERROR(err)
+	var dataSources []dataSource
+	if err := json.Unmarshal(raw, &dataSources); err != nil {
+		var dataSource dataSource
+		if err := json.Unmarshal(raw, &dataSource); err == nil {
+			dataSources = append(dataSources, dataSource)
 		}
-		if len(dsArr) > 0 {
-			var first string
-			for _, ds := range dsArr {
-				if IsBlank(ds) || ds.Name == "" {
-					continue
-				}
-				if _, ok := dataSourcesMap.Load(ds.Name); ok {
-					continue
-				}
-				if first == "" {
-					first = ds.Name
-				}
-				db, err := gorm.Open(ds.Dialect, ds.Args)
-				if err != nil {
-					panic(err)
-				} else {
-					connectedPrint(strings.Title(db.Dialect().GetName()), db.Dialect().CurrentDatabase())
-					dataSourcesMap.Store(ds.Name, db)
-					if gin.IsDebugging() {
-						db.LogMode(true)
-						//db.SetLogger(dbLogger{})
-					}
-				}
-			}
-			if first != "" {
-				singleDSName = first
-			}
+	}
+	if len(dataSources) == 0 {
+		return
+	}
+	var firstDSName string
+	for _, ds := range dataSources {
+		if ds.Name == "" {
+			ds.Name = singleDSName
 		}
+		if _, ok := dataSourcesMap.Load(ds.Name); ok {
+			continue
+		}
+		if firstDSName == "" {
+			firstDSName = ds.Name
+			singleDSName = firstDSName
+		}
+		openDB(ds)
+	}
+}
+
+func openDB(ds dataSource) {
+	db, err := gorm.Open(ds.Dialect, ds.Args)
+	if err != nil {
+		panic(err)
 	} else {
-		// Single data source
-		var ds datasource
-		if err := Copy(dbConfig, &ds); err != nil {
-			ERROR(err)
-		}
-		if !IsBlank(ds) {
-			if ds.Name == "" {
-				ds.Name = singleDSName
-			} else {
-				singleDSName = ds.Name
-			}
-			db, err := gorm.Open(ds.Dialect, ds.Args)
-			if err != nil {
-				panic(err)
-			} else {
-				connectedPrint(strings.Title(db.Dialect().GetName()), db.Dialect().CurrentDatabase())
-				dataSourcesMap.Store(ds.Name, db)
-				if gin.IsDebugging() {
-					db.LogMode(true)
-					db.SetLogger(dbLogger{})
-				}
-			}
+		connectedPrint(strings.Title(db.Dialect().GetName()), db.Dialect().CurrentDatabase())
+		dataSourcesMap.Store(ds.Name, db)
+		if gin.IsDebugging() {
+			db.LogMode(true)
+			db.SetLogger(dbLogger{})
 		}
 	}
 }

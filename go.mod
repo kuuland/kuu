@@ -4,6 +4,7 @@ require (
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.0.1
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/boltdb/bolt v1.3.1
+	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-contrib/cors v1.3.0
@@ -17,6 +18,7 @@ require (
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jinzhu/gorm v1.9.10
 	github.com/jinzhu/inflection v1.0.0
+	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible
 	github.com/mojocn/base64Captcha v0.0.0-20190801020520-752b1cd608b2
 	github.com/mssola/user_agent v0.5.0

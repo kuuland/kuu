@@ -24,7 +24,7 @@ type Cache interface {
 }
 
 func init() {
-	if _, exists := C().Get("redis"); exists {
+	if C().Has("redis") {
 		// 初始化redis
 		DefaultCache = NewCacheRedis()
 	} else {
