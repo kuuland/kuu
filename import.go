@@ -3,17 +3,14 @@ package kuu
 import (
 	"errors"
 	"fmt"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	uuid "github.com/satori/go.uuid"
+	"net/url"
 	"strconv"
+	"strings"
 )
 
-var importCallbackMap = make(map[string]*ImportCallbackArgs)
-
-type ImportCallbackArgs struct {
-	TemplateGenerator func(*Context) []string
-	Validator         *ImportCallbackValidator
-	Processor         *ImportCallbackProcessor
-}
+var importCallbackMap = make(map[string]*ImportCallback)
 
 // ImportCallbackResult
 type ImportCallbackResult struct {
@@ -49,7 +46,8 @@ type ImportContext struct {
 
 type ImportCallback struct {
 	Channel           string
-	TemplateGenerator func(*Context) []string
+	Description       string
+	TemplateGenerator func(*Context) (string, []string)
 	Validator         ImportCallbackValidator
 	Processor         ImportCallbackProcessor
 }
@@ -92,11 +90,7 @@ func RegisterImportCallback(callback *ImportCallback) {
 		return
 	}
 
-	importCallbackMap[callback.Channel] = &ImportCallbackArgs{
-		TemplateGenerator: callback.TemplateGenerator,
-		Processor:         &callback.Processor,
-		Validator:         &callback.Validator,
-	}
+	importCallbackMap[callback.Channel] = callback
 }
 
 // ReimportRecord
@@ -147,7 +141,7 @@ func CallImportCallback(info *ImportRecord) {
 	context := &ImportContext{}
 	_ = JSONParse(info.Context, context)
 	args := callback
-	result := (*args.Processor)(context, rows)
+	result := args.Processor(context, rows)
 	if result == nil {
 		result = &ImportCallbackResult{Message: "success"}
 	}
@@ -215,7 +209,7 @@ var ImportRoute = RouteInfo{
 		// 调用导入验证
 		args := importCallbackMap[channel]
 		if args.Validator != nil {
-			msg, err := (*args.Validator)(c, rows)
+			msg, err := args.Validator(c, rows)
 			if err != nil {
 				if msg == nil {
 					msg = failedMessage
@@ -263,6 +257,7 @@ var ImportTemplateRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		failedMessage := c.L("import_template_failed", "Import template download failed")
 		channel := c.Query("channel")
+		format := strings.ToLower(c.DefaultQuery("format", "file"))
 		if channel == "" {
 			c.STDErr(failedMessage, errors.New("no 'channel' key in query parameters"))
 			return
@@ -276,9 +271,29 @@ var ImportTemplateRoute = RouteInfo{
 			c.STDErr(failedMessage, fmt.Errorf("no template generator registered for this channel: %s", channel))
 			return
 		}
-		headers := callback.TemplateGenerator(c)
-		// 响应请求
-		c.STD(headers)
+		fileName, headers := callback.TemplateGenerator(c)
+		switch format {
+		case "json":
+			c.STD(headers)
+		case "file":
+			if !strings.HasSuffix(fileName, ".xlsx") {
+				fileName = fmt.Sprintf("%s.xlsx", fileName)
+			}
+			fileName = url.QueryEscape(fileName)
+			f := excelize.NewFile()
+			if err := f.SetSheetRow("Sheet1", "A1", &headers); err != nil {
+				c.STDErr(failedMessage, err)
+				return
+			}
+			c.Header("Content-Transfer-Encoding", "binary")
+			c.Header("Content-Disposition", "attachment; filename="+fileName)
+			c.Header("Content-Type", "application/octet-stream")
+			f.SetActiveSheet(1)
+			if err := f.Write(c.Writer); err != nil {
+				c.STDErr(failedMessage, err)
+				return
+			}
+		}
 	},
 }
 
