@@ -13,7 +13,7 @@ func init() {
 
 func bizBeforeQueryCallback(scope *Scope) {
 	if !scope.HasError() {
-		scope.CallMethod("BizBeforeQuery")
+		scope.CallMethod("BizBeforeFind")
 	}
 }
 func bizQueryCallback(scope *Scope) {
@@ -41,6 +41,6 @@ func bizQueryCallback(scope *Scope) {
 
 func bizAfterQueryCallback(scope *Scope) {
 	if !scope.HasError() {
-		scope.CallMethod("BizAfterQuery")
+		scope.CallMethod("BizAfterFind")
 	}
 }
