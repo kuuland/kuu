@@ -48,6 +48,7 @@ func AESCBCEncrypt(rawData, key []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
+// AESCBCDecrypt
 func AESCBCDecrypt(encryptData, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

@@ -929,6 +929,7 @@ func Sys() *Mod {
 			UserMenusRoute,
 			UploadRoute,
 			ImportRoute,
+			ImportTemplateRoute,
 			ReimportRoute,
 			AuthRoute,
 			MetaRoute,

@@ -10,8 +10,9 @@ import (
 var importCallbackMap = make(map[string]*ImportCallbackArgs)
 
 type ImportCallbackArgs struct {
-	Validator *ImportCallbackValidator
-	Processor *ImportCallbackProcessor
+	TemplateGenerator func(*Context) []string
+	Validator         *ImportCallbackValidator
+	Processor         *ImportCallbackProcessor
 }
 
 // ImportCallbackResult
@@ -92,8 +93,9 @@ func RegisterImportCallback(callback *ImportCallback) {
 	}
 
 	importCallbackMap[callback.Channel] = &ImportCallbackArgs{
-		Processor: &callback.Processor,
-		Validator: &callback.Validator,
+		TemplateGenerator: callback.TemplateGenerator,
+		Processor:         &callback.Processor,
+		Validator:         &callback.Validator,
 	}
 }
 
@@ -250,6 +252,33 @@ var ImportRoute = RouteInfo{
 		}
 		// 响应请求
 		c.STD(record.ImportSn)
+	},
+}
+
+// ImportTemplateRoute
+var ImportTemplateRoute = RouteInfo{
+	Name:   "导入模板下载",
+	Method: "GET",
+	Path:   "/import/template",
+	HandlerFunc: func(c *Context) {
+		failedMessage := c.L("import_template_failed", "Import template download failed")
+		channel := c.Query("channel")
+		if channel == "" {
+			c.STDErr(failedMessage, errors.New("no 'channel' key in query parameters"))
+			return
+		}
+		callback := importCallbackMap[channel]
+		if callback == nil {
+			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
+			return
+		}
+		if callback.TemplateGenerator == nil {
+			c.STDErr(failedMessage, fmt.Errorf("no template generator registered for this channel: %s", channel))
+			return
+		}
+		headers := callback.TemplateGenerator(c)
+		// 响应请求
+		c.STD(headers)
 	},
 }
 
