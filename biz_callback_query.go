@@ -27,7 +27,6 @@ func bizQueryCallback(scope *Scope) {
 
 		// 处理totalrecords、totalpages
 		var totalRecords int
-		scope.DB = CountWheres(scope.Value, scope.DB)
 		if err := scope.DB.Offset(-1).Limit(-1).Count(&totalRecords).Error; err != nil {
 			_ = scope.Err(err)
 			return

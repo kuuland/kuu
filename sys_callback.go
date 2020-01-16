@@ -42,11 +42,14 @@ func registerCallbacks() {
 	if callback.Update().Get("validations:validate") == nil {
 		callback.Update().Before("gorm:before_update").Register("validations:validate", ValidateCallback)
 	}
+	if callback.Query().Get("kuu:before_query") == nil {
+		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
+	}
 	if callback.Query().Get("kuu:query") == nil {
 		callback.Query().Before("gorm:query").Register("kuu:query", QueryCallback)
 	}
-	if callback.Query().Get("kuu:before_query") == nil {
-		callback.Query().Before("gorm:query").Register("kuu:before_query", BeforeQueryCallback)
+	if callback.RowQuery().Get("kuu:row_query") == nil {
+		callback.RowQuery().Before("gorm:row_query").Register("kuu:row_query", QueryCallback)
 	}
 	if callback.Create().Get("kuu:update_ts") == nil {
 		callback.Create().Before("gorm:create").Register("kuu:update_ts", updateTsForCreateCallback)

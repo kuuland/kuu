@@ -339,22 +339,6 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 	return
 }
 
-// CountWheres
-func CountWheres(valueOrName interface{}, db *gorm.DB) *gorm.DB {
-	var (
-		meta  = Meta(valueOrName)
-		scope = db.NewScope(meta.NewValue())
-		desc  = GetRoutinePrivilegesDesc()
-	)
-	if desc != nil {
-		sqls, attrs := GetDataScopeWheres(scope, desc, desc.ReadableOrgIDs, desc.PersonalWritableOrgIDMap)
-		if len(sqls) > 0 {
-			db = db.Where(strings.Join(sqls, " OR "), attrs...)
-		}
-	}
-	return db
-}
-
 // GetPrivilegesDesc
 func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	var (
