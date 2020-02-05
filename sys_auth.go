@@ -445,7 +445,12 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 		loginableOrgIDMap = make(map[uint]Org)
 	)
 	for orgID, orgRange := range orm {
-		org := orgMap[orgID]
+		var org Org
+		if v, has := orgMap[orgID]; !has {
+			continue
+		} else {
+			org = v
+		}
 		loginableOrgIDMap[orgID] = org
 		// 统计可读
 		if vmap[orgRange.readable] == 2 {
