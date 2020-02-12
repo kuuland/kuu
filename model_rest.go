@@ -182,9 +182,9 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 					columnName = field.DBName
 				}
 				if refCond, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
-					ss, as = parseRefField(field, refCond)
+					ss, as = parseRefField(scope, field, refCond)
 				} else {
-					ss, as = parseSlimField(columnName, val)
+					ss, as = parseSlimField(scope, columnName, val)
 				}
 				if len(ss) > 0 {
 					desc.AndSQLs = append(desc.AndSQLs, ss...)
@@ -241,9 +241,9 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 				columnName = gorm.ToColumnName(key)
 			}
 			if refCond, ok := val.(map[string]interface{}); ok && field.Relationship != nil {
-				ss, as = parseRefField(field, refCond)
+				ss, as = parseRefField(scope, field, refCond)
 			} else {
-				ss, as = parseSlimField(columnName, val)
+				ss, as = parseSlimField(scope, columnName, val)
 			}
 			if len(ss) > 0 {
 				sqls = append(sqls, ss...)
@@ -257,7 +257,7 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 	return
 }
 
-func parseSlimField(name string, value interface{}) (sqls []string, attrs []interface{}) {
+func parseSlimField(scope *gorm.Scope, name string, value interface{}) (sqls []string, attrs []interface{}) {
 	if name == "" || value == nil {
 		return
 	}
@@ -286,26 +286,26 @@ func parseSlimField(name string, value interface{}) (sqls []string, attrs []inte
 			if hasSuffix {
 				a = append(a, "%")
 			}
-			sqls = append(sqls, fmt.Sprintf(" %s LIKE ?", name))
+			sqls = append(sqls, fmt.Sprintf(" %s.%s LIKE ?", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, strings.Join(a, ""))
 		} else if raw, has := vmap["$in"]; has {
-			sqls = append(sqls, fmt.Sprintf("%s IN (?)", name))
+			sqls = append(sqls, fmt.Sprintf(" %s.%s IN (?)", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, raw)
 		} else if raw, has := vmap["$nin"]; has {
-			sqls = append(sqls, fmt.Sprintf("%s NOT IN (?)", name))
+			sqls = append(sqls, fmt.Sprintf(" %s.%s NOT IN (?)", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, raw)
 		} else if raw, has := vmap["$eq"]; has {
-			sqls = append(sqls, fmt.Sprintf("%s = ?", name))
+			sqls = append(sqls, fmt.Sprintf(" %s.%s = ?", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, raw)
 		} else if raw, has := vmap["$ne"]; has {
-			sqls = append(sqls, fmt.Sprintf("%s <> ?", name))
+			sqls = append(sqls, fmt.Sprintf(" %s.%s <> ?", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, raw)
 		} else if raw, has := vmap["$exists"]; has {
 			if v, ok := raw.(bool); ok {
 				if v {
-					sqls = append(sqls, fmt.Sprintf("%s IS NOT NULL", name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s IS NOT NULL", scope.QuotedTableName(), scope.Quote(name)))
 				} else {
-					sqls = append(sqls, fmt.Sprintf("%s IS NULL", name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s IS NULL", scope.QuotedTableName(), scope.Quote(name)))
 				}
 			}
 		} else {
@@ -315,43 +315,43 @@ func parseSlimField(name string, value interface{}) (sqls []string, attrs []inte
 			lte, hlte := vmap["$lte"]
 			if hgt {
 				if hlt {
-					sqls = append(sqls, fmt.Sprintf("%s > ? AND %s < ?", name, name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s > ? AND %s.%s < ?", scope.QuotedTableName(), scope.Quote(name), scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gt, lt)
 				} else if hlte {
-					sqls = append(sqls, fmt.Sprintf("%s > ? AND %s <= ?", name, name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s > ? AND %s.%s <= ?", scope.QuotedTableName(), scope.Quote(name), scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gt, lte)
 				} else {
-					sqls = append(sqls, fmt.Sprintf("%s > ?", name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s > ?", scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gt)
 				}
 			} else if hgte {
 				if hlt {
-					sqls = append(sqls, fmt.Sprintf("%s >= ? AND %s < ?", name, name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s >= ? AND %s.%s < ?", scope.QuotedTableName(), scope.Quote(name), scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gte, lt)
 				} else if hlte {
-					sqls = append(sqls, fmt.Sprintf("%s >= ? AND %s <= ?", name, name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s >= ? AND %s.%s <= ?", scope.QuotedTableName(), scope.Quote(name), scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gte, lte)
 				} else {
-					sqls = append(sqls, fmt.Sprintf("%s >= ?", name))
+					sqls = append(sqls, fmt.Sprintf(" %s.%s >= ?", scope.QuotedTableName(), scope.Quote(name)))
 					attrs = append(attrs, gte)
 				}
 			} else if hlt {
-				sqls = append(sqls, fmt.Sprintf("%s < ?", name))
+				sqls = append(sqls, fmt.Sprintf(" %s.%s < ?", scope.QuotedTableName(), scope.Quote(name)))
 				attrs = append(attrs, lt)
 			} else if hlte {
-				sqls = append(sqls, fmt.Sprintf("%s <= ?", name))
+				sqls = append(sqls, fmt.Sprintf(" %s.%s <= ?", scope.QuotedTableName(), scope.Quote(name)))
 				attrs = append(attrs, lte)
 			}
 		}
 	} else {
 		// 普通值
-		sqls = append(sqls, fmt.Sprintf("%s = ?", name))
+		sqls = append(sqls, fmt.Sprintf(" %s.%s = ?", scope.QuotedTableName(), scope.Quote(name)))
 		attrs = append(attrs, value)
 	}
 	return
 }
 
-func parseRefField(field *gorm.Field, refCond map[string]interface{}) (sqls []string, attrs []interface{}) {
+func parseRefField(scope *gorm.Scope, field *gorm.Field, refCond map[string]interface{}) (sqls []string, attrs []interface{}) {
 	refModel := reflect.New(field.Struct.Type).Interface()
 	refScope := DB().NewScope(refModel)
 	ss, as := parseObject(refCond, refModel)
