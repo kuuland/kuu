@@ -147,6 +147,9 @@ func (r *STDRender) Render() {
 	}
 	r.action = strings.TrimSpace(strings.ToUpper(r.action))
 	if r.languageMessage != nil && r.message == "" {
+		if r.languageMessage.c == nil {
+			r.languageMessage.c = r.c
+		}
 		r.message = r.languageMessage.Render()
 	}
 	ret := make(map[string]interface{})

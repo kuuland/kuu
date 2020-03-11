@@ -11,6 +11,7 @@ type RouteInfo struct {
 	IgnorePrefix   bool
 	Description    string
 	Tags           []string
+	SignType       []string
 	RequestParams  route.RequestParams
 	ResponseParams route.ResponseParams
 }

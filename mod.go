@@ -13,6 +13,7 @@ import (
 var (
 	tableNames       = make(map[string]string)
 	tableNameMetaMap = make(map[string]*Metadata)
+	routesMap        = make(map[string]*RouteInfo)
 	ModMap           = make(map[string]*Mod)
 )
 
@@ -72,6 +73,7 @@ func (e *Engine) Import(mods ...*Mod) {
 				if route.Method == "" {
 					route.Method = "GET"
 				}
+				route.Method = strings.ToUpper(route.Method)
 				var routePath string
 				if route.IgnorePrefix {
 					routePath = path.Join(route.Path)
@@ -80,9 +82,16 @@ func (e *Engine) Import(mods ...*Mod) {
 				}
 				if route.Method == "*" {
 					e.Any(routePath, route.HandlerFunc)
+					for _, method := range []string{"GET", "POST", "PUT", "PATCH", "HEAD", "OPTIONS", "DELETE", "CONNECT", "TRACE"} {
+						key := fmt.Sprintf("%s %s", method, routePath)
+						routesMap[key] = &route
+					}
 				} else {
 					e.Handle(route.Method, routePath, route.HandlerFunc)
+					key := fmt.Sprintf("%s %s", route.Method, routePath)
+					routesMap[key] = &route
 				}
+
 			}
 			for _, model := range mod.Models {
 				desc := RESTful(e, routePrefix, model)
