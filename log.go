@@ -143,7 +143,7 @@ func (l *Log) BeforeCreate() {
 // IgnoreLog
 func (l *Log) IgnoreLog() {}
 
-// BeforeCreate
+// RepairDBTypes
 func (l *Log) RepairDBTypes() {
 	var (
 		db        = DB()

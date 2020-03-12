@@ -360,7 +360,26 @@ type Param struct {
 	ExtendField
 	Code      string    `name:"参数编码" gorm:"not null"`
 	Name      string    `name:"参数名称" gorm:"not null"`
-	Value     string    `name:"参数值" gorm:"size:4096"`
+	Value     string    `name:"参数值" gorm:"type:text"`
 	Type      string    `name:"参数类型"`
 	IsBuiltIn null.Bool `name:"是否预置"`
+}
+
+// RepairDBTypes
+func (l *Param) RepairDBTypes() {
+	var (
+		db        = DB()
+		scope     = db.NewScope(l)
+		tableName = scope.QuotedTableName()
+		textType  = C().DefaultGetString("logs:textType", "MEDIUMTEXT")
+	)
+	if db.Dialect().GetName() == "mysql" {
+		fields := []string{
+			"value",
+		}
+		for _, item := range fields {
+			sql := fmt.Sprintf("ALTER TABLE %s MODIFY %s %s NULL", tableName, scope.Quote(item), textType)
+			ERROR(db.Exec(sql).Error)
+		}
+	}
 }
