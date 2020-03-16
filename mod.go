@@ -13,7 +13,7 @@ import (
 var (
 	tableNames       = make(map[string]string)
 	tableNameMetaMap = make(map[string]*Metadata)
-	routesMap        = make(map[string]*RouteInfo)
+	routesMap        = make(map[string]RouteInfo)
 	ModMap           = make(map[string]*Mod)
 )
 
@@ -84,12 +84,12 @@ func (e *Engine) Import(mods ...*Mod) {
 					e.Any(routePath, route.HandlerFunc)
 					for _, method := range []string{"GET", "POST", "PUT", "PATCH", "HEAD", "OPTIONS", "DELETE", "CONNECT", "TRACE"} {
 						key := fmt.Sprintf("%s %s", method, routePath)
-						routesMap[key] = &route
+						routesMap[key] = route
 					}
 				} else {
 					e.Handle(route.Method, routePath, route.HandlerFunc)
 					key := fmt.Sprintf("%s %s", route.Method, routePath)
-					routesMap[key] = &route
+					routesMap[key] = route
 				}
 
 			}

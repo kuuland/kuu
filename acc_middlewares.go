@@ -43,7 +43,7 @@ func validSignType(c *gin.Context, sign *SignContext) bool {
 	k := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
 	info := routesMap[k]
 
-	if info == nil || len(info.SignType) == 0 {
+	if len(info.SignType) == 0 {
 		return true
 	}
 
