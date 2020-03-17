@@ -32,6 +32,11 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	if desc.Type == "" {
 		desc.Type = AdminSignType
 	}
+	// 兼容未传递SubDocID时自动查询
+	if desc.SubDocID == 0 {
+		user := GetUserFromCache(desc.UID)
+		desc.SubDocID = user.SubDocID
+	}
 	// 生成新密钥
 	secretData = &SignSecret{
 		UID:      desc.UID,
