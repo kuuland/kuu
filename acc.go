@@ -46,6 +46,7 @@ var (
 const (
 	RedisSecretKey = "secret"
 	RedisOrgKey    = "org"
+	AdminSignType  = "ADMIN"
 )
 
 // InWhitelist
@@ -140,7 +141,7 @@ func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 	}
 	sign.Secret = &secret
 	if secret.Type == "" {
-		secret.Type = "ADMIN"
+		secret.Type = AdminSignType
 	}
 	sign.Type = secret.Type
 	sign.Payload = DecodedToken(token, secret.Secret)

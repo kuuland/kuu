@@ -30,7 +30,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	desc.Payload["Iat"] = iat      // 签发时间
 	desc.Payload["Exp"] = desc.Exp // 过期时间
 	if desc.Type == "" {
-		desc.Type = "ADMIN"
+		desc.Type = AdminSignType
 	}
 	// 生成新密钥
 	secretData = &SignSecret{
