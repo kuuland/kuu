@@ -1299,3 +1299,31 @@ var LogOverviewRoute = RouteInfo{
 		})
 	},
 }
+
+// LoginAsRoute
+var LoginAsRoute = RouteInfo{
+	Name:   "以用户身份登录（该接口仅限root调用）",
+	Method: "POST",
+	Path:   "/login_as",
+	HandlerFunc: func(c *Context) {
+		var (
+			rootOnlyMessage = c.L("login_as_root_only", "Only called by root user")
+			failedMessage   = c.L("login_as_failed", "Mock login failed")
+			body            struct {
+				UID uint
+			}
+		)
+
+		if c.SignInfo.UID != RootUID() {
+			c.STDErr(rootOnlyMessage)
+			return
+		}
+
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+
+		//c.DB().First(&SignSecret{UID: body.UID, Type: AdminSignType}).
+	},
+}

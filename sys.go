@@ -219,6 +219,7 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("lang_trans_query_failed").Add("Query translation list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
 	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
 	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
+	register.SetKey("login_as_root_only").Add("Only called by root user", "仅支持root用户调用", "僅支持root用戶調用")
 	// Model RESTful
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
@@ -891,7 +892,7 @@ func GetUserFromCache(uid uint) (user User) {
 	if info := GetCacheString(cacheKey); info != "" {
 		_ = JSONParse(info, &user)
 	} else {
-		if err := DB().First(&user, &User{ID: uid}); err != nil {
+		if err := DB().First(&user, &User{ID: uid}).Error; err != nil {
 			SetCacheString(cacheKey, JSONStringify(user))
 		}
 	}
@@ -945,6 +946,7 @@ func Sys() *Mod {
 			LangtransImportRoute,
 			LangSwitchRoute,
 			LogOverviewRoute,
+			LoginAsRoute,
 		},
 		AfterImport: initSys,
 	}

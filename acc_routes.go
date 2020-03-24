@@ -34,7 +34,12 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	}
 	// 兼容未传递SubDocID时自动查询
 	if desc.SubDocID == 0 {
-		user := GetUserFromCache(desc.UID)
+		var user User
+		db := DB().Model(&User{}).Where(&User{ID: desc.UID})
+		db = db.Select([]string{db.Dialect().Quote("id"), db.Dialect().Quote("sub_doc_id")})
+		if err := db.First(&user).Error; err != nil {
+			return nil, err
+		}
 		desc.SubDocID = user.SubDocID
 	}
 	// 生成新密钥
