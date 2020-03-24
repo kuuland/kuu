@@ -90,10 +90,51 @@ type User struct {
 	Disable     null.Bool    `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   null.Bool    `name:"是否内置"`
-	SubDocID    uint         `name:"扩展档案ID"`
+	SubDocIDs   string       `name:"扩展档案ID映射（令牌类型为键、ID为值的JSON字符串，如{\"ADMIN\":3,\"WECHAT:COMPANY\":2}）"`
 	Lang        string       `name:"最近使用语言"`
 	AllowLogin  bool         `name:"允许登录"`
 	ActOrgID    uint         `name:"当前组织"`
+}
+
+// GetSubDocIDs
+func (u *User) GetSubDocIDs() (v map[string]uint, err error) {
+	v = make(map[string]uint)
+	err = JSONParse(u.SubDocIDs, &v)
+	return
+}
+
+// SetSubDocIDs
+func (u *User) SetSubDocIDs(v map[string]uint) {
+	u.SubDocIDs = JSONStringify(v)
+}
+
+// GetSubDocID
+func (u *User) GetSubDocID(signType string) (uint, error) {
+	m, err := u.GetSubDocIDs()
+	if err != nil {
+		return 0, err
+	}
+	return m[signType], nil
+}
+
+// SetSubDocIDs
+func (u *User) SetSubDocID(signType string, subDocID uint) error {
+	m, err := u.GetSubDocIDs()
+	if err != nil {
+		return err
+	}
+	if subDocID == 0 {
+		delete(m, signType)
+	} else {
+		m[signType] = subDocID
+	}
+	u.SetSubDocIDs(m)
+	return nil
+}
+
+// DelSubDocID
+func (u *User) DelSubDocID(signType string) error {
+	return u.SetSubDocID(signType, 0)
 }
 
 // BeforeSave

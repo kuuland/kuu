@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
@@ -20,18 +21,19 @@ type GenTokenDesc struct {
 	SubDocID uint
 	Desc     string `binding:"required"`
 	IsAPIKey bool
-	Type     string
+	Type     string `binding:"required"`
 }
 
 // GenToken
 func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
+	if desc.Type == "" {
+		return nil, errors.New("missing token type")
+	}
+
 	// 设置JWT令牌信息
 	iat := time.Now().Unix()
 	desc.Payload["Iat"] = iat      // 签发时间
 	desc.Payload["Exp"] = desc.Exp // 过期时间
-	if desc.Type == "" {
-		desc.Type = AdminSignType
-	}
 	// 兼容未传递SubDocID时自动查询
 	if desc.SubDocID == 0 {
 		var user User
@@ -40,7 +42,11 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		if err := db.First(&user).Error; err != nil {
 			return nil, err
 		}
-		desc.SubDocID = user.SubDocID
+		if v, err := user.GetSubDocID(desc.Type); err != nil {
+			return nil, err
+		} else {
+			desc.SubDocID = v
+		}
 	}
 	// 生成新密钥
 	secretData = &SignSecret{
@@ -90,6 +96,7 @@ var LoginRoute = RouteInfo{
 			UID:     resp.UID,
 			Payload: resp.Payload,
 			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
+			Type:    AdminSignType,
 		})
 		if err != nil {
 			c.STDErr(c.L("acc_token_failed", "Token signing failed"), err)
@@ -191,6 +198,7 @@ var APIKeyRoute = RouteInfo{
 		body.UID = c.SignInfo.UID
 		body.SubDocID = c.SignInfo.SubDocID
 		body.IsAPIKey = true
+		body.Type = AdminSignType
 		secretData, err := GenToken(body)
 		if err != nil {
 			c.STDErr(failedMessage, err)
