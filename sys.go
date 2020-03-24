@@ -892,7 +892,7 @@ func GetUserFromCache(uid uint) (user User) {
 	if info := GetCacheString(cacheKey); info != "" {
 		_ = JSONParse(info, &user)
 	} else {
-		if err := DB().First(&user, &User{ID: uid}).Error; err != nil {
+		if err := DB().First(&user, &User{ID: uid}).Error; err == nil {
 			SetCacheString(cacheKey, JSONStringify(user))
 		}
 	}

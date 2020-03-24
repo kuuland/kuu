@@ -152,11 +152,10 @@ func (u *User) BeforeSave(scope *gorm.Scope) (err error) {
 }
 
 // AfterDelete
-func (u *User) AfterDelete(tx *gorm.DB) (err error) {
+func (u *User) AfterDelete() {
 	if u.ID != 0 {
 		DelCache(fmt.Sprintf("user_%d", u.ID))
 	}
-	return
 }
 
 // Org

@@ -3,6 +3,7 @@ package kuu
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin/binding"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
 	"regexp"
@@ -15,19 +16,21 @@ const (
 )
 
 type GenTokenDesc struct {
-	UID      uint
-	Payload  jwt.MapClaims
-	Exp      int64 `binding:"required"`
-	SubDocID uint
-	Desc     string `binding:"required"`
-	IsAPIKey bool
+	UID      uint   `binding:"required"`
+	Exp      int64  `binding:"required"`
 	Type     string `binding:"required"`
+	Desc     string
+	Payload  jwt.MapClaims
+	IsAPIKey bool
 }
 
 // GenToken
 func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
-	if desc.Type == "" {
-		return nil, errors.New("missing token type")
+	if err := binding.Validator.ValidateStruct(&desc); err != nil {
+		return nil, err
+	}
+	if desc.IsAPIKey && desc.Desc == "" {
+		return nil, errors.New("API & Keys needs a usage description")
 	}
 
 	// 设置JWT令牌信息
@@ -35,18 +38,14 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	desc.Payload["Iat"] = iat      // 签发时间
 	desc.Payload["Exp"] = desc.Exp // 过期时间
 	// 兼容未传递SubDocID时自动查询
-	if desc.SubDocID == 0 {
-		var user User
-		db := DB().Model(&User{}).Where(&User{ID: desc.UID})
-		db = db.Select([]string{db.Dialect().Quote("id"), db.Dialect().Quote("sub_doc_id")})
-		if err := db.First(&user).Error; err != nil {
-			return nil, err
-		}
-		if v, err := user.GetSubDocID(desc.Type); err != nil {
-			return nil, err
-		} else {
-			desc.SubDocID = v
-		}
+	var (
+		subDocID uint
+		user     = GetUserFromCache(desc.UID)
+	)
+	if v, err := user.GetSubDocID(desc.Type); err != nil {
+		return nil, err
+	} else {
+		subDocID = v
 	}
 	// 生成新密钥
 	secretData = &SignSecret{
@@ -55,7 +54,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Iat:      iat,
 		Exp:      desc.Exp,
 		Method:   SignMethodLogin,
-		SubDocID: desc.SubDocID,
+		SubDocID: subDocID,
 		Desc:     desc.Desc,
 		Type:     desc.Type,
 		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
@@ -196,7 +195,6 @@ var APIKeyRoute = RouteInfo{
 		}
 		body.Payload = c.SignInfo.Payload
 		body.UID = c.SignInfo.UID
-		body.SubDocID = c.SignInfo.SubDocID
 		body.IsAPIKey = true
 		body.Type = AdminSignType
 		secretData, err := GenToken(body)
