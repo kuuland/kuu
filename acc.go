@@ -146,6 +146,14 @@ func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 	sign.Type = secret.Type
 	sign.Payload = DecodedToken(token, secret.Secret)
 	sign.SubDocID = secret.SubDocID
+	if sign.SubDocID == 0 { // 当取SubDocID失败时，查用户数据（因为令牌签发可能在子档案创建之前）
+		user := GetUserFromCache(sign.UID)
+		sid, err := user.GetSubDocID(sign.Type)
+		if err != nil {
+			return nil, err
+		}
+		sign.SubDocID = sid
+	}
 	if sign.IsValid() {
 		c.Set(SignContextKey, sign)
 	}
