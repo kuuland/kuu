@@ -932,7 +932,6 @@ func Sys() *Mod {
 			UploadRoute,
 			ImportRoute,
 			ImportTemplateRoute,
-			ReimportRoute,
 			AuthRoute,
 			MetaRoute,
 			EnumRoute,

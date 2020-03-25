@@ -82,7 +82,7 @@ func (imp *ImportRecord) BeforeCreate() {
 type ImportCallbackValidator func(c *Context, rows [][]string) (*LanguageMessage, error)
 
 // ImportCallbackProcessor
-type ImportCallbackProcessor func(context *ImportContext, rows [][]string) *ImportCallbackResult
+type ImportCallbackProcessor func(c *Context, rows [][]string) *ImportCallbackResult
 
 // RegisterImportCallback 注册导入回调
 func RegisterImportCallback(callback *ImportCallback) {
@@ -93,35 +93,8 @@ func RegisterImportCallback(callback *ImportCallback) {
 	importCallbackMap[callback.Channel] = callback
 }
 
-// ReimportRecord
-func ReimportRecord(importSn string) error {
-	var record ImportRecord
-	if err := DB().Where(&ImportRecord{ImportSn: importSn}).First(&record).Error; err != nil {
-		return err
-	}
-	if record.Status == ImportStatusImporting {
-		return fmt.Errorf("record are being imported: %s", importSn)
-	}
-	if importCallbackMap[record.Channel] == nil {
-		return fmt.Errorf("no import callback registered for this channel: %s", record.Channel)
-	}
-	if record.Status == ImportStatusImporting {
-		return fmt.Errorf("record are being imported: %s", importSn)
-	}
-	db := DB().Model(&ImportRecord{}).Where(&ImportRecord{Model: Model{ID: record.ID}})
-	if err := db.Update(&ImportRecord{Status: ImportStatusImporting}).Error; err != nil {
-		return err
-	}
-	if record.Sync {
-		CallImportCallback(&record)
-	} else {
-		go CallImportCallback(&record)
-	}
-	return nil
-}
-
 // CallImportCallback
-func CallImportCallback(info *ImportRecord) {
+func CallImportCallback(c *Context, info *ImportRecord) {
 	if info == nil {
 		return
 	}
@@ -137,11 +110,8 @@ func CallImportCallback(info *ImportRecord) {
 		ERROR("no import callback registered for this channel: %s", info.Channel)
 		return
 	}
-
-	context := &ImportContext{}
-	_ = JSONParse(info.Context, context)
 	args := callback
-	result := args.Processor(context, rows)
+	result := args.Processor(c, rows)
 	if result == nil {
 		result = &ImportCallbackResult{Message: "success"}
 	}
@@ -240,9 +210,9 @@ var ImportRoute = RouteInfo{
 		}
 		// 触发导入回调
 		if record.Sync {
-			CallImportCallback(&record)
+			CallImportCallback(c, &record)
 		} else {
-			go CallImportCallback(&record)
+			go CallImportCallback(c, &record)
 		}
 		// 响应请求
 		c.STD(record.ImportSn)
@@ -294,28 +264,5 @@ var ImportTemplateRoute = RouteInfo{
 				return
 			}
 		}
-	},
-}
-
-// ReimportRoute
-var ReimportRoute = RouteInfo{
-	Name:   "重新导入路由",
-	Method: "GET",
-	Path:   "/reimport",
-	HandlerFunc: func(c *Context) {
-		var (
-			failedMessage = c.L("reimport_failed", "Reimport failed")
-			importSn      = c.Query("import_sn")
-		)
-		if importSn == "" {
-			c.STDErr(failedMessage, errors.New("'import_sn' is required"))
-			return
-		}
-
-		if err := ReimportRecord(importSn); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		c.STD("ok")
 	},
 }
