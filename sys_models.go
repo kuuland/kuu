@@ -99,6 +99,9 @@ type User struct {
 // GetSubDocIDs
 func (u *User) GetSubDocIDs() (v map[string]uint, err error) {
 	v = make(map[string]uint)
+	if u.SubDocIDs == "" {
+		u.SubDocIDs = "{}"
+	}
 	err = JSONParse(u.SubDocIDs, &v)
 	return
 }
