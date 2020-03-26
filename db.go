@@ -139,3 +139,8 @@ func releaseDB() {
 		return true
 	})
 }
+
+// AutoMigrate
+func AutoMigrate(values ...interface{}) *gorm.DB {
+	return DB().AutoMigrate(values...)
+}
