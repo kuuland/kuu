@@ -359,8 +359,7 @@ var CaptchaRoute = RouteInfo{
 			return
 		}
 		// 生成验证码
-		captchaID := ParseCaptchaID(c)
-		id, base64Str := GenerateCaptcha(captchaID)
+		id, base64Str := GenerateCaptcha()
 		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
 		c.STD(M{
 			"id":        id,

@@ -3,7 +3,9 @@ package kuu
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/mojocn/base64Captcha"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 var (
@@ -11,47 +13,58 @@ var (
 	CaptchaIDKey = "captcha_id"
 	// CaptchaValKey
 	CaptchaValKey = "captcha_val"
+	store         = &captchaStore{}
 )
+
+func init() {
+	//init rand seed
+	rand.Seed(time.Now().UnixNano())
+}
 
 type captchaStore struct{}
 
-// Set
-func (c *captchaStore) Set(id string, value string) {
+func (cs *captchaStore) Set(id string, value string) {
 	DefaultCache.SetString(id, value)
-	return
 }
 
-// Get
-func (c *captchaStore) Get(id string, clear bool) (val string) {
-	val = DefaultCache.GetString(id)
+func (cs *captchaStore) Get(id string, clear bool) string {
+	v := DefaultCache.GetString(id)
 	if clear {
 		DefaultCache.Del(id)
 	}
-	return
+	return v
+}
+
+func (cs *captchaStore) Verify(id, answer string, clear bool) bool {
+	v := cs.Get(id, clear)
+	return v == answer
+}
+
+//NewCaptcha creates a captcha instance from driver and store
+func NewCaptcha() *base64Captcha.Captcha {
+	driver := &base64Captcha.DriverDigit{
+		Height:   80,
+		Width:    280,
+		Length:   4,
+		MaxSkew:  0.1,
+		DotCount: 10,
+	}
+	return base64Captcha.NewCaptcha(driver, store)
 }
 
 // GenerateCaptcha create a digit captcha.
-func GenerateCaptcha(idKey string, configs ...interface{}) (id string, base64Str string) {
-	var config interface{}
-	if len(configs) > 0 {
-		config = configs[0]
-	} else {
-		config = base64Captcha.ConfigDigit{
-			Height:     30,
-			Width:      100,
-			MaxSkew:    1,
-			DotCount:   90,
-			CaptchaLen: 4,
-		}
+func GenerateCaptcha() (id string, base64Str string) {
+	c := NewCaptcha()
+	id, base64Str, err := c.Generate()
+	if err != nil {
+		ERROR(err)
 	}
-	id, captchaInstance := base64Captcha.GenerateCaptcha(idKey, config)
-	base64Str = base64Captcha.CaptchaWriteToBase64Encoding(captchaInstance)
 	return
 }
 
 // VerifyCaptcha Verify captcha value.
 func VerifyCaptcha(idKey, value string) bool {
-	return base64Captcha.VerifyCaptcha(idKey, value)
+	return store.Verify(idKey, value, true)
 }
 
 // ParseCaptchaID

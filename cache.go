@@ -2,7 +2,6 @@ package kuu
 
 import (
 	"encoding/binary"
-	"github.com/mojocn/base64Captcha"
 	"time"
 )
 
@@ -30,10 +29,6 @@ func init() {
 	} else {
 		// 初始化bolt
 		DefaultCache = NewCacheBolt()
-	}
-	// 初始化验证码存储器
-	if DefaultCache != nil {
-		base64Captcha.SetCustomStore(&captchaStore{})
 	}
 }
 
