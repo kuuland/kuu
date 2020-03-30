@@ -309,6 +309,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("kuu_navbar_languages").Add("Languages", "语言切换", "語言切換")
 	register.SetKey("kuu_navbar_apikeys").Add("API & Keys", "API & Keys", "API & Keys")
 	register.SetKey("kuu_navbar_logout").Add("Logout", "退出登录", "退出登錄")
+	register.SetKey("kuu_navbar_loginas").Add("Login As", "模拟登录", "模拟登录")
+	register.SetKey("kuu_navbar_loginas_placeholder").Add("Select a user", "选择一个用户", "選擇一個用戶")
 	register.SetKey("kuu_navbar_apiendpoint").Add("API Endpoint", "API服务器", "API服務器")
 	register.SetKey("kuu_navbar_apiendpoint_placeholder").Add("Optional: e.g. https://kuu.example.com/api", "例如：https://kuu.example.com/api", "例如：https://kuu.example.com/api")
 	// Kuu i18n
@@ -946,6 +948,7 @@ func Sys() *Mod {
 			LangSwitchRoute,
 			LogOverviewRoute,
 			LoginAsRoute,
+			LoginAsUsersRoute,
 		},
 		AfterImport: initSys,
 	}

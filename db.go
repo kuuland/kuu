@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -42,6 +43,11 @@ func (logger dbLogger) Print(values ...interface{}) {
 func (logger dbLogger) Println(values ...interface{}) {
 	messages := gorm.LogFormatter(values...)
 	if len(messages) > 0 {
+		if r := GetRoutineRequestID(); r != "" {
+			tmp := []interface{}{fmt.Sprintf("%s=%s", GLSRequestIDKey, r)}
+			tmp = append(tmp, messages...)
+			messages = tmp
+		}
 		Logger.Info(messages...)
 	}
 }

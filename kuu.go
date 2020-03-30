@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/json-iterator/go"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,6 +31,7 @@ var (
 	GLSRoutineCachesKey = "RoutineCaches"
 	// GLSRequestContextKey
 	GLSRequestContextKey = "RequestContext"
+	GLSRequestIDKey      = "RequestID"
 	// RunTime
 	RunTime time.Time
 	// IsProduction
@@ -176,6 +178,7 @@ var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) 
 			glsVals[GLSPrisDescKey] = kc.PrisDesc
 			glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
 			glsVals[GLSRequestContextKey] = kc
+			glsVals[GLSRequestIDKey] = uuid.NewV4().String()
 			SetGLSValues(glsVals, func() {
 				if InWhitelist(c) {
 					IgnoreAuth()
@@ -288,6 +291,15 @@ func GetRoutineRequestContext() *Context {
 		return c
 	}
 	return nil
+}
+
+// GetRoutineRequestID
+func GetRoutineRequestID() string {
+	raw, ok := GetGLSValue(GLSRequestIDKey)
+	if ok {
+		return raw.(string)
+	}
+	return ""
 }
 
 // IgnoreAuth

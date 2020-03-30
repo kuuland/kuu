@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var valueCacheMap sync.Map
@@ -1306,15 +1307,15 @@ var LoginAsRoute = RouteInfo{
 	Path:   "/login_as",
 	HandlerFunc: func(c *Context) {
 		var (
-			rootOnlyMessage = c.L("login_as_root_only", "Only called by root user")
-			failedMessage   = c.L("login_as_failed", "Mock login failed")
-			body            struct {
+			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
+			failedMessage       = c.L("login_as_failed", "Mock login failed")
+			body                struct {
 				UID uint
 			}
 		)
 
 		if c.SignInfo.UID != RootUID() {
-			c.STDErr(rootOnlyMessage)
+			c.STDErr(unauthorizedMessage)
 			return
 		}
 
@@ -1323,6 +1324,58 @@ var LoginAsRoute = RouteInfo{
 			return
 		}
 
-		//c.DB().First(&SignSecret{UID: body.UID, Type: AdminSignType}).
+		var (
+			secret SignSecret
+			user   User
+			db     = c.DB()
+		)
+		if err := db.Where(&SignSecret{UID: body.UID, Type: AdminSignType, Method: "LOGIN"}).Where(fmt.Sprintf("%s > ?", db.Dialect().Quote("exp")), time.Now().Unix()).Order("created_at desc").First(&secret).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		if err := db.Where(fmt.Sprintf("%s = ?", db.Dialect().Quote("id")), secret.UID).First(&user).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
+		c.SetCookie(TokenKey, secret.Token, ExpiresSeconds, "/", "", false, true)
+		c.STD("ok")
+	},
+}
+
+// LoginAsUsersRoute
+var LoginAsUsersRoute = RouteInfo{
+	Name:   "查询可模拟登录的用户列表（该接口仅限root调用）",
+	Method: "GET",
+	Path:   "/login_as/users",
+	HandlerFunc: func(c *Context) {
+		var (
+			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
+			failedMessage       = c.L("login_as_failed", "Mock login failed")
+		)
+
+		if c.SignInfo.UID != RootUID() {
+			c.STDErr(unauthorizedMessage)
+			return
+		}
+
+		var (
+			secrets []SignSecret
+			uids    []uint
+			users   []User
+			db      = c.DB()
+		)
+		if err := db.Model(&SignSecret{}).Where(&SignSecret{Type: AdminSignType, Method: "LOGIN"}).Where(fmt.Sprintf("%s > ?", db.Dialect().Quote("exp")), time.Now().Unix()).Find(&secrets).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		for _, item := range secrets {
+			uids = append(uids, item.UID)
+		}
+		if err := db.Model(&User{}).Where(fmt.Sprintf("%s IN (?)", db.Dialect().Quote("id")), uids).Find(&users).Error; err != nil {
+			c.STDErr(failedMessage, err)
+			return
+		}
+		c.STD(ProjectFields(users, "ID,Name,Username"))
 	},
 }
