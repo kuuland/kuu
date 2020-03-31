@@ -219,7 +219,8 @@ func createPresetLanguageMessages(tx *gorm.DB) {
 	register.SetKey("lang_trans_query_failed").Add("Query translation list failed", "查询国际化翻译列表失败", "查詢國際化翻譯列表失敗")
 	register.SetKey("lang_trans_save_failed").Add("Save locale messages failed", "保存国际化配置失败", "保存國際化配置失敗")
 	register.SetKey("lang_list_save_failed").Add("Save languages failed", "保存语言列表失败", "保存語言列表失敗")
-	register.SetKey("login_as_root_only").Add("Only called by root user", "仅支持root用户调用", "僅支持root用戶調用")
+	register.SetKey("login_as_unauthorized").Add("Unauthorized operation", "无权操作", "無權操作")
+	register.SetKey("login_as_failed").Add("Login failed", "模拟登录失败", "模擬登錄失敗")
 	// Model RESTful
 	register.SetKey("rest_update_failed").Add("Update failed", "更新失败", "更新失敗")
 	register.SetKey("rest_query_failed").Add("Query failed", "查询失败", "查詢失敗")
@@ -949,6 +950,7 @@ func Sys() *Mod {
 			LogOverviewRoute,
 			LoginAsRoute,
 			LoginAsUsersRoute,
+			LoginAsOutRoute,
 		},
 		AfterImport: initSys,
 	}

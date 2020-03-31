@@ -1308,7 +1308,7 @@ var LoginAsRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		var (
 			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
-			failedMessage       = c.L("login_as_failed", "Mock login failed")
+			failedMessage       = c.L("login_as_failed", "Login failed")
 			body                struct {
 				UID uint
 			}
@@ -1343,6 +1343,18 @@ var LoginAsRoute = RouteInfo{
 	},
 }
 
+// LoginAsOutRoute
+var LoginAsOutRoute = RouteInfo{
+	Name:   "退出模拟登录（该接口仅限root调用）",
+	Method: "DELETE",
+	Path:   "/login_as",
+	HandlerFunc: func(c *Context) {
+		c.SetCookie(TokenKey, c.SignInfo.Token, -1, "/", "", false, true)
+		c.SetCookie(RequestLangKey, "", -1, "/", "", false, true)
+		c.STD("ok")
+	},
+}
+
 // LoginAsUsersRoute
 var LoginAsUsersRoute = RouteInfo{
 	Name:   "查询可模拟登录的用户列表（该接口仅限root调用）",
@@ -1351,7 +1363,7 @@ var LoginAsUsersRoute = RouteInfo{
 	HandlerFunc: func(c *Context) {
 		var (
 			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
-			failedMessage       = c.L("login_as_failed", "Mock login failed")
+			failedMessage       = c.L("login_as_failed", "Login failed")
 		)
 
 		if c.SignInfo.UID != RootUID() {
