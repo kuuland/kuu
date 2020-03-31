@@ -8,12 +8,13 @@ import (
 	"github.com/hoisie/mustache"
 	"github.com/jinzhu/gorm"
 	"strings"
+	"sync"
 	"time"
 )
 
 var (
 	// LanguageMessagesCache
-	languageMessagesCache = map[string]LanguageMessagesMap{}
+	languageMessagesCache sync.Map
 	// RequestLangKey
 	RequestLangKey = "Lang"
 )
@@ -250,18 +251,27 @@ func RefreshLanguageMessagesCache() {
 		ERROR("Refreshing i18n cache failed: %s", err.Error())
 		return
 	}
-	languageMessagesCache = make(map[string]LanguageMessagesMap)
+	//languageMessagesCache = make(map[string]LanguageMessagesMap)
 	for _, item := range list {
-		if languageMessagesCache[item.LangCode] == nil {
-			languageMessagesCache[item.LangCode] = make(LanguageMessagesMap)
+		var mm LanguageMessagesMap
+		if v, ok := languageMessagesCache.Load(item.LangCode); ok {
+			mm = v.(LanguageMessagesMap)
+		} else {
+			mm = make(LanguageMessagesMap)
 		}
-		languageMessagesCache[item.LangCode][item.Key] = item
+		mm[item.Key] = item
+		languageMessagesCache.Store(item.LangCode, mm)
 	}
 }
 
 // GetUserLanguageMessages
 func GetUserLanguageMessages(c *gin.Context, userLang ...string) LanguageMessagesMap {
-	if len(languageMessagesCache) == 0 {
+	var count int
+	languageMessagesCache.Range(func(_, _ interface{}) bool {
+		count++
+		return true
+	})
+	if count == 0 {
 		RefreshLanguageMessagesCache()
 	}
 	var (
@@ -282,7 +292,9 @@ func GetUserLanguageMessages(c *gin.Context, userLang ...string) LanguageMessage
 			lang = ParseLang(c)
 		}
 	}
-	messages = languageMessagesCache[lang]
+	if v, ok := languageMessagesCache.Load(lang); ok {
+		messages = v.(LanguageMessagesMap)
+	}
 	return messages
 }
 
