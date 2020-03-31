@@ -35,8 +35,8 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 
 	// 设置JWT令牌信息
 	iat := time.Now().Unix()
-	desc.Payload["Iat"] = iat      // 签发时间
-	desc.Payload["Exp"] = desc.Exp // 过期时间
+	desc.Payload["iat"] = iat      // 签发时间：必须用全小写iat
+	desc.Payload["exp"] = desc.Exp // 过期时间：必须用全小写exp
 	// 兼容未传递SubDocID时自动查询
 	var (
 		subDocID uint

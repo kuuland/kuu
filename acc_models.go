@@ -4,6 +4,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
+	"time"
 )
 
 // SignHistory
@@ -46,8 +47,33 @@ func (s *SignContext) IsValid() (ret bool) {
 	if s == nil {
 		return
 	}
-	if err := s.Payload.Valid(); err == nil && s.Token != "" && s.UID != 0 && s.Secret != nil {
+	// 双重验证
+	if err := s.Payload.Valid(); err == nil && s.verifyExp() && s.Token != "" && s.UID != 0 && s.Secret != nil {
 		ret = true
 	}
 	return
+}
+
+func (s *SignContext) verifyExp() bool {
+	exp := s.getPayloadExp()
+	if exp == 0 {
+		return true
+	}
+	return time.Now().Unix() <= exp
+}
+
+func (s *SignContext) getPayloadExp() int64 {
+	var exp interface{}
+	if v, ok := s.Payload["iat"]; ok {
+		exp = v
+	} else if v, ok := s.Payload["Iat"]; ok { // 兼容处理：部分已存在的令牌使用了大写
+		exp = v
+	}
+	switch v := exp.(type) {
+	case int64:
+		return v
+	case float64:
+		return int64(v)
+	}
+	return 0
 }
