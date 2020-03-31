@@ -64,9 +64,9 @@ func (s *SignContext) verifyExp() bool {
 
 func (s *SignContext) getPayloadExp() int64 {
 	var exp interface{}
-	if v, ok := s.Payload["iat"]; ok {
+	if v, ok := s.Payload["exp"]; ok {
 		exp = v
-	} else if v, ok := s.Payload["Iat"]; ok { // 兼容处理：部分已存在的令牌使用了大写
+	} else if v, ok := s.Payload["Exp"]; ok { // 兼容处理：部分已存在的令牌使用了大写
 		exp = v
 	}
 	switch v := exp.(type) {
