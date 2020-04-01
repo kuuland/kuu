@@ -1381,13 +1381,30 @@ var LoginAsUsersRoute = RouteInfo{
 			c.STDErr(failedMessage, err)
 			return
 		}
+		secretMap := make(map[uint]SignSecret)
 		for _, item := range secrets {
 			uids = append(uids, item.UID)
+			secretMap[item.UID] = item
 		}
 		if err := db.Model(&User{}).Where(fmt.Sprintf("%s IN (?)", db.Dialect().Quote("id")), uids).Find(&users).Error; err != nil {
 			c.STDErr(failedMessage, err)
 			return
 		}
-		c.STD(ProjectFields(users, "ID,Name,Username"))
+		type record struct {
+			ID       uint
+			Name     string
+			Username string
+			Exp      int64
+		}
+		var records []record
+		for _, item := range users {
+			records = append(records, record{
+				ID:       item.ID,
+				Name:     item.Name,
+				Username: item.Username,
+				Exp:      secretMap[item.ID].Exp,
+			})
+		}
+		c.STD(records)
 	},
 }
