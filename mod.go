@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,12 @@ var (
 
 func init() {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+		if strings.HasPrefix(defaultTableName, "raw:") {
+			subs := regexp.MustCompile(`raw:(.*)`).FindAllStringSubmatch(defaultTableName, -1)[0]
+			if len(subs) > 1 {
+				return subs[1]
+			}
+		}
 		v, ok := tableNames[defaultTableName]
 		if !ok || v == "" {
 			if defaultTableName != "" {
