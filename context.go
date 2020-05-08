@@ -29,8 +29,8 @@ func (c *Context) DB() *gorm.DB {
 }
 
 // GetPagination
-func (c *Context) GetPagination() (int, int) {
-	return GetPagination(c)
+func (c *Context) GetPagination(ignoreDefault ...bool) (int, int) {
+	return GetPagination(c, ignoreDefault...)
 }
 
 // ParseCond
@@ -40,7 +40,7 @@ func (c *Context) ParseCond(cond interface{}, model interface{}) CondDesc {
 }
 
 // Pagination
-func GetPagination(ginContextOrKuuContext interface{}) (page int, size int) {
+func GetPagination(ginContextOrKuuContext interface{}, ignoreDefault ...bool) (page int, size int) {
 	var c *gin.Context
 	if v, ok := ginContextOrKuuContext.(*gin.Context); ok {
 		c = v
@@ -49,8 +49,16 @@ func GetPagination(ginContextOrKuuContext interface{}) (page int, size int) {
 	} else {
 		return
 	}
-	rawPage := c.DefaultQuery("page", "1")
-	rawSize := c.DefaultQuery("size", "30")
+
+	var rawPage, rawSize string
+	if len(ignoreDefault) > 0 && ignoreDefault[0] {
+		rawPage = c.Query("page")
+		rawSize = c.Query("size")
+	} else {
+		rawPage = c.DefaultQuery("page", "1")
+		rawSize = c.DefaultQuery("size", "30")
+	}
+
 	if v, err := strconv.Atoi(rawPage); err == nil {
 		page = v
 	}
