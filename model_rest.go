@@ -215,16 +215,37 @@ func parseObject(filter map[string]interface{}, model interface{}) (sqls []strin
 	}
 
 	for key, val := range filter {
+		var (
+			tsqls  []string
+			tattrs []interface{}
+		)
 		if v, ok := val.([]interface{}); ok {
 			for _, item := range v {
 				if obj, ok := item.(map[string]interface{}); ok {
 					ss, as := parseObject(obj, model)
-					if len(ss) > 0 {
-						sqls = append(sqls, ss...)
+					if key == "$or" {
+						if len(ss) > 0 {
+							tsqls = append(tsqls, ss...)
+						}
+						if len(as) > 0 {
+							tattrs = append(tattrs, as...)
+						}
+					} else {
+						if len(ss) > 0 {
+							sqls = append(sqls, ss...)
+						}
+						if len(as) > 0 {
+							attrs = append(attrs, as...)
+						}
 					}
-					if len(as) > 0 {
-						attrs = append(attrs, as...)
-					}
+				}
+			}
+			if key == "$or" {
+				if len(tsqls) > 0 {
+					sqls = append(sqls, strings.Join(tsqls, " OR "))
+				}
+				if len(tattrs) > 0 {
+					attrs = append(attrs, tattrs...)
 				}
 			}
 		} else {
