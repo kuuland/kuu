@@ -20,6 +20,10 @@ type RestDesc struct {
 	Import bool
 }
 
+type buildSelectField interface {
+	BuildSelectField(string) string
+}
+
 // IsValid
 func (r *RestDesc) IsValid() bool {
 	return r.Create || r.Delete || r.Query || r.Update
@@ -522,6 +526,7 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		_, db := ParseCond(cond, modelValue, DB().Model(modelValue))
 		// 处理project
 		rawProject := c.Query("project")
+		bsf, sok := modelValue.(buildSelectField)
 		if rawProject != "" {
 			split := strings.Split(rawProject, ",")
 			var (
@@ -533,12 +538,50 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 					name = name[1:]
 				}
 				if field, ok := scope.FieldByName(name); ok {
-					columns = append(columns, field.DBName)
+					dbName := field.DBName
+					if sok {
+						dbName = bsf.BuildSelectField(field.DBName)
+					}
+					if dbName == field.DBName {
+						columns = append(columns, scope.Quote(dbName))
+					} else {
+						columns = append(columns, dbName)
+					}
 					retProject = append(retProject, field.Name)
 				}
 			}
 			db = db.Select(columns)
 			ret.Project = strings.Join(retProject, ",")
+		} else if sok {
+			var columns []string
+			for _, field := range scope.Fields() {
+				if field.IsNormal && !field.IsIgnored {
+					dbName := field.DBName
+					if sok {
+						dbName = bsf.BuildSelectField(field.DBName)
+					}
+					if dbName == field.DBName {
+						columns = append(columns, scope.Quote(dbName))
+					} else {
+						columns = append(columns, dbName)
+					}
+				} else if field.Relationship != nil && field.Relationship.Kind == "belongs_to" {
+					for _, foreignKey := range field.Relationship.ForeignDBNames {
+						if foreignField, ok := scope.FieldByName(foreignKey); ok {
+							dbName := foreignField.DBName
+							if sok {
+								dbName = bsf.BuildSelectField(foreignField.DBName)
+							}
+							if dbName == foreignField.DBName {
+								columns = append(columns, scope.Quote(dbName))
+							} else {
+								columns = append(columns, dbName)
+							}
+						}
+					}
+				}
+			}
+			db = db.Select(columns)
 		}
 		// 处理sort
 		rawSort := c.Query("sort")
