@@ -274,7 +274,7 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 }
 
 // 日志序列化任务
-func LogPersisJob() {
+func LogPersisJob() error {
 	err := WithTransaction(func(tx *gorm.DB) error {
 		data := HasPrefixCache(BuildKey("log"), 5000)
 
@@ -410,13 +410,11 @@ func LogPersisJob() {
 		return tx.Error
 	})
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	return err
 }
 
 // LogCleanupJob
-func LogCleanupJob() {
+func LogCleanupJob() error {
 	var (
 		dest   = (24 * time.Hour) * 100 // 默认清除100天前的记录
 		divide = time.Now().Add(-dest).Unix()
@@ -427,9 +425,7 @@ func LogCleanupJob() {
 		Where(fmt.Sprintf("%s < ?", db.Dialect().Quote("time")), divide).
 		Delete(&Log{}).Error
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	return err
 }
 
 func split(args ...interface{}) (string, []interface{}) {
