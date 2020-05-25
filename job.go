@@ -56,6 +56,8 @@ func AddJobEntry(j *Job) error {
 	jobsMu.Lock()
 	defer jobsMu.Unlock()
 
+	INFO(fmt.Sprintf("Add job: %s %s", j.Name, j.Spec))
+
 	if os.Getenv("KUU_JOB") == "" || j.Cmd == nil {
 		return nil
 	}
@@ -112,7 +114,6 @@ func AddJob(spec string, name string, cmd func(c *JobContext)) (cron.EntryID, er
 		Name: name,
 		Cmd:  cmd,
 	}
-	INFO(fmt.Sprintf("Add job: %s %s", job.Name, job.Spec))
 	err := AddJobEntry(&job)
 	return job.EntryID, err
 }
