@@ -2,7 +2,8 @@ module github.com/kuuland/kuu
 
 require (
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.0.1
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/boltdb/bolt v1.3.1
 	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -10,6 +11,7 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.2-0.20190827144029-5602d8b438ea
 	github.com/gin-gonic/gin v1.4.0
+	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-redis/redis v6.15.5+incompatible
 	github.com/go-session/gin-session v3.1.0+incompatible
 	github.com/go-session/session v3.1.2+incompatible // indirect
@@ -25,6 +27,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/shirou/gopsutil v2.20.4+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472

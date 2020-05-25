@@ -20,7 +20,7 @@ var (
 // Job
 type Job struct {
 	Spec        string              `json:"spec" valid:"required"`
-	Cmd         func(c *JobContext) `json:"-,omitempty" valid:"required"`
+	Cmd         func(c *JobContext) `json:"-,omitempty"`
 	Name        string              `json:"name" valid:"required"`
 	RunAfterAdd bool                `json:"runAfterAdd"`
 	EntryID     cron.EntryID        `json:"entryID,omitempty"`
@@ -42,7 +42,7 @@ func (c *JobContext) Error(err error) {
 
 // AddJobEntry
 func AddJobEntry(j *Job) error {
-	if os.Getenv("KUU_JOB") == "" {
+	if os.Getenv("KUU_JOB") == "" || j.Cmd == nil {
 		return nil
 	}
 
