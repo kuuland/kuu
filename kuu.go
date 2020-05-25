@@ -92,6 +92,7 @@ func GetGLSValue(key interface{}) (value interface{}, ok bool) {
 
 func beforeRun() {
 	DefaultCron.Start()
+	runAllRunAfterJobs()
 }
 
 func shutdown(srv *http.Server) {

@@ -13,8 +13,9 @@ import (
 var DefaultCron = cron.New(cron.WithSeconds())
 
 var (
-	jobCmds   = make(map[cron.EntryID]bool)
-	jobCmdsMu sync.RWMutex
+	runningJobs = make(map[cron.EntryID]bool)
+	jobs        = make(map[cron.EntryID]*Job)
+	jobsMu      sync.RWMutex
 )
 
 // Job
@@ -24,6 +25,7 @@ type Job struct {
 	Name        string              `json:"name" valid:"required"`
 	RunAfterAdd bool                `json:"runAfterAdd"`
 	EntryID     cron.EntryID        `json:"entryID,omitempty"`
+	cmd         func()
 }
 
 // JobContext
@@ -31,6 +33,13 @@ type JobContext struct {
 	name string
 	errs []error
 	l    *sync.RWMutex
+}
+
+func (j *Job) NewJobContext() *JobContext {
+	return &JobContext{
+		name: j.Name,
+		l:    new(sync.RWMutex),
+	}
 }
 
 func (c *JobContext) Error(err error) {
@@ -42,6 +51,9 @@ func (c *JobContext) Error(err error) {
 
 // AddJobEntry
 func AddJobEntry(j *Job) error {
+	jobsMu.Lock()
+	defer jobsMu.Unlock()
+
 	if os.Getenv("KUU_JOB") == "" || j.Cmd == nil {
 		return nil
 	}
@@ -51,19 +63,16 @@ func AddJobEntry(j *Job) error {
 	}
 
 	cmd := func() {
-		jobCmdsMu.Lock()
-		defer jobCmdsMu.Unlock()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
 
-		if jobCmds[j.EntryID] {
+		if runningJobs[j.EntryID] {
 			return
 		}
-		jobCmds[j.EntryID] = true
+		runningJobs[j.EntryID] = true
 		INFO("----------- Job '%s' start -----------", j.Name)
 
-		c := &JobContext{
-			name: j.Name,
-			l:    new(sync.RWMutex),
-		}
+		c := j.NewJobContext()
 		j.Cmd(c)
 		if len(c.errs) > 0 {
 			for i, err := range c.errs {
@@ -72,16 +81,26 @@ func AddJobEntry(j *Job) error {
 			ERROR(c.errs)
 		}
 		INFO("----------- Job '%s' finish -----------", j.Name)
-		jobCmds[j.EntryID] = false
-	}
-	if j.RunAfterAdd {
-		cmd()
+		runningJobs[j.EntryID] = false
 	}
 	v, err := DefaultCron.AddFunc(j.Spec, cmd)
 	if err == nil {
 		j.EntryID = v
+		j.cmd = cmd
+		jobs[j.EntryID] = j
 	}
 	return err
+}
+
+func runAllRunAfterJobs() {
+	jobsMu.RLock()
+	defer jobsMu.RUnlock()
+
+	for _, job := range jobs {
+		if job.RunAfterAdd {
+			job.cmd()
+		}
+	}
 }
 
 // AddJob
