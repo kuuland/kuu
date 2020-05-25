@@ -13,9 +13,11 @@ import (
 var DefaultCron = cron.New(cron.WithSeconds())
 
 var (
-	runningJobs = make(map[cron.EntryID]bool)
-	jobs        = make(map[cron.EntryID]*Job)
-	jobsMu      sync.RWMutex
+	runningJobs   = make(map[cron.EntryID]bool)
+	runningJobsMu sync.RWMutex
+
+	jobs   = make(map[cron.EntryID]*Job)
+	jobsMu sync.RWMutex
 )
 
 // Job
@@ -63,8 +65,8 @@ func AddJobEntry(j *Job) error {
 	}
 
 	cmd := func() {
-		jobsMu.Lock()
-		defer jobsMu.Unlock()
+		runningJobsMu.Lock()
+		defer runningJobsMu.Unlock()
 
 		if runningJobs[j.EntryID] {
 			return
@@ -110,6 +112,7 @@ func AddJob(spec string, name string, cmd func(c *JobContext)) (cron.EntryID, er
 		Name: name,
 		Cmd:  cmd,
 	}
+	INFO(fmt.Sprintf("Add job: %s %s", job.Name, job.Spec))
 	err := AddJobEntry(&job)
 	return job.EntryID, err
 }
