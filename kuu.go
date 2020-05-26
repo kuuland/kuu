@@ -35,9 +35,15 @@ var (
 	// RunTime
 	RunTime time.Time
 	// IsProduction
-	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_ENV") == "prod"
+	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_PROD") == "true"
 	json         = jsoniter.ConfigCompatibleWithStandardLibrary
 )
+
+func init() {
+	if v := os.Getenv("KUU_PROD"); v != "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
 
 // M is a shortcut for map[string]interface{}
 type M map[string]interface{}

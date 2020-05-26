@@ -20,7 +20,7 @@ func parseKuuJSON(filePath ...string) (data []byte) {
 	}
 
 	if configFile == "" {
-		if v := os.Getenv("CONFIG_FILE"); v != "" {
+		if v := os.Getenv("KUU_CONFIG"); v != "" {
 			configFile = v
 		}
 	}
