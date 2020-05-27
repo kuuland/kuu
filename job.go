@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -18,7 +19,15 @@ var (
 
 	jobs   = make(map[cron.EntryID]*Job)
 	jobsMu sync.RWMutex
+
+	isJobInstance = false
 )
+
+func init() {
+	if v, err := strconv.ParseBool(os.Getenv("KUU_JOB")); err == nil {
+		isJobInstance = v
+	}
+}
 
 // Job
 type Job struct {
@@ -56,11 +65,11 @@ func AddJobEntry(j *Job) error {
 	jobsMu.Lock()
 	defer jobsMu.Unlock()
 
-	INFO(fmt.Sprintf("Add job: %s %s", j.Name, j.Spec))
-
-	if os.Getenv("KUU_JOB") == "" || j.Cmd == nil {
+	if !isJobInstance || j.Cmd == nil {
 		return nil
 	}
+
+	INFO(fmt.Sprintf("Add job: %s %s", j.Name, j.Spec))
 
 	if _, err := govalidator.ValidateStruct(j); err != nil {
 		return err
