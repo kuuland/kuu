@@ -20,7 +20,8 @@ var (
 	jobs   = make(map[cron.EntryID]*Job)
 	jobsMu sync.RWMutex
 
-	isJobInstance = false
+	isJobInstance   = false
+	outputKuuJobLog = false
 )
 
 func init() {
@@ -66,6 +67,10 @@ func AddJobEntry(j *Job) error {
 	defer jobsMu.Unlock()
 
 	if !isJobInstance || j.Cmd == nil {
+		if !outputKuuJobLog {
+			INFO("Non-task instance, set the environment variable 'KUU_JOB=true' to enable cron jobs.")
+			outputKuuJobLog = true
+		}
 		return nil
 	}
 
