@@ -152,7 +152,7 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 	// 执行SQL
 	var (
 		insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s) VALUES ",
-			r.DB.Dialect().Quote(quotedTableName),
+			quotedTableName,
 			r.DB.Dialect().Quote("created_at"),
 			r.DB.Dialect().Quote("updated_at"),
 			r.DB.Dialect().Quote("lang_code"),
@@ -200,7 +200,7 @@ func (r *LangRegister) Exec(createOnly ...bool) error {
 				continue
 			}
 			sql := fmt.Sprintf("UPDATE %s SET %s = ?, %s = ? WHERE %s = ?",
-				DB().Dialect().Quote(quotedTableName),
+				quotedTableName,
 				DB().Dialect().Quote("updated_at"),
 				DB().Dialect().Quote("value"),
 				DB().Dialect().Quote("id"),

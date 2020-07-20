@@ -287,7 +287,7 @@ func LogPersisJob(c *JobContext) {
 		var (
 			totalKeys  []string
 			insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES ",
-				tx.Dialect().Quote(quotedTableName),
+				quotedTableName,
 				tx.Dialect().Quote("uuid"),
 				tx.Dialect().Quote("time"),
 				tx.Dialect().Quote("type"),
