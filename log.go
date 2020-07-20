@@ -277,7 +277,7 @@ func NewLog(logType string, context ...*gin.Context) (log *Log) {
 func LogPersisJob(c *JobContext) {
 	err := WithTransaction(func(tx *gorm.DB) error {
 		data := HasPrefixCache(BuildKey("log"), 5000)
-
+		quotedTableName := DB().NewScope(&Log{}).QuotedTableName()
 		if len(data) == 0 {
 			return nil
 		}
@@ -285,7 +285,7 @@ func LogPersisJob(c *JobContext) {
 		var (
 			totalKeys  []string
 			insertBase = fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES ",
-				tx.Dialect().Quote("sys_Log"),
+				tx.Dialect().Quote(quotedTableName),
 				tx.Dialect().Quote("uuid"),
 				tx.Dialect().Quote("time"),
 				tx.Dialect().Quote("type"),
