@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -8,6 +9,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"log"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -427,122 +429,98 @@ func LogCleanupJob(c *JobContext) {
 	c.Error(err)
 }
 
-func split(args ...interface{}) (string, []interface{}) {
-	var (
-		format string
-		a      []interface{}
-	)
-	if v, ok := args[0].(string); ok {
-		format = v
+func parseArgs(v []interface{}) (fields logrus.Fields, format string, args []interface{}, err error) {
+	if len(v) == 0 || (len(v) == 1 && IsNil(v[0])) {
+		return
+	}
+	if vv, ok := v[0].(string); ok {
+		format = vv
+		if len(v) > 1 {
+			args = v[1:]
+		}
 	} else {
-		data, err := json.Marshal(v)
-		if err == nil {
-			format = string(data)
+		indirectValue := reflect.Indirect(reflect.ValueOf(v[0]))
+		switch indirectValue.Kind() {
+		case reflect.Map, reflect.Struct:
+			_ = Copy(v[0], &fields)
+		default:
+			fields = make(logrus.Fields)
+			fields["data"] = fmt.Sprintf("%v", v[0])
+		}
+		if len(v) > 1 {
+			if vv, ok := v[1].(string); ok {
+				format = vv
+				if len(v) > 2 {
+					args = v[2:]
+				}
+			}
 		}
 	}
-	if len(args) > 1 {
-		a = args[1:]
+	if len(fields) == 0 && format == "" {
+		return fields, format, args, errors.New("unsupported parameter format")
 	}
-	return format, a
-}
-
-func isBlankArgs(args ...interface{}) bool {
-	if len(args) == 0 || (len(args) == 1 && IsNil(args[0])) {
-		return true
-	}
-	return false
+	return
 }
 
 // PRINT
-func PRINT(args ...interface{}) {
-	if isBlankArgs(args...) {
+func PRINT(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Printf(format, a...)
-	}
+	Logger.WithFields(fields).Printf(format, args...)
 }
 
 // DEBUG
-func DEBUG(args ...interface{}) {
-	if isBlankArgs(args...) {
+func DEBUG(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Debugf(format, a...)
-	}
+	Logger.WithFields(fields).Debugf(format, args...)
 }
 
 // WARN
-func WARN(args ...interface{}) {
-	if isBlankArgs(args...) {
+func WARN(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Warnf(format, a...)
-	}
+	Logger.WithFields(fields).Warnf(format, args...)
 }
 
 // INFO
-func INFO(args ...interface{}) {
-	if isBlankArgs(args...) {
+func INFO(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Infof(format, a...)
-	}
+	Logger.WithFields(fields).Infof(format, args...)
 }
 
 // ERROR
-func ERROR(args ...interface{}) {
-	if isBlankArgs(args...) {
+func ERROR(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	switch args[0].(type) {
-	case error:
-		args[0] = args[0].(error).Error()
-	case []error:
-		for _, e := range args[0].([]error) {
-			ERROR(e)
-		}
-		return
-	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Errorf(format, a...)
-	}
+	Logger.WithFields(fields).Errorf(format, args...)
 }
 
 // FATAL
-func FATAL(args ...interface{}) {
-	if isBlankArgs(args...) {
+func FATAL(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	switch args[0].(type) {
-	case error:
-		args[0] = args[0].(error).Error()
-	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Fatalf(format, a...)
-	}
+	Logger.WithFields(fields).Fatalf(format, args...)
 }
 
 // PANIC
-func PANIC(args ...interface{}) {
-	if isBlankArgs(args...) {
+func PANIC(v ...interface{}) {
+	fields, format, args, err := parseArgs(v)
+	if err != nil {
 		return
 	}
-	switch args[0].(type) {
-	case error:
-		args[0] = args[0].(error).Error()
-	}
-	format, a := split(args...)
-	if format != "" {
-		Logger.Panicf(format, a...)
-	}
+	Logger.WithFields(fields).Panicf(format, args...)
 }

@@ -37,7 +37,7 @@ func changeLoggerOutput(filePath string) {
 	filePath = path.Join(LogDir, filePath)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
-		Logger.Out = file
+		Logger.SetOutput(file)
 		if DailyFile != nil {
 			_ = DailyFile.Close()
 		}
