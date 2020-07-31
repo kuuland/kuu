@@ -36,6 +36,8 @@ var (
 		"GET /language",
 		"GET /langmsgs",
 		"GET /captcha",
+		"GET /intl/languages",
+		"GET /intl/messages",
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400

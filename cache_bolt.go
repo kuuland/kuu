@@ -161,3 +161,15 @@ func (c *CacheBolt) Close() {
 		ERROR(c.db.Close())
 	}
 }
+
+func (c *CacheBolt) Publish(channel string, message interface{}) error {
+	return nil
+}
+
+func (c *CacheBolt) Subscribe(channels []string, handler func(string, string)) error {
+	return nil
+}
+
+func (c *CacheBolt) PSubscribe(patterns []string, handler func(string, string)) error {
+	return nil
+}

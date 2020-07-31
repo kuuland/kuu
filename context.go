@@ -96,6 +96,11 @@ func (c *Context) STD(data interface{}, msg ...*LanguageMessage) *STDRender {
 	return STD(c.Context, data, msg...)
 }
 
+// STD
+func (c *Context) STDOK() *STDRender {
+	return c.STD("ok")
+}
+
 // STDErr
 func (c *Context) STDErr(msg *LanguageMessage, err ...interface{}) *STDRender {
 	return STDErr(c.Context, msg, err...)

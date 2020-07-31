@@ -951,6 +951,10 @@ func Sys() *Mod {
 			LoginAsRoute,
 			LoginAsUsersRoute,
 			LoginAsOutRoute,
+			IntlLanguages,
+			IntlMessages,
+			IntlMessagesSave,
+			IntlMessagesUpload,
 		},
 		AfterImport: initSys,
 	}

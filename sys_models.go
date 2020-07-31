@@ -386,15 +386,15 @@ func (m *Menu) AfterDelete(db *gorm.DB) {
 type File struct {
 	Model `rest:"*" displayName:"文件"`
 	ExtendField
-	Class  string `name:"文件分类" `
+	Class  string `name:"文件分类"`
 	RefID  uint   `name:"关联ID" `
 	UID    string `name:"文件唯一ID" `
 	Type   string `name:"文件Mine-Type" `
 	Size   int64  `name:"文件大小" `
 	Name   string `name:"文件名称" `
 	Status string `name:"文件状态" `
-	URL    string `name:"文件URL" `
-	Path   string `json:"path"`
+	URL    string `name:"文件下载路径"`
+	Path   string `name:"文件存储路径"`
 }
 
 // Param

@@ -20,6 +20,10 @@ type Cache interface {
 	Incr(string) int
 	Del(...string)
 	Close()
+
+	Publish(channel string, message interface{}) error
+	Subscribe(channels []string, handler func(string, string)) error
+	PSubscribe(patterns []string, handler func(string, string)) error
 }
 
 func init() {
@@ -119,4 +123,28 @@ func DelCache(keys ...string) {
 		DefaultCache.Del(keys...)
 	}
 	return
+}
+
+// PublishCache
+func PublishCache(channel string, message interface{}) error {
+	if DefaultCache != nil {
+		return DefaultCache.Publish(channel, message)
+	}
+	return nil
+}
+
+// SubscribeCache
+func SubscribeCache(channels []string, handler func(string, string)) error {
+	if DefaultCache != nil {
+		return DefaultCache.Subscribe(channels, handler)
+	}
+	return nil
+}
+
+// PSubscribeCache
+func PSubscribeCache(patterns []string, handler func(string, string)) error {
+	if DefaultCache != nil {
+		return DefaultCache.PSubscribe(patterns, handler)
+	}
+	return nil
 }

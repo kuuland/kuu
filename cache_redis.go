@@ -1,8 +1,9 @@
 package kuu
 
 import (
+	"context"
 	"fmt"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"strconv"
 	"strings"
 	"time"
@@ -52,7 +53,7 @@ func NewCacheRedis() *CacheRedis {
 	C().GetInterface("redis", &opts)
 	// 初始化客户端
 	cmd := redis.NewUniversalClient(&opts)
-	if _, err := cmd.Ping().Result(); err != nil {
+	if _, err := cmd.Ping(context.Background()).Result(); err != nil {
 		PANIC(err)
 	}
 	c.client = cmd
@@ -64,7 +65,7 @@ func NewCacheRedis() *CacheRedis {
 func (c *CacheRedis) SetString(rawKey, val string, expiration ...time.Duration) {
 	var (
 		key, exp = c.buildKeyAndExp(rawKey, expiration)
-		status   = c.client.Set(key, val, exp)
+		status   = c.client.Set(context.Background(), key, val, exp)
 	)
 	if err := status.Err(); err != nil {
 		ERROR(err)
@@ -75,7 +76,7 @@ func (c *CacheRedis) SetString(rawKey, val string, expiration ...time.Duration) 
 func (c *CacheRedis) GetString(rawKey string) (val string) {
 	var (
 		key = BuildKey(rawKey)
-		cmd = c.client.Get(key)
+		cmd = c.client.Get(context.Background(), key)
 	)
 	if err := cmd.Err(); err != nil {
 		ERROR(err)
@@ -88,7 +89,7 @@ func (c *CacheRedis) GetString(rawKey string) (val string) {
 func (c *CacheRedis) scan(cursor uint64, pattern string, limit int64) (values map[string]string) {
 	values = make(map[string]string)
 	for len(values) < int(limit) {
-		cmd := c.client.Scan(cursor, pattern, limit)
+		cmd := c.client.Scan(context.Background(), cursor, pattern, limit)
 		if err := cmd.Err(); err != nil {
 			ERROR(err)
 			return
@@ -96,7 +97,7 @@ func (c *CacheRedis) scan(cursor uint64, pattern string, limit int64) (values ma
 
 		if keys, nextCur := cmd.Val(); len(keys) > 0 {
 			for _, key := range keys {
-				values[key] = c.client.Get(key).Val()
+				values[key] = c.client.Get(context.Background(), key).Val()
 			}
 			if (limit != 0 && len(values) >= int(limit)) || nextCur == 0 {
 				break
@@ -158,7 +159,7 @@ func (c *CacheRedis) GetInt(key string) (val int) {
 func (c *CacheRedis) Incr(rawKey string) (val int) {
 	var (
 		key = BuildKey(rawKey)
-		cmd = c.client.Incr(key)
+		cmd = c.client.Incr(context.Background(), key)
 	)
 	if err := cmd.Err(); err != nil {
 		ERROR(err)
@@ -173,7 +174,7 @@ func (c *CacheRedis) Del(keys ...string) {
 	for index, key := range keys {
 		keys[index] = BuildKey(key)
 	}
-	cmd := c.client.Del(keys...)
+	cmd := c.client.Del(context.Background(), keys...)
 	if err := cmd.Err(); err != nil {
 		ERROR(err)
 	}
@@ -184,4 +185,36 @@ func (c *CacheRedis) Close() {
 	if c.client != nil {
 		ERROR(c.client.Close())
 	}
+}
+
+func (c *CacheRedis) Publish(channel string, message interface{}) error {
+	return c.client.Publish(context.Background(), channel, message).Err()
+}
+
+func (c *CacheRedis) Subscribe(channels []string, handler func(string, string)) error {
+	ps := c.client.Subscribe(context.Background(), channels...)
+	if _, err := ps.Receive(context.Background()); err != nil {
+		return err
+	}
+	ch := ps.Channel()
+	go func(ch <-chan *redis.Message) {
+		for msg := range ch {
+			handler(msg.Channel, msg.Payload)
+		}
+	}(ch)
+	return nil
+}
+
+func (c *CacheRedis) PSubscribe(patterns []string, handler func(string, string)) error {
+	pubsub := c.client.PSubscribe(context.Background(), patterns...)
+	if _, err := pubsub.Receive(context.Background()); err != nil {
+		return err
+	}
+	ch := pubsub.Channel()
+	go func(ch <-chan *redis.Message) {
+		for msg := range ch {
+			handler(msg.Channel, msg.Payload)
+		}
+	}(ch)
+	return nil
 }
