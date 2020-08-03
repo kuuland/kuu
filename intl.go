@@ -45,6 +45,18 @@ type IntlMessagesOptions struct {
 	Keys          string
 }
 
+func getSimpleIntlMessages(opts ...*IntlMessagesOptions) map[string]string {
+	messages := getIntlMessages(opts...)
+	simpleMessages := make(map[string]string)
+	for k, values := range messages {
+		for _, v := range values {
+			simpleMessages[k] = v
+			break
+		}
+	}
+	return simpleMessages
+}
+
 func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string {
 	query := IntlMessagesOptions{}
 	if len(opts) > 0 && opts[0] != nil {

@@ -27,15 +27,36 @@ var IntlMessagesRoute = RouteInfo{
 			Prefix        string `form:"prefix"`
 			Description   string `form:"desc"`
 			Keys          string `form:"keys"`
+			Simple        string `form:"simple"`
 		}
 		_ = c.ShouldBindQuery(&query)
-		messagesMap := getIntlMessages(&IntlMessagesOptions{
+		var simple bool
+		if v, err := strconv.ParseBool(query.Simple); err == nil {
+			simple = v
+		}
+		if simple {
+			failedMessage := c.L("intl_messages_failed", "You must and only specify one language code, like 'langs=zh-Hans'")
+			if query.LanguageCodes == "" {
+				c.STDErr(failedMessage)
+				return
+			} else if split := strings.Split(query.LanguageCodes, ","); len(split) > 1 {
+				c.STDErr(failedMessage)
+				return
+			}
+		}
+		opts := IntlMessagesOptions{
 			LanguageCodes: query.LanguageCodes,
 			Prefix:        query.Prefix,
 			Description:   query.Description,
 			Keys:          query.Keys,
-		})
-		c.STD(messagesMap)
+		}
+		var ret interface{}
+		if simple {
+			ret = getSimpleIntlMessages(&opts)
+		} else {
+			ret = getIntlMessages(&opts)
+		}
+		c.STD(ret)
 	},
 }
 
