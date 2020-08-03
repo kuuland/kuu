@@ -5,12 +5,30 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/kuuland/kuu/intl"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
-	"strconv"
 	"strings"
+	"sync"
 )
+
+const intlMessagesChangedChannel = "intl_messages_changed"
+
+var (
+	intlMessages   = make(map[string]map[string]string)
+	intlMessagesMu sync.RWMutex
+)
+
+func GetIntlMessages() map[string]map[string]string {
+	intlMessagesMu.RLock()
+	defer intlMessagesMu.RUnlock()
+	return intlMessages
+}
+
+func ReloadIntlMessages() {
+	intlMessagesMu.Lock()
+	defer intlMessagesMu.Unlock()
+	intlMessages = getIntlMessages()
+}
 
 func getLocalesDir() string {
 	localesDir := "assets/locales"
@@ -18,133 +36,6 @@ func getLocalesDir() string {
 		localesDir = v
 	}
 	return localesDir
-}
-
-var IntlLanguages = RouteInfo{
-	Name:   "查询语言列表",
-	Method: http.MethodGet,
-	Path:   "/intl/languages",
-	HandlerFunc: func(c *Context) {
-		list := intl.LanguageList()
-		c.STD(list)
-	},
-}
-
-var IntlMessages = RouteInfo{
-	Name:   "查询消息列表",
-	Method: http.MethodGet,
-	Path:   "/intl/messages",
-	HandlerFunc: func(c *Context) {
-		var query struct {
-			LanguageCodes string `form:"langs"`
-			Prefix        string `form:"prefix"`
-			Description   string `form:"desc"`
-			Keys          string `form:"keys"`
-		}
-		_ = c.ShouldBindQuery(&query)
-		messagesMap := getIntlMessages(&IntlMessagesOptions{
-			LanguageCodes: query.LanguageCodes,
-			Prefix:        query.Prefix,
-			Description:   query.Description,
-			Keys:          query.Keys,
-		})
-		c.STD(messagesMap)
-	},
-}
-
-var IntlMessagesSave = RouteInfo{
-	Name:   "修改/新增翻译键",
-	Method: http.MethodPost,
-	Path:   "/intl/messages/save",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("intl_messages_save_failed", "Save failed.")
-		var messages map[string]map[string]string
-		if err := c.ShouldBindJSON(&messages); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		if err := saveIntlMessages(messages, false); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		c.STDOK()
-	},
-}
-
-var IntlMessagesUpload = RouteInfo{
-	Name:   "批量上传翻译文件",
-	Method: http.MethodPost,
-	Path:   "/intl/messages/upload",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("intl_messages_upload_failed", "Upload failed.")
-
-		updateMethod := c.DefaultPostForm("method", "incr")
-		fh, err := c.FormFile("file")
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		var (
-			sheetIndex int
-			sheetName  string
-		)
-		sheetName = c.PostForm("sheet_name")
-		if v := c.PostForm("sheet_idx"); v != "" {
-			idx, err := strconv.Atoi(v)
-			if err == nil {
-				sheetIndex = idx
-			}
-		}
-		rows, err := ParseExcelFromFileHeader(fh, sheetIndex, sheetName)
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		if len(rows) == 0 {
-			c.STDOK()
-			return
-		}
-		languages := intl.LanguageList()
-		indexLangCodeMap := map[int]string{
-			0: "key",
-			1: "default",
-			2: "en",
-			3: "zh-Hans",
-			4: "zh-Hant",
-		}
-		i := len(indexLangCodeMap)
-		for _, item := range languages {
-			if item.Code == "en" || item.Code == "zh-Hans" || item.Code == "zh-Hant" {
-				continue
-			}
-			indexLangCodeMap[i] = item.Code
-			i++
-		}
-		messages := make(map[string]map[string]string)
-		for i := 1; i < len(rows); i++ {
-			row := rows[i]
-			key := strings.TrimSpace(row[0])
-			if key == "" {
-				continue
-			}
-			for j := 1; j < len(row); j++ {
-				value := strings.TrimSpace(row[j])
-				if value == "" {
-					continue
-				}
-				lang := indexLangCodeMap[j]
-				if messages[key] == nil {
-					messages[key] = make(map[string]string)
-				}
-				messages[key][lang] = value
-			}
-		}
-		if err := saveIntlMessages(messages, updateMethod == "full"); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		c.STDOK()
-	},
 }
 
 type IntlMessagesOptions struct {
@@ -159,9 +50,11 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 	if len(opts) > 0 && opts[0] != nil {
 		query = *opts[0]
 	}
-	query.LanguageCodes = strings.ToLower(query.LanguageCodes)
-	query.Prefix = strings.ToLower(query.Prefix)
-	query.Keys = strings.ToLower(query.Keys)
+	query.LanguageCodes = strings.TrimSpace(query.LanguageCodes)
+	query.Prefix = strings.TrimSpace(query.Prefix)
+	query.Description = strings.TrimSpace(query.Description)
+	query.Keys = strings.TrimSpace(query.Keys)
+
 	localesDir := getLocalesDir()
 	fis, err := ioutil.ReadDir(localesDir)
 	var messagesMap = make(map[string]map[string]string)
@@ -173,24 +66,13 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 			fileName := fi.Name()
 			filePath := path.Join(localesDir, fileName)
 			langCode := strings.ReplaceAll(fileName, path.Ext(fileName), "")
-			lowerCaseLangCode := strings.ToLower(langCode)
 			buf, err := ioutil.ReadFile(filePath)
 			if err == nil {
 				_ = jsonparser.ObjectEach(buf, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
 					keyStr := string(key)
 					valueStr := string(value)
-					lowerCaseKeyStr := strings.ToLower(keyStr)
-					if query.Prefix != "" && !strings.Contains(lowerCaseKeyStr, query.Prefix) {
-						return nil
-					}
 					if messagesMap[keyStr] == nil {
 						messagesMap[keyStr] = make(map[string]string)
-					}
-					if query.Keys != "" && !strings.Contains(query.Keys, lowerCaseKeyStr) {
-						return nil
-					}
-					if query.LanguageCodes != "" && !strings.Contains(query.LanguageCodes, lowerCaseLangCode) {
-						return nil
 					}
 					messagesMap[keyStr][langCode] = valueStr
 					return nil
@@ -198,22 +80,7 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 			}
 		}
 	}
-	// 过滤Description
-	query.Description = strings.TrimSpace(query.Description)
-	if query.Description != "" {
-		for k, values := range messagesMap {
-			var has bool
-			for l, v := range values {
-				if l == "default" && strings.Contains(v, query.Description) {
-					has = true
-				}
-			}
-			if !has {
-				delete(messagesMap, k)
-			}
-		}
-	}
-	// 过滤预置键
+	// 增加预置键
 	for k, presetValues := range presetIntlMessages {
 		if k == "" || len(presetValues) == 0 {
 			continue
@@ -228,6 +95,47 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 				}
 				messagesMap[k][l] = v
 			}
+		}
+	}
+	// 关键字过滤
+	lowerPrefix := strings.ToLower(query.Prefix)
+	lowerDescription := strings.ToLower(query.Description)
+	lowerLanguageCodes := strings.ToLower(query.LanguageCodes)
+	lowerKeys := strings.ToLower(query.Keys)
+	for k, values := range messagesMap {
+		if len(values) == 0 {
+			delete(messagesMap, k)
+			continue
+		}
+		lowerKey := strings.ToLower(k)
+		if query.Prefix != "" {
+			if !strings.HasPrefix(lowerKey, lowerPrefix) {
+				delete(messagesMap, k)
+				continue
+			}
+		}
+		if query.Keys != "" && !strings.Contains(lowerKeys, lowerKey) {
+			delete(messagesMap, k)
+			continue
+		}
+		if query.Description != "" {
+			if !strings.HasPrefix(strings.ToLower(values["default"]), lowerDescription) {
+				delete(messagesMap, k)
+				continue
+			}
+		}
+		for l := range values {
+			if l == "default" {
+				continue
+			}
+			if query.LanguageCodes != "" && !strings.Contains(lowerLanguageCodes, strings.ToLower(l)) {
+				delete(values, l)
+				continue
+			}
+		}
+		messagesMap[k] = values
+		if len(messagesMap[k]) == 0 {
+			delete(messagesMap, k)
 		}
 	}
 
@@ -349,6 +257,6 @@ func saveMessageFile(langCode string, content interface{}) error {
 	if err := ioutil.WriteFile(filePath, buf, os.ModePerm); err != nil {
 		return err
 	}
-	_ = PublishCache("intl_messages_changed", langCode)
+	_ = PublishCache(intlMessagesChangedChannel, langCode)
 	return nil
 }

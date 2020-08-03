@@ -14,6 +14,7 @@ type RouteInfo struct {
 	SignType       []string
 	RequestParams  route.RequestParams
 	ResponseParams route.ResponseParams
+	IntlMessages   map[string]string
 }
 
 // RoutesInfo defines a RouteInfo array.

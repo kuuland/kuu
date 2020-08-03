@@ -34,6 +34,9 @@ func init() {
 		// 初始化bolt
 		DefaultCache = NewCacheBolt()
 	}
+	_ = DefaultCache.Subscribe([]string{intlMessagesChangedChannel}, func(c string, d string) {
+		ReloadIntlMessages()
+	})
 }
 
 func releaseCacheDB() {
