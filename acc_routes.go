@@ -1,11 +1,6 @@
 package kuu
 
 import (
-	"errors"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin/binding"
-	uuid "github.com/satori/go.uuid"
-	"gopkg.in/guregu/null.v3"
 	"regexp"
 	"time"
 )
@@ -15,80 +10,25 @@ const (
 	SignMethodLogout = "LOGOUT"
 )
 
-type GenTokenDesc struct {
-	UID      uint   `binding:"required"`
-	Exp      int64  `binding:"required"`
-	Type     string `binding:"required"`
-	Desc     string
-	Payload  jwt.MapClaims
-	IsAPIKey bool
-}
-
-// GenToken
-func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
-	if err := binding.Validator.ValidateStruct(&desc); err != nil {
-		return nil, err
-	}
-	if desc.IsAPIKey && desc.Desc == "" {
-		return nil, errors.New("API & Keys needs a usage description")
-	}
-
-	// 设置JWT令牌信息
-	iat := time.Now().Unix()
-	desc.Payload["iat"] = iat      // 签发时间：必须用全小写iat
-	desc.Payload["exp"] = desc.Exp // 过期时间：必须用全小写exp
-	// 兼容未传递SubDocID时自动查询
-	var (
-		subDocID uint
-		user     = GetUserFromCache(desc.UID)
-	)
-	if v, err := user.GetSubDocID(desc.Type); err != nil {
-		return nil, err
-	} else {
-		subDocID = v
-	}
-	// 生成新密钥
-	secretData = &SignSecret{
-		UID:      desc.UID,
-		Secret:   uuid.NewV4().String(),
-		Iat:      iat,
-		Exp:      desc.Exp,
-		Method:   SignMethodLogin,
-		SubDocID: subDocID,
-		Desc:     desc.Desc,
-		Type:     desc.Type,
-		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
-	}
-	// 签发令牌
-	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {
-		return secretData, err
-	} else {
-		secretData.Token = signed
-	}
-	desc.Payload[TokenKey] = secretData.Token
-	if err = DB().Create(secretData).Error; err != nil {
-		return
-	}
-	// 保存登入历史
-	saveHistory(secretData)
-	return
-}
-
 // LoginRoute
 var LoginRoute = RouteInfo{
 	Name:   "默认登录接口",
 	Method: "POST",
 	Path:   "/login",
-	HandlerFunc: func(c *Context) {
-		c.Set("is_login", true)
+	IntlMessages: map[string]string{
+		"acc_login_failed": "Login failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		// 调用登录处理器获取登录数据
 		if loginHandler == nil {
 			PANIC("login handler not configured")
 		}
 		resp := loginHandler(c)
 		if resp.Error != nil {
-			c.ERROR(resp.Error).STDErr(resp.LanguageMessage)
-			return
+			if resp.LocaleMessageID != "" {
+				return c.STDErr(resp.Error, resp.LocaleMessageID, resp.LocaleMessageDefaultText, resp.LocaleMessageContextValues)
+			}
+			return c.STDErr(resp.Error, "acc_login_failed")
 		}
 		// 调用令牌签发
 		secretData, err := GenToken(GenTokenDesc{
@@ -98,23 +38,22 @@ var LoginRoute = RouteInfo{
 			Type:    AdminSignType,
 		})
 		if err != nil {
-			c.STDErr(c.L("acc_token_failed", "Token signing failed"), err)
-			return
+			return c.STDErr(err, "acc_login_failed")
 		}
 		// 设置到上下文中
-		c.Set(SignContextKey, &SignContext{
+		c.Set("__kuu_sign_context__", &SignContext{
 			Token:   secretData.Token,
 			UID:     secretData.UID,
 			Payload: resp.Payload,
 			Secret:  secretData,
 		})
 		// 设置Cookie
-		c.SetCookie(RequestLangKey, resp.Lang, ExpiresSeconds, "/", "", false, true)
+		c.SetCookie(LangKey, resp.Lang, ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(TokenKey, secretData.Token, ExpiresSeconds, "/", "", false, true)
 		// 清空验证码Cookie和缓存
 		c.SetCookie(CaptchaIDKey, "", -1, "/", "", false, true)
 		DelCache(getFailedTimesKey(resp.Username))
-		c.STD(resp.Payload)
+		return c.STD(resp.Payload)
 	},
 }
 
@@ -123,8 +62,10 @@ var LogoutRoute = RouteInfo{
 	Name:   "默认登出接口",
 	Method: "POST",
 	Path:   "/logout",
-	HandlerFunc: func(c *Context) {
-		c.Set("is_logout", true)
+	IntlMessages: map[string]string{
+		"acc_logout_failed": "Logout failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		if c.SignInfo != nil && c.SignInfo.IsValid() {
 			var (
 				secretData SignSecret
@@ -133,17 +74,16 @@ var LogoutRoute = RouteInfo{
 			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
 			if !db.NewRecord(&secretData) {
 				if err := db.Model(&secretData).Updates(&SignSecret{Method: SignMethodLogout}).Error; err != nil {
-					c.STDErr(c.L("acc_logout_failed", "Logout failed"), err)
-					return
+					return c.STDErr(err, "acc_logout_failed")
 				}
 				// 保存登出历史
 				saveHistory(&secretData)
 				// 设置Cookie过期
 				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
-				c.SetCookie(RequestLangKey, "", -1, "/", "", false, true)
+				c.SetCookie(LangKey, "", -1, "/", "", false, true)
 			}
 		}
-		c.STD("退出成功")
+		return c.STDOK()
 	},
 }
 
@@ -152,32 +92,30 @@ var ValidRoute = RouteInfo{
 	Name:   "令牌有效性验证接口",
 	Method: "POST",
 	Path:   "/valid",
-	HandlerFunc: func(c *Context) {
-		if c.SignInfo != nil && c.SignInfo.IsValid() {
-			// 查询用户
-			var user User
-			if err := c.IgnoreAuth().DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
-				c.STDErr(c.L("user_query_failed", "Query user failed"), err)
-				return
-			}
-			// 处理Lang参数
-			if user.Lang == "" {
-				user.Lang = ParseLang(c.Context)
-			}
-			c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
-			c.SignInfo.Payload["Lang"] = user.Lang
-			c.SignInfo.Payload["ActOrgID"] = c.PrisDesc.ActOrgID
-			c.SignInfo.Payload["ActOrgCode"] = c.PrisDesc.ActOrgCode
-			c.SignInfo.Payload["ActOrgName"] = c.PrisDesc.ActOrgName
-			c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
-			if c.PrisDesc != nil {
-				c.SignInfo.Payload["Permissions"] = c.PrisDesc.Permissions
-				c.SignInfo.Payload["RolesCode"] = c.PrisDesc.RolesCode
-			}
-			c.STD(c.SignInfo.Payload)
-		} else {
-			c.STDErrHold(c.L("acc_token_expired", "Token has expired")).Code(555).Render()
+	IntlMessages: map[string]string{
+		"acc_invalid_token": "Invalid token.",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		// 查询用户
+		var user User
+		if err := c.IgnoreAuth().DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
+			return c.STDErr(err, "acc_invalid_token")
 		}
+		// 处理Lang参数
+		if user.Lang == "" {
+			user.Lang = c.Lang()
+		}
+		c.SetCookie(LangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
+		c.SignInfo.Payload["Lang"] = user.Lang
+		c.SignInfo.Payload["ActOrgID"] = c.PrisDesc.ActOrgID
+		c.SignInfo.Payload["ActOrgCode"] = c.PrisDesc.ActOrgCode
+		c.SignInfo.Payload["ActOrgName"] = c.PrisDesc.ActOrgName
+		c.SignInfo.Payload[TokenKey] = c.SignInfo.Token
+		if c.PrisDesc != nil {
+			c.SignInfo.Payload["Permissions"] = c.PrisDesc.Permissions
+			c.SignInfo.Payload["RolesCode"] = c.PrisDesc.RolesCode
+		}
+		return c.STD(c.SignInfo.Payload)
 	},
 }
 
@@ -186,12 +124,13 @@ var APIKeyRoute = RouteInfo{
 	Name:   "令牌生成接口",
 	Method: "POST",
 	Path:   "/apikeys",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"apikeys_failed": "Create API & Keys failed.",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var body GenTokenDesc
-		failedMessage := c.L("apikeys_failed", "Create API & Keys failed")
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "apikeys_failed")
 		}
 		body.Payload = c.SignInfo.Payload
 		body.UID = c.SignInfo.UID
@@ -199,10 +138,9 @@ var APIKeyRoute = RouteInfo{
 		body.Type = AdminSignType
 		secretData, err := GenToken(body)
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "apikeys_failed")
 		}
-		c.STD(secretData.Token)
+		return c.STD(secretData.Token)
 	},
 }
 
@@ -211,7 +149,7 @@ var WhitelistRoute = RouteInfo{
 	Name:   "查询白名单列表",
 	Method: "GET",
 	Path:   "/whitelist",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		var list []string
 		for _, item := range Whitelist {
 			if v, ok := item.(string); ok {
@@ -220,6 +158,6 @@ var WhitelistRoute = RouteInfo{
 				list = append(list, v.String())
 			}
 		}
-		c.STD(list)
+		return c.STD(list)
 	},
 }

@@ -32,8 +32,8 @@ var (
 	// GLSRequestContextKey
 	GLSRequestContextKey = "RequestContext"
 	GLSRequestIDKey      = "RequestID"
-	// RunTime
-	RunTime time.Time
+	// Uptime
+	Uptime time.Time
 	// IsProduction
 	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_PROD") == "true"
 	json         = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -46,7 +46,7 @@ func init() {
 }
 
 // M is a shortcut for map[string]interface{}
-type M map[string]interface{}
+type D map[string]interface{}
 
 // Engine
 type Engine struct {
@@ -66,23 +66,22 @@ func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
 }
 
 // Default
-func Default() (e *Engine) {
-	e = &Engine{Engine: gin.Default()}
-	e.Use(Recovery)
+func Default() (app *Engine) {
+	app = &Engine{Engine: gin.Default()}
+	app.UseGin(Recovery)
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
-		e.GET("/", func(c *Context) {
-			msg := c.L("kuu_up", "{{time}}", M{"time": RunTime.Format("2006-01-02 15:04:05")})
-			c.STD(fmt.Sprintf("%s is up.", GetAppName()), msg)
+		app.GET("/", func(c *Context) *STDReply {
+			return c.STD(fmt.Sprintf("%s is up.", GetAppName()), "kuu_up", "{{time}}", D{"time": Uptime.Format("2006-01-02 15:04:05")})
 		})
 	}
-	onInit(e)
+	app.init()
 	return
 }
 
 // New
-func New() (e *Engine) {
-	e = &Engine{Engine: gin.New()}
-	onInit(e)
+func New() (app *Engine) {
+	app = &Engine{Engine: gin.New()}
+	app.init()
 	return
 }
 
@@ -127,17 +126,17 @@ func shutdown(srv *http.Server) {
 }
 
 // RegisterWhitelist
-func (e *Engine) RegisterWhitelist(rules ...interface{}) {
+func (app *Engine) RegisterWhitelist(rules ...interface{}) {
 	AddWhitelist(rules...)
 }
 
 // Run
-func (e *Engine) Run(addr ...string) {
-	RunTime = time.Now()
+func (app *Engine) Run(addr ...string) {
+	Uptime = time.Now()
 	address := resolveAddress(addr)
 	srv := &http.Server{
 		Addr:    address,
-		Handler: e.Engine,
+		Handler: app.Engine,
 	}
 	beforeRun()
 	go func() {
@@ -150,11 +149,11 @@ func (e *Engine) Run(addr ...string) {
 }
 
 // RunTLS
-func (e *Engine) RunTLS(addr, certFile, keyFile string) {
-	RunTime = time.Now()
+func (app *Engine) RunTLS(addr, certFile, keyFile string) {
+	Uptime = time.Now()
 	srv := &http.Server{
 		Addr:    addr,
-		Handler: e.Engine,
+		Handler: app.Engine,
 	}
 	beforeRun()
 	go func() {
@@ -166,85 +165,121 @@ func (e *Engine) RunTLS(addr, certFile, keyFile string) {
 	shutdown(srv)
 }
 
-// ConvertKuuHandlers
-var ConvertKuuHandlers = func(chain HandlersChain) (handlers gin.HandlersChain) {
+func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (handlers gin.HandlersChain) {
 	handlers = make(gin.HandlersChain, len(chain))
+	var middleware bool
+	if len(isMiddleware) > 0 {
+		middleware = isMiddleware[0]
+	}
 	for index, handler := range chain {
 		handlers[index] = func(c *gin.Context) {
-			kc := &Context{
-				Context:       c,
-				RoutineCaches: make(RoutineCaches),
-				SignInfo:      GetSignContext(c),
-			}
-			if kc.SignInfo.IsValid() {
-				desc := GetPrivilegesDesc(kc.SignInfo)
-				kc.PrisDesc = desc
-			}
-			glsVals := make(gls.Values)
-			glsVals[GLSSignInfoKey] = kc.SignInfo
-			glsVals[GLSPrisDescKey] = kc.PrisDesc
-			glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
-			glsVals[GLSRequestContextKey] = kc
-			glsVals[GLSRequestIDKey] = uuid.NewV4().String()
-			SetGLSValues(glsVals, func() {
-				if InWhitelist(c) {
-					IgnoreAuth()
+			var (
+				kc = &Context{
+					Context: c,
+					app:     app,
 				}
-				handler(kc)
-			})
+				v *STDReply
+			)
+			if middleware {
+				v = handler(kc)
+			} else {
+				kc.RoutineCaches = make(RoutineCaches)
+				sc, err := kc.DecodedContext()
+				if err == nil && sc.IsValid() {
+					desc := GetPrivilegesDesc(kc.SignInfo)
+					kc.PrisDesc = desc
+					kc.SignInfo = sc
+				}
+				glsVals := make(gls.Values)
+				glsVals[GLSSignInfoKey] = kc.SignInfo
+				glsVals[GLSPrisDescKey] = kc.PrisDesc
+				glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
+				glsVals[GLSRequestContextKey] = kc
+				glsVals[GLSRequestIDKey] = uuid.NewV4().String()
+				SetGLSValues(glsVals, func() {
+					if kc.InWhitelist() {
+						IgnoreAuth()
+					}
+					v = handler(kc)
+				})
+			}
+			if v != nil {
+				switch vv := v.Data.(type) {
+				case error:
+				case []error:
+					ERROR(vv)
+				}
+				if v.HTTPAction == nil {
+					v.HTTPAction = c.JSON
+				}
+				if v.HTTPCode == 0 {
+					v.HTTPCode = http.StatusOK
+				}
+				v.HTTPAction(v.HTTPCode, v)
+			}
 		}
 	}
 	return
 }
 
+func (app *Engine) Use(handlers ...HandlerFunc) *Engine {
+	app.Engine.Use(app.convertHandlers(handlers, true)...)
+	return app
+}
+
+func (app *Engine) UseGin(handlers ...gin.HandlerFunc) *Engine {
+	app.Engine.Use(handlers...)
+	return app
+}
+
 // Overrite r.Group
-func (e *Engine) Group(relativePath string, handlers ...HandlerFunc) *gin.RouterGroup {
-	return e.Engine.Group(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) Group(relativePath string, handlers ...HandlerFunc) *gin.RouterGroup {
+	return app.Engine.Group(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.Handle
-func (e *Engine) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.Handle(httpMethod, relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.Handle(httpMethod, relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.POST
-func (e *Engine) POST(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.POST(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) POST(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.POST(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.GET
-func (e *Engine) GET(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.GET(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) GET(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.GET(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.DELETE
-func (e *Engine) DELETE(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.DELETE(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) DELETE(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.DELETE(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.PATCH
-func (e *Engine) PATCH(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.PATCH(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) PATCH(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.PATCH(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.PUT
-func (e *Engine) PUT(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.PUT(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) PUT(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.PUT(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.OPTIONS
-func (e *Engine) OPTIONS(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.OPTIONS(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) OPTIONS(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.OPTIONS(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.HEAD
-func (e *Engine) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.HEAD(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.HEAD(relativePath, app.convertHandlers(handlers)...)
 }
 
 // Overrite r.Any
-func (e *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	return e.Engine.Any(relativePath, ConvertKuuHandlers(handlers)...)
+func (app *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	return app.Engine.Any(relativePath, app.convertHandlers(handlers)...)
 }
 
 // GetRoutinePrivilegesDesc
@@ -319,33 +354,33 @@ func IgnoreAuth(cancel ...bool) (success bool) {
 	return
 }
 
-func (e *Engine) initConfigs() {
+func (app *Engine) initConfigs() {
 	if C().Has("cors") {
 		if C().GetBool("cors") {
 			config := cors.DefaultConfig()
 			config.AllowAllOrigins = true
 			config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "api_key", "Authorization", TokenKey, ""}
-			e.Use(cors.New(config))
+			app.UseGin(cors.New(config))
 		} else {
 			var config cors.Config
 			C().GetInterface("cors", &config)
-			e.Use(cors.New(config))
+			app.UseGin(cors.New(config))
 		}
 	}
 
 	if C().Has("gzip") {
 		if C().GetBool("gzip") {
-			e.Use(gzip.Gzip(gzip.DefaultCompression))
+			app.UseGin(gzip.Gzip(gzip.DefaultCompression))
 		} else {
 			v := C().GetInt("gzip")
 			if v != 0 {
-				e.Use(gzip.Gzip(v))
+				app.UseGin(gzip.Gzip(v))
 			}
 		}
 	}
 }
 
-func (e *Engine) initStatics() {
+func (app *Engine) initStatics() {
 	statics := make(map[string]string)
 	C().GetInterface("statics", &statics)
 	if statics == nil || len(statics) == 0 {
@@ -358,9 +393,9 @@ func (e *Engine) initStatics() {
 			continue
 		}
 		if stat.IsDir() {
-			e.Static(key, val)
+			app.Static(key, val)
 		} else {
-			e.StaticFile(key, val)
+			app.StaticFile(key, val)
 		}
 		AddWhitelist(regexp.MustCompile(fmt.Sprintf(`^GET\s%s`, key)))
 	}
@@ -381,9 +416,17 @@ func connectedPrint(name, args string) {
 	INFO("%-8s is connected: %s", name, args)
 }
 
-func onInit(app *Engine) {
-	app.Use(session.New())
+func (app *Engine) init() {
 	initDataSources()
+	app.Use(func(c *Context) *STDReply {
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return nil
+		}
+		c.RequestID()
+		return nil
+	})
+	app.UseGin(session.New())
 	app.initConfigs()
 	app.initStatics()
 

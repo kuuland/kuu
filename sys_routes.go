@@ -5,13 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
-	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
 	"net/http"
 	"path"
 	"reflect"
-	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,14 +22,16 @@ var OrgLoginableRoute = RouteInfo{
 	Name:   "查询可登录组织",
 	Method: "GET",
 	Path:   "/org/loginable",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"org_query_failed": "Query organization failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		c.IgnoreAuth()
-		sign := c.SignInfo
-		if data, err := GetLoginableOrgs(c.Context, sign.UID); err != nil {
-			c.STDErr(c.L("org_query_failed", "Query organization failed"), err)
-		} else {
-			c.STD(data)
+		data, err := GetLoginableOrgs(c, c.SignInfo.UID)
+		if err != nil {
+			return c.STDErr(err, "org_query_failed")
 		}
+		return c.STD(data)
 	},
 }
 
@@ -41,16 +40,15 @@ var OrgSwitchRoute = RouteInfo{
 	Name:   "切换当前登录组织",
 	Method: "POST",
 	Path:   "/org/switch",
-	HandlerFunc: func(c *Context) {
-		var (
-			failedMessage = c.L("org_switch_failed", "Switching organization failed")
-			body          struct {
-				ActOrgID uint
-			}
-		)
+	IntlMessages: map[string]string{
+		"org_switch_failed": "Switching organization failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		var body struct {
+			ActOrgID uint
+		}
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "org_switch_failed")
 		}
 
 		err := c.IgnoreAuth().DB().
@@ -58,10 +56,9 @@ var OrgSwitchRoute = RouteInfo{
 			Update(User{ActOrgID: body.ActOrgID}).Error
 
 		if err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD("ok")
+			return c.STDErr(err, "org_switch_failed")
 		}
+		return c.STDOK()
 	},
 }
 
@@ -70,19 +67,20 @@ var UserRoleAssigns = RouteInfo{
 	Name:   "查询用户已分配角色",
 	Method: "GET",
 	Path:   "/user/role_assigns/:uid",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"role_assigns_failed": "User roles query failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		raw := c.Param("uid")
-		failedMessage := c.L("role_assigns_failed", "User roles query failed")
 		if raw == "" {
-			c.STDErr(failedMessage, errors.New("UID is required"))
-			return
+			return c.STDErr(errors.New("UID is required"), "role_assigns_failed")
 		}
 		uid := ParseID(raw)
-		if user, err := GetUserWithRoles(uid); err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD(user.RoleAssigns)
+		user, err := GetUserWithRoles(uid)
+		if err != nil {
+			return c.STDErr(err, "role_assigns_failed")
 		}
+		return c.STD(user.RoleAssigns)
 	},
 }
 
@@ -91,19 +89,19 @@ var UserMenusRoute = RouteInfo{
 	Name:   "查询用户菜单",
 	Method: "GET",
 	Path:   "/user/menus",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"user_menus_failed": "User menus query failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var menus []Menu
-		failedMessage := c.L("user_menus_failed", "User menus query failed")
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "user_menus_failed")
 		}
 		// 补全父级菜单
 		var total []Menu
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "user_menus_failed")
 		}
 		var (
 			totalMap  = make(map[uint]Menu)
@@ -136,7 +134,7 @@ var UserMenusRoute = RouteInfo{
 			return result
 		}
 		menus = fall(menus)
-		c.STD(menus)
+		return c.STD(menus)
 	},
 }
 
@@ -158,10 +156,12 @@ var UploadRoute = RouteInfo{
 	Name:   "默认文件上传接口",
 	Method: "POST",
 	Path:   "/upload",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"upload_failed": "Upload file failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var (
-			save2db       = true
-			failedMessage = c.L("upload_failed", "Upload file failed")
+			save2db = true
 		)
 		if v, ok := c.GetPostForm("save2db"); ok {
 			if b, err := strconv.ParseBool(v); err == nil {
@@ -170,20 +170,17 @@ var UploadRoute = RouteInfo{
 		}
 		extra, err := getFileExtraData(c)
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "upload_failed")
 		}
 		fh, err := c.FormFile("file")
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "upload_failed")
 		}
 		file, err := SaveUploadedFile(fh, save2db, extra)
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "upload_failed")
 		}
-		c.STD(file)
+		return c.STD(file)
 	},
 }
 
@@ -192,12 +189,15 @@ var AuthRoute = RouteInfo{
 	Name:   "操作权限鉴权接口",
 	Method: "GET",
 	Path:   "/auth",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"auth_failed": "Authentication failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		ps := c.Query("p")
 		split := strings.Split(ps, ",")
 
 		if len(split) == 0 {
-			c.STDErr(c.L("auth_failed", "Authentication failed"), errors.New("'p' is required"))
+			return c.STDErr(errors.New("param 'p' is required"), "auth_failed")
 		}
 
 		ret := make(map[string]bool)
@@ -206,7 +206,7 @@ var AuthRoute = RouteInfo{
 			ret[s] = has
 		}
 
-		c.STD(ret)
+		return c.STD(ret)
 	},
 }
 
@@ -215,7 +215,7 @@ var MetaRoute = RouteInfo{
 	Name:   "查询元数据列表",
 	Method: "GET",
 	Path:   "/meta",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		json := c.Query("json")
 		name := c.Query("name")
 		mod := c.Query("mod")
@@ -238,12 +238,8 @@ var MetaRoute = RouteInfo{
 		} else {
 			list = metadataList
 		}
-		if len(list) == 0 {
-			c.STDErr(c.L("sys_meta_failed", "Metadata does not exist: {{name}}", M{"name": name}))
-			return
-		}
 		if json != "" {
-			c.STD(list)
+			return c.STD(list)
 		} else {
 			var (
 				hashKey = fmt.Sprintf("meta_%s_%s", name, mod)
@@ -278,6 +274,7 @@ var MetaRoute = RouteInfo{
 				valueCacheMap.Store(hashKey, result)
 			}
 			c.String(http.StatusOK, result)
+			return nil
 		}
 	},
 }
@@ -287,22 +284,23 @@ var EnumRoute = RouteInfo{
 	Name:   "查询枚举列表",
 	Path:   "/enum",
 	Method: "GET",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		json := c.Query("json")
 		name := c.Query("name")
 
+		em := EnumMap()
 		var list []*EnumDesc
 		if name != "" {
 			for _, name := range strings.Split(name, ",") {
-				if v, ok := enumMap[name]; ok && v != nil {
+				if v, ok := em[name]; ok && v != nil {
 					list = append(list, v)
 				}
 			}
 		} else {
-			list = enumList
+			list = EnumList()
 		}
 		if json != "" {
-			c.STD(list)
+			return c.STD(list)
 		} else {
 			var (
 				hashKey = fmt.Sprintf("enum_%s", name)
@@ -337,6 +335,7 @@ var EnumRoute = RouteInfo{
 				valueCacheMap.Store(hashKey, result)
 			}
 			c.String(http.StatusOK, result)
+			return nil
 		}
 	},
 }
@@ -346,7 +345,7 @@ var CaptchaRoute = RouteInfo{
 	Name:   "查询验证码",
 	Path:   "/captcha",
 	Method: "GET",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		var (
 			user  = c.Query("user")
 			valid bool
@@ -356,13 +355,12 @@ var CaptchaRoute = RouteInfo{
 			valid = failedTimesValid(times)
 		}
 		if valid == false {
-			c.STD(null.NewBool(valid, true))
-			return
+			return c.STD(null.BoolFrom(valid))
 		}
 		// 生成验证码
 		id, base64Str := GenerateCaptcha()
 		c.SetCookie(CaptchaIDKey, id, ExpiresSeconds, "/", "", false, true)
-		c.STD(M{
+		return c.STD(D{
 			"id":        id,
 			"base64Str": base64Str,
 		})
@@ -374,7 +372,10 @@ var ModelDocsRoute = RouteInfo{
 	Name:   "查询默认接口文档",
 	Method: "GET",
 	Path:   "/model/docs",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"model_docs_failed": "Model document query failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var (
 			hashKeyYAML = "model_docs_yaml"
 			hashKeyJSON = "model_docs_json"
@@ -385,12 +386,12 @@ var ModelDocsRoute = RouteInfo{
 		if json {
 			if v, ok := valueCacheMap.Load(hashKeyJSON); ok {
 				c.String(http.StatusOK, v.(string))
-				return
+				return nil
 			}
 		} else {
 			if v, ok := valueCacheMap.Load(hashKeyYAML); ok {
 				c.String(http.StatusOK, v.(string))
-				return
+				return nil
 			}
 		}
 		// 重新生成
@@ -774,6 +775,7 @@ var ModelDocsRoute = RouteInfo{
 			Components: DocComponent{
 				Schemas: func() (schemas map[string]DocComponentSchema) {
 					schemas = make(map[string]DocComponentSchema)
+					em := EnumMap()
 					for _, m := range validMeta {
 						props := make(map[string]DocSchemaProperty)
 						for _, f := range m.Fields {
@@ -793,8 +795,8 @@ var ModelDocsRoute = RouteInfo{
 							} else {
 								prop.Type = f.Type
 							}
-							if f.Enum != "" && enumMap[f.Enum] != nil {
-								for value, _ := range enumMap[f.Enum].Values {
+							if f.Enum != "" && em[f.Enum] != nil {
+								for value, _ := range em[f.Enum].Values {
 									prop.Enum = append(prop.Enum, value)
 								}
 							}
@@ -820,8 +822,7 @@ var ModelDocsRoute = RouteInfo{
 		if json {
 			data, err := yaml.YAMLToJSON([]byte(yml))
 			if err != nil {
-				c.STDErr(c.L("model_docs_failed", "Model document query failed"), err)
-				return
+				return c.STDErr(err, "model_docs_failed")
 			}
 			json := string(data)
 			valueCacheMap.Store(hashKeyJSON, json)
@@ -830,276 +831,7 @@ var ModelDocsRoute = RouteInfo{
 			valueCacheMap.Store(hashKeyYAML, yml)
 			c.String(http.StatusOK, yml)
 		}
-	},
-}
-
-// LangmsgsRoute
-var LangmsgsRoute = RouteInfo{
-	Name:   "查询国际化消息列表",
-	Method: "GET",
-	Path:   "/langmsgs",
-	HandlerFunc: func(c *Context) {
-		lang := ParseLang(c.Context)
-		group := c.Query("group")
-		db := c.DB()
-		if lang != "" && lang != "*" {
-			db = db.Where("lang_code = ?", lang)
-		}
-		if group != "" {
-			db = db.Where("group = ?", group)
-		}
-		var list []LanguageMessage
-		failedMessage := c.L("lang_msgs_failed", "Query i18n messages failed")
-		if err := db.Find(&list).Order("sort").Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		ret := make(map[string]map[string]string)
-		for _, item := range list {
-			if item.LangCode == "" || item.Key == "" {
-				continue
-			}
-			if ret[item.LangCode] == nil {
-				ret[item.LangCode] = make(map[string]string)
-			}
-			ret[item.LangCode][item.Key] = item.Value
-		}
-		c.STD(ret)
-	},
-}
-
-// LangtransGetRoute
-var LangtransGetRoute = RouteInfo{
-	Name:   "查询国际化翻译列表",
-	Method: "GET",
-	Path:   "/langtrans",
-	HandlerFunc: func(c *Context) {
-		c.IgnoreAuth()
-		failedMessage := c.L("lang_trans_query_failed", "Query translation list failed")
-		var (
-			languages []Language
-			messages  []LanguageMessage
-		)
-
-		if err := c.DB().Order("lang_code").Find(&languages).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		if err := c.DB().Order("key").Find(&messages).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-
-		keysSort := make(map[string]int)
-		keysMap := make(map[string]LanguageMessagesMap)
-		for index, item := range messages {
-			if keysMap[item.Key] == nil {
-				keysMap[item.Key] = make(LanguageMessagesMap)
-			}
-			keysMap[item.Key][item.LangCode] = item
-			if _, exists := keysSort[item.Key]; !exists {
-				keysSort[item.Key] = index
-			}
-		}
-		var list TranslatedList
-		for key, translated := range keysMap {
-			item := map[string]interface{}{"Key": key, "Sort": keysSort[key]}
-			for _, lang := range languages {
-				var (
-					langMsgValue string
-					langMsgID    uint
-				)
-				if translated != nil {
-					if v, ok := translated[lang.LangCode]; ok {
-						langMsgValue = v.Value
-						langMsgID = v.ID
-					}
-				}
-				item[fmt.Sprintf("Lang_%s_ID", lang.LangCode)] = langMsgID
-				item[fmt.Sprintf("Lang_%s_Value", lang.LangCode)] = langMsgValue
-				item[fmt.Sprintf("Lang_%s_LangName", lang.LangCode)] = lang.LangName
-			}
-			list = append(list, item)
-		}
-		sort.Sort(list)
-		c.STD(list)
-	},
-}
-
-// LangtransImportRoute
-var LangtransImportRoute = RouteInfo{
-	Name:   "导入国际化翻译列表",
-	Method: "POST",
-	Path:   "/langtrans/import",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("rest_import_failed", "Import failed")
-		// 解析请求体
-		file, _ := c.FormFile("file")
-		if file == nil {
-			c.STDErr(failedMessage, errors.New("no 'file' key in form-data"))
-			return
-		}
-		rows, err := ParseExcelFromFileHeader(file, 0)
-		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		// 查询语言列表
-		var (
-			langs        []Language
-			indexCodeMap = make(map[int]string)
-		)
-		c.DB().Model(&Language{}).Find(&langs)
-		for index, name := range rows[0] {
-			for _, lang := range langs {
-				if lang.LangName == name {
-					indexCodeMap[index] = lang.LangCode
-				}
-			}
-		}
-		// 生成SQLs
-		var docs []*LanguageMessage
-		for index, row := range rows {
-			if index == 0 {
-				continue
-			}
-			for index, value := range row {
-				langCode := indexCodeMap[index]
-				if langCode == "" {
-					continue
-				}
-				doc := &LanguageMessage{Key: row[0], LangCode: langCode, Value: value}
-				docs = append(docs, doc)
-			}
-		}
-		// 执行SQLs
-		if len(docs) > 0 {
-			err := c.WithTransaction(func(tx *gorm.DB) error {
-				register := NewLangRegister(tx)
-				register.Append(docs...)
-				return register.Exec()
-			})
-			if err != nil {
-				c.STDErr(failedMessage, err)
-				return
-			}
-		}
-		c.STD(docs)
-	},
-}
-
-// LangtransPostRoute
-var LangtransPostRoute = RouteInfo{
-	Name:   "修改国际化翻译列表",
-	Method: "POST",
-	Path:   "/langtrans",
-	HandlerFunc: func(c *Context) {
-		var body M
-		failedMessage := c.L("lang_trans_save_failed", "Save locale messages failed")
-		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		err := c.WithTransaction(func(tx *gorm.DB) error {
-			regVal := regexp.MustCompile("Lang_(.*)_Value")
-			for key, val := range body {
-				value, ok := val.(string)
-				if !regVal.MatchString(key) || !ok || value == "" {
-					continue
-				}
-				langCode := regVal.ReplaceAllString(key, "$1")
-				if langCode != "" {
-					var (
-						err error
-						id  uint
-					)
-					langID := body[fmt.Sprintf("Lang_%s_ID", langCode)]
-					switch langID.(type) {
-					case float32:
-						id = uint(langID.(float32))
-					case float64:
-						id = uint(langID.(float64))
-					case int:
-						id = uint(langID.(int))
-					case int32:
-						id = uint(langID.(int32))
-					case int64:
-						id = uint(langID.(int64))
-					}
-					if id != 0 {
-						// 修改
-						err = tx.Model(&LanguageMessage{}).Where("id = ?", id).Update("value", value).Error
-					} else {
-						// 新增
-						err = tx.Create(&LanguageMessage{
-							LangCode: langCode,
-							Key:      body["Key"].(string),
-							Value:    value,
-						}).Error
-					}
-					if err != nil {
-						return err
-					}
-				}
-			}
-			return tx.Error
-		})
-		if err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD("ok")
-		}
-	},
-}
-
-// LanglistPostRoute
-var LanglistPostRoute = RouteInfo{
-	Name:   "修改国际化语言列表",
-	Method: "POST",
-	Path:   "/langlist",
-	HandlerFunc: func(c *Context) {
-		var body []Language
-		failedMessage := c.L("lang_list_save_failed", "Save languages failed")
-		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		var languages []Language
-		c.DB().Select("id").Find(&languages)
-		err := c.WithTransaction(func(tx *gorm.DB) error {
-			existsIDs := make(map[uint]bool)
-			for _, item := range body {
-				if item.ID > 0 {
-					existsIDs[item.ID] = true
-					if err := tx.Model(&item).Updates(map[string]interface{}{"lang_code": item.LangCode, "lang_name": item.LangName}).Error; err != nil {
-						return err
-					}
-				} else {
-					if err := tx.Create(&item).Error; err != nil {
-						return err
-					}
-				}
-			}
-			// 删除不存在的
-			var deletedIDs []uint
-			for _, item := range languages {
-				if _, exists := existsIDs[item.ID]; !exists {
-					deletedIDs = append(deletedIDs, item.ID)
-				}
-			}
-			if len(deletedIDs) > 0 {
-				err := tx.Where("id IN (?)", deletedIDs).Delete(&Language{}).Error
-				if err != nil {
-					return err
-				}
-			}
-			return tx.Error
-		})
-		if err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD("ok")
-		}
+		return nil
 	},
 }
 
@@ -1108,16 +840,15 @@ var LangSwitchRoute = RouteInfo{
 	Name:   "切换用户语言环境",
 	Method: "POST",
 	Path:   "/lang/switch",
-	HandlerFunc: func(c *Context) {
-		var (
-			failedMessage = c.L("lang_switch_failed", "Switching language failed")
-			body          struct {
-				Lang string
-			}
-		)
+	IntlMessages: map[string]string{
+		"lang_switch_failed": "Switching language failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		var body struct {
+			Lang string
+		}
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "lang_switch_failed")
 		}
 
 		err := c.IgnoreAuth().DB().
@@ -1125,178 +856,9 @@ var LangSwitchRoute = RouteInfo{
 			Update(User{Lang: body.Lang}).Error
 
 		if err != nil {
-			c.STDErr(failedMessage, err)
-		} else {
-			c.STD("ok")
+			return c.STDErr(err, "lang_switch_failed")
 		}
-	},
-}
-
-// LogOverviewRoute
-var LogOverviewRoute = RouteInfo{
-	Name:   "日志汇总概览接口",
-	Method: "GET",
-	Path:   "/log/overview",
-	HandlerFunc: func(c *Context) {
-		var (
-			failedMessage = c.L("log_overview_failed", "Query log failed")
-			body          struct {
-				TimeStart int64 `json:"time_start" binding:"required"`
-				TimeEnd   int64 `json:"time_end" binding:"required"`
-			}
-		)
-		if err := c.ShouldBindQuery(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
-		}
-		c.STD(M{
-			"sign": M{
-				"today": 2251,
-				"total": 8832,
-				"list": []M{
-					{
-						"time": 1574218843,
-						"data": 10,
-					},
-					{
-						"time": 1574218839,
-						"data": 5,
-					},
-					{
-						"time": 1574218829,
-						"data": 7,
-					},
-					{
-						"time": 1574218820,
-						"data": 34,
-					},
-					{
-						"time": 1574218832,
-						"data": 2,
-					},
-				},
-			},
-			"session": M{
-				"current": 2251,
-				"total":   8832,
-				"list": []M{
-					{
-						"time": 1574218843,
-						"data": 10,
-					},
-					{
-						"time": 1574218839,
-						"data": 5,
-					},
-					{
-						"time": 1574218829,
-						"data": 7,
-					},
-					{
-						"time": 1574218820,
-						"data": 34,
-					},
-					{
-						"time": 1574218832,
-						"data": 2,
-					},
-				},
-			},
-			"api": M{
-				"current": 251,
-				"total":   12411,
-				"list": []M{
-					{
-						"time": 1574218843,
-						"data": 10,
-					},
-					{
-						"time": 1574218839,
-						"data": 5,
-					},
-					{
-						"time": 1574218829,
-						"data": 7,
-					},
-					{
-						"time": 1574218820,
-						"data": 34,
-					},
-					{
-						"time": 1574218832,
-						"data": 2,
-					},
-				},
-			},
-			"audit": M{
-				"current": 51,
-				"total":   232,
-				"list": []M{
-					{
-						"time": 1574218843,
-						"data": 10,
-					},
-					{
-						"time": 1574218839,
-						"data": 5,
-					},
-					{
-						"time": 1574218829,
-						"data": 7,
-					},
-					{
-						"time": 1574218820,
-						"data": 34,
-					},
-					{
-						"time": 1574218832,
-						"data": 2,
-					},
-				},
-			},
-			"summary": []M{
-				{
-					"time": 1574218843,
-					"data": 10,
-				},
-				{
-					"time": 1574218839,
-					"data": 5,
-				},
-				{
-					"time": 1574218829,
-					"data": 7,
-				},
-				{
-					"time": 1574218820,
-					"data": 34,
-				},
-				{
-					"time": 1574218832,
-					"data": 2,
-				},
-				{
-					"time": 1574218843,
-					"data": 10,
-				},
-				{
-					"time": 1574218839,
-					"data": 5,
-				},
-				{
-					"time": 1574218829,
-					"data": 7,
-				},
-				{
-					"time": 1574218820,
-					"data": 34,
-				},
-				{
-					"time": 1574218832,
-					"data": 2,
-				},
-			},
-		})
+		return c.STDOK()
 	},
 }
 
@@ -1305,23 +867,21 @@ var LoginAsRoute = RouteInfo{
 	Name:   "以用户身份登录（该接口仅限root调用）",
 	Method: "POST",
 	Path:   "/login_as",
-	HandlerFunc: func(c *Context) {
-		var (
-			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
-			failedMessage       = c.L("login_as_failed", "Login failed")
-			body                struct {
-				UID uint
-			}
-		)
+	IntlMessages: map[string]string{
+		"login_as_unauthorized": "Unauthorized operation",
+		"login_as_failed":       "Login failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		var body struct {
+			UID uint
+		}
 
 		if c.SignInfo.UID != RootUID() {
-			c.STDErr(unauthorizedMessage)
-			return
+			return c.STDErr(fmt.Errorf("unauthorized operation: uid=%v", c.SignInfo.UID), "login_as_unauthorized")
 		}
 
 		if err := c.ShouldBindJSON(&body); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "login_as_failed")
 		}
 
 		var (
@@ -1330,16 +890,14 @@ var LoginAsRoute = RouteInfo{
 			db     = c.DB()
 		)
 		if err := db.Where(&SignSecret{UID: body.UID, Type: AdminSignType, Method: "LOGIN"}).Where(fmt.Sprintf("%s > ?", db.Dialect().Quote("exp")), time.Now().Unix()).Order("created_at desc").First(&secret).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "login_as_failed")
 		}
 		if err := db.Where(fmt.Sprintf("%s = ?", db.Dialect().Quote("id")), secret.UID).First(&user).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "login_as_failed")
 		}
-		c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
+		c.SetCookie(LangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
 		c.SetCookie(TokenKey, secret.Token, ExpiresSeconds, "/", "", false, true)
-		c.STD("ok")
+		return c.STDOK()
 	},
 }
 
@@ -1348,10 +906,10 @@ var LoginAsOutRoute = RouteInfo{
 	Name:   "退出模拟登录（该接口仅限root调用）",
 	Method: "DELETE",
 	Path:   "/login_as",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		c.SetCookie(TokenKey, c.SignInfo.Token, -1, "/", "", false, true)
-		c.SetCookie(RequestLangKey, "", -1, "/", "", false, true)
-		c.STD("ok")
+		c.SetCookie(LangKey, "", -1, "/", "", false, true)
+		return c.STDOK()
 	},
 }
 
@@ -1360,15 +918,13 @@ var LoginAsUsersRoute = RouteInfo{
 	Name:   "查询可模拟登录的用户列表（该接口仅限root调用）",
 	Method: "GET",
 	Path:   "/login_as/users",
-	HandlerFunc: func(c *Context) {
-		var (
-			unauthorizedMessage = c.L("login_as_unauthorized", "Unauthorized operation")
-			failedMessage       = c.L("login_as_failed", "Login failed")
-		)
-
+	IntlMessages: map[string]string{
+		"login_as_unauthorized": "Unauthorized operation",
+		"login_as_failed":       "Login failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		if c.SignInfo.UID != RootUID() {
-			c.STDErr(unauthorizedMessage)
-			return
+			return c.STDErr(fmt.Errorf("unauthorized operation: uid=%v", c.SignInfo.UID), "login_as_unauthorized")
 		}
 
 		var (
@@ -1378,8 +934,7 @@ var LoginAsUsersRoute = RouteInfo{
 			db      = c.DB()
 		)
 		if err := db.Model(&SignSecret{}).Where(&SignSecret{Type: AdminSignType, Method: "LOGIN"}).Where(fmt.Sprintf("%s > ?", db.Dialect().Quote("exp")), time.Now().Unix()).Find(&secrets).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "login_as_failed")
 		}
 		secretMap := make(map[uint]SignSecret)
 		for _, item := range secrets {
@@ -1387,8 +942,7 @@ var LoginAsUsersRoute = RouteInfo{
 			secretMap[item.UID] = item
 		}
 		if err := db.Model(&User{}).Where(fmt.Sprintf("%s IN (?)", db.Dialect().Quote("id")), uids).Find(&users).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "login_as_failed")
 		}
 		type record struct {
 			ID       uint
@@ -1405,6 +959,6 @@ var LoginAsUsersRoute = RouteInfo{
 				Exp:      secretMap[item.ID].Exp,
 			})
 		}
-		c.STD(records)
+		return c.STD(records)
 	},
 }

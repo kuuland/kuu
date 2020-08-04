@@ -3,7 +3,6 @@ package kuu
 import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"regexp"
 	"strings"
 )
@@ -13,17 +12,20 @@ type LoginHandlerFunc func(*Context) *LoginHandlerResponse
 
 // LoginHandlerResponse
 type LoginHandlerResponse struct {
-	Username        string
-	Password        string
-	Payload         jwt.MapClaims
-	Lang            string
-	UID             uint
-	Error           error
-	LanguageMessage *LanguageMessage
+	Username                   string
+	Password                   string
+	Payload                    jwt.MapClaims
+	Lang                       string
+	UID                        uint
+	Error                      error
+	LocaleMessageID            string
+	LocaleMessageDefaultText   string
+	LocaleMessageContextValues interface{}
 }
 
 var (
 	TokenKey  = "Token"
+	LangKey   = "Lang"
 	Whitelist = []interface{}{
 		"GET /",
 		"GET /favicon.ico",
@@ -41,18 +43,15 @@ var (
 		regexp.MustCompile("GET /assets"),
 	}
 	ExpiresSeconds = 86400
-	SignContextKey = "SignContext"
 	loginHandler   = defaultLoginHandler
 )
 
 const (
-	RedisSecretKey = "secret"
-	RedisOrgKey    = "org"
-	AdminSignType  = "ADMIN"
+	AdminSignType = "ADMIN"
 )
 
 // InWhitelist
-func InWhitelist(c *gin.Context) bool {
+func (c *Context) InWhitelist() bool {
 	if len(Whitelist) == 0 {
 		return false
 	}
@@ -100,10 +99,14 @@ func saveHistory(secretData *SignSecret) {
 	DB().Create(&history)
 }
 
-// ParseToken
-var ParseToken = func(c *gin.Context) string {
+func (c *Context) Token() string {
+	cacheKey := "__kuu_token__"
+	if v, has := c.Get(cacheKey); has {
+		return v.(string)
+	}
+
 	// querystring > header > cookie
-	token := QueryCI(c, TokenKey)
+	token := c.QueryCI(TokenKey)
 	if token == "" {
 		token = c.GetHeader(TokenKey)
 		if token == "" {
@@ -116,16 +119,22 @@ var ParseToken = func(c *gin.Context) string {
 	if token == "" {
 		token, _ = c.Cookie(TokenKey)
 	}
+	c.Set(cacheKey, token)
 	return token
 }
 
 // DecodedContext
-func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
-	token := ParseToken(c)
+func (c *Context) DecodedContext() (sign *SignContext, err error) {
+	cacheKey := "__kuu_sign_context__"
+	if v, has := c.Get(cacheKey); has {
+		return v.(*SignContext), nil
+	}
+
+	token := c.Token()
 	if token == "" {
 		return nil, ErrTokenNotFound
 	}
-	sign = &SignContext{Token: token, Lang: ParseLang(c)}
+	sign = &SignContext{Token: token, Lang: c.Lang()}
 	// 解析UID
 	var secret SignSecret
 	if err = DB().Where(&SignSecret{Token: token}).Find(&secret).Error; err != nil {
@@ -156,9 +165,10 @@ func DecodedContext(c *gin.Context) (sign *SignContext, err error) {
 		}
 		sign.SubDocID = sid
 	}
-	if sign.IsValid() {
-		c.Set(SignContextKey, sign)
+	if !sign.IsValid() {
+		return nil, ErrInvalidToken
 	}
+	c.Set(cacheKey, sign)
 	return
 }
 
@@ -202,7 +212,7 @@ func Acc(handler ...LoginHandlerFunc) *Mod {
 			&SignSecret{},
 			&SignHistory{},
 		},
-		Middleware: gin.HandlersChain{
+		Middleware: HandlersChain{
 			AuthMiddleware,
 		},
 		Routes: RoutesInfo{

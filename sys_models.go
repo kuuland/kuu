@@ -13,7 +13,7 @@ type Model struct {
 	ID          uint        `gorm:"primary_key"`
 	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"INDEX:kuu_dr"`
 	OrgID       uint        `name:"所属组织ID（默认字段）"`
 	CreatedByID uint        `name:"创建人ID（默认字段）"`
 	UpdatedByID uint        `name:"修改人ID（默认字段）"`
@@ -32,7 +32,7 @@ type ModelExOrg struct {
 	ID          uint        `gorm:"primary_key"`
 	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"INDEX:kuu_dr"`
 	CreatedByID uint        `name:"创建人ID（默认字段）"`
 	UpdatedByID uint        `name:"修改人ID（默认字段）"`
 	DeletedByID uint        `name:"删除人ID（默认字段）"`
@@ -67,7 +67,7 @@ type User struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"INDEX:kuu_dr"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -167,7 +167,7 @@ type Org struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"INDEX:kuu_dr"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -267,7 +267,7 @@ type Role struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"角色"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"INDEX:kuu_dr"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`

@@ -79,7 +79,7 @@ func (imp *ImportRecord) BeforeCreate() {
 }
 
 // ImportCallbackValidator
-type ImportCallbackValidator func(c *Context, rows [][]string) (*LanguageMessage, error)
+type ImportCallbackValidator func(c *Context, rows [][]string) (*STDReply, error)
 
 // ImportCallbackProcessor
 type ImportCallbackProcessor func(c *Context, rows [][]string) *ImportCallbackResult
@@ -139,22 +139,22 @@ var ImportRoute = RouteInfo{
 	Name:   "统一导入路由",
 	Method: "POST",
 	Path:   "/import",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("import_failed", "Import failed")
+	IntlMessages: map[string]string{
+		"import_failed": "Import failed",
+		"import_empty":  "Import data is empty",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		// 解析请求体
 		file, _ := c.FormFile("file")
 		if file == nil {
-			c.STDErr(failedMessage, errors.New("no 'file' key in form-data"))
-			return
+			return c.STDErr(errors.New("no 'file' key in form-data"), "import_failed")
 		}
 		channel := c.PostForm("channel")
 		if channel == "" {
-			c.STDErr(failedMessage, errors.New("no 'channel' key in form-data"))
-			return
+			return c.STDErr(errors.New("no 'channel' key in form-data"), "import_failed")
 		}
 		if importCallbackMap[channel] == nil {
-			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
-			return
+			return c.STDErr(fmt.Errorf("no import callback registered for this channel: %s", channel), "import_failed")
 		}
 		var (
 			sheetIndex int
@@ -169,23 +169,16 @@ var ImportRoute = RouteInfo{
 		}
 		rows, err := ParseExcelFromFileHeader(file, sheetIndex, sheetName)
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "import_failed")
 		}
 		if len(rows) == 0 {
-			c.STDErr(c.L("import_empty", "Import data is empty"))
-			return
+			return c.STDErr(err, "import_empty")
 		}
 		// 调用导入验证
 		args := importCallbackMap[channel]
 		if args.Validator != nil {
-			msg, err := args.Validator(c, rows)
-			if err != nil {
-				if msg == nil {
-					msg = failedMessage
-				}
-				c.STDErr(msg, err)
-				return
+			if std, err := args.Validator(c, rows); err != nil {
+				return std
 			}
 		}
 		// 创建导入记录
@@ -205,8 +198,7 @@ var ImportRoute = RouteInfo{
 			}),
 		}
 		if err := c.DB().Create(&record).Error; err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "import_failed")
 		}
 		// 触发导入回调
 		if record.Sync {
@@ -215,7 +207,7 @@ var ImportRoute = RouteInfo{
 			go CallImportCallback(c, &record)
 		}
 		// 响应请求
-		c.STD(record.ImportSn)
+		return c.STD(record.ImportSn)
 	},
 }
 
@@ -224,22 +216,21 @@ var ImportTemplateRoute = RouteInfo{
 	Name:   "导入模板下载",
 	Method: "GET",
 	Path:   "/import/template",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("import_template_failed", "Import template download failed")
+	IntlMessages: map[string]string{
+		"import_template_failed": "Import template download failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		channel := c.Query("channel")
 		format := strings.ToLower(c.DefaultQuery("format", "file"))
 		if channel == "" {
-			c.STDErr(failedMessage, errors.New("no 'channel' key in query parameters"))
-			return
+			return c.STDErr(errors.New("no 'channel' key in query parameters"), "import_template_failed")
 		}
 		callback := importCallbackMap[channel]
 		if callback == nil {
-			c.STDErr(failedMessage, fmt.Errorf("no import callback registered for this channel: %s", channel))
-			return
+			return c.STDErr(fmt.Errorf("no import callback registered for this channel: %s", channel), "import_template_failed")
 		}
 		if callback.TemplateGenerator == nil {
-			c.STDErr(failedMessage, fmt.Errorf("no template generator registered for this channel: %s", channel))
-			return
+			return c.STDErr(fmt.Errorf("no template generator registered for this channel: %s", channel), "import_template_failed")
 		}
 		fileName, headers := callback.TemplateGenerator(c)
 		switch format {
@@ -252,17 +243,16 @@ var ImportTemplateRoute = RouteInfo{
 			fileName = url.QueryEscape(fileName)
 			f := excelize.NewFile()
 			if err := f.SetSheetRow("Sheet1", "A1", &headers); err != nil {
-				c.STDErr(failedMessage, err)
-				return
+				return c.STDErr(err, "import_template_failed")
 			}
 			c.Header("Content-Transfer-Encoding", "binary")
 			c.Header("Content-Disposition", "attachment; filename="+fileName)
 			c.Header("Content-Type", "application/octet-stream")
 			f.SetActiveSheet(1)
 			if err := f.Write(c.Writer); err != nil {
-				c.STDErr(failedMessage, err)
-				return
+				return c.STDErr(err, "import_template_failed")
 			}
 		}
+		return c.STDOK()
 	},
 }

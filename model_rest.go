@@ -427,8 +427,8 @@ func parseRefField(scope *gorm.Scope, field *gorm.Field, refCond map[string]inte
 	return
 }
 
-func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
-	return func(c *Context) {
+func restUpdateHandler(reflectType reflect.Type) HandlerFunc {
+	return func(c *Context) *STDReply {
 		var (
 			result     interface{}
 			err        error
@@ -495,20 +495,16 @@ func restUpdateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if cusErr, ok := ErrOut(err); ok {
-				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
-			} else {
-				c.STDErr(c.L("rest_update_failed", "Update failed"), err)
-			}
+			return c.STDErr(err, "rest_update_failed", "Update failed")
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
-			c.STD(result)
+			return c.STD(result)
 		}
 	}
 }
 
-func restQueryHandler(reflectType reflect.Type) func(c *Context) {
-	return func(c *Context) {
+func restQueryHandler(reflectType reflect.Type) HandlerFunc {
+	return func(c *Context) *STDReply {
 		var (
 			modelValue = reflect.New(reflectType).Elem().Addr().Interface()
 			ret        = new(BizQueryResult)
@@ -719,20 +715,15 @@ func restQueryHandler(reflectType reflect.Type) func(c *Context) {
 		bizScope := NewBizScope(c, reflect.New(reflectType).Elem().Addr().Interface(), db)
 		bizScope.QueryResult = ret
 		bizScope.callCallbacks(BizQueryKind)
-		if bizScope.HasError() {
-			if cusErr, ok := ErrOut(bizScope.DB.Error); ok {
-				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(bizScope.DB.Error)[0]), bizScope.DB.Error)
-			} else {
-				c.STDErr(c.L("rest_query_failed", "Query failed"), bizScope.DB.Error)
-			}
-			return
+		if err := bizScope.DB.Error; err != nil {
+			return c.STDErr(err, "rest_query_failed", "Query failed")
 		}
-		c.STD(ret)
+		return c.STD(ret)
 	}
 }
 
-func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
-	return func(c *Context) {
+func restDeleteHandler(reflectType reflect.Type) HandlerFunc {
+	return func(c *Context) *STDReply {
 		var (
 			result     interface{}
 			err        error
@@ -810,20 +801,16 @@ func restDeleteHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if cusErr, ok := ErrOut(err); ok {
-				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
-			} else {
-				c.STDErr(c.L("rest_delete_failed", "Delete failed"), err)
-			}
+			return c.STDErr(err, "rest_delete_failed", "Delete failed")
 		} else {
 			result = Meta(reflect.New(reflectType).Interface()).OmitPassword(result)
-			c.STD(result)
+			return c.STD(result)
 		}
 	}
 }
 
-func restCreateHandler(reflectType reflect.Type) func(c *Context) {
-	return func(c *Context) {
+func restCreateHandler(reflectType reflect.Type) HandlerFunc {
+	return func(c *Context) *STDReply {
 		var (
 			docs  []interface{}
 			multi bool
@@ -863,16 +850,12 @@ func restCreateHandler(reflectType reflect.Type) func(c *Context) {
 		})
 		// 响应结果
 		if err != nil {
-			if cusErr, ok := ErrOut(err); ok {
-				c.STDErr(c.L("kuu_error_"+fmt.Sprintf("%v", cusErr.Code), ErrMsgs(err)[0]), err)
-			} else {
-				c.STDErr(c.L("rest_create_failed", "Create failed"), err)
-			}
+			return c.STDErr(err, "rest_create_failed", "Create failed")
 		} else {
 			if multi {
-				c.STD(docs)
+				return c.STD(docs)
 			} else {
-				c.STD(docs[0])
+				return c.STD(docs[0])
 			}
 		}
 	}

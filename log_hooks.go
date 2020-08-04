@@ -46,31 +46,3 @@ func changeLoggerOutput(filePath string) {
 		ERROR("创建日志文件失败，使用标准输出流输出日志")
 	}
 }
-
-// LogBizHook
-type LogBizHook struct{}
-
-// Levels
-func (h *LogBizHook) Levels() []logrus.Level {
-	return logrus.AllLevels
-}
-
-// Fire
-func (h *LogBizHook) Fire(entry *logrus.Entry) error {
-	if !strings.HasPrefix(entry.Message, "biz:") {
-		return nil
-	}
-
-	now := fmt.Sprintf("kuu-%s.log", time.Now().Format("2006-01-02"))
-	if now != DailyFileName || DailyFile == nil {
-		DailyFileName = now
-		changeLoggerOutput(now)
-	}
-	info := NewLog(LogTypeBiz)
-	info.Level = entry.Level.String()
-
-	info.ContentHuman = strings.TrimSpace(strings.Replace(entry.Message, "biz:", "", 1))
-	info.ContentData = info.ContentHuman
-	info.Save2Cache()
-	return nil
-}

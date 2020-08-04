@@ -11,9 +11,9 @@ var IntlLanguagesRoute = RouteInfo{
 	Name:   "查询语言列表",
 	Method: http.MethodGet,
 	Path:   "/intl/languages",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		list := intl.LanguageList()
-		c.STD(list)
+		return c.STD(list)
 	},
 }
 
@@ -21,7 +21,10 @@ var IntlMessagesRoute = RouteInfo{
 	Name:   "查询消息列表",
 	Method: http.MethodGet,
 	Path:   "/intl/messages",
-	HandlerFunc: func(c *Context) {
+	IntlMessages: map[string]string{
+		"intl_messages_failed": "You must and only specify one language code, like 'langs=zh-Hans'",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var query struct {
 			LanguageCodes string `form:"langs"`
 			Prefix        string `form:"prefix"`
@@ -35,13 +38,10 @@ var IntlMessagesRoute = RouteInfo{
 			simple = v
 		}
 		if simple {
-			failedMessage := c.L("intl_messages_failed", "You must and only specify one language code, like 'langs=zh-Hans'")
 			if query.LanguageCodes == "" {
-				c.STDErr(failedMessage)
-				return
+				return c.STDErr(nil, "intl_messages_failed")
 			} else if split := strings.Split(query.LanguageCodes, ","); len(split) > 1 {
-				c.STDErr(failedMessage)
-				return
+				return c.STDErr(nil, "intl_messages_failed")
 			}
 		}
 		opts := IntlMessagesOptions{
@@ -52,11 +52,11 @@ var IntlMessagesRoute = RouteInfo{
 		}
 		var ret interface{}
 		if simple {
-			ret = getSimpleIntlMessages(&opts)
+			ret = getIntlMessagesByLang(&opts)
 		} else {
 			ret = getIntlMessages(&opts)
 		}
-		c.STD(ret)
+		return c.STD(ret)
 	},
 }
 
@@ -64,18 +64,18 @@ var IntlMessagesSaveRoute = RouteInfo{
 	Name:   "修改/新增翻译键",
 	Method: http.MethodPost,
 	Path:   "/intl/messages/save",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("intl_messages_save_failed", "Save failed.")
+	IntlMessages: map[string]string{
+		"intl_messages_save_failed": "Save failed.",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		var messages map[string]map[string]string
 		if err := c.ShouldBindJSON(&messages); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "intl_messages_save_failed")
 		}
 		if err := saveIntlMessages(messages, false); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "intl_messages_save_failed")
 		}
-		c.STDOK()
+		return c.STDOK()
 	},
 }
 
@@ -83,14 +83,14 @@ var IntlMessagesUploadRoute = RouteInfo{
 	Name:   "批量上传翻译文件",
 	Method: http.MethodPost,
 	Path:   "/intl/messages/upload",
-	HandlerFunc: func(c *Context) {
-		failedMessage := c.L("intl_messages_upload_failed", "Upload failed.")
-
+	IntlMessages: map[string]string{
+		"intl_messages_upload_failed": "Upload failed.",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
 		updateMethod := c.DefaultPostForm("method", "incr")
 		fh, err := c.FormFile("file")
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "intl_messages_upload_failed")
 		}
 		var (
 			sheetIndex int
@@ -105,12 +105,10 @@ var IntlMessagesUploadRoute = RouteInfo{
 		}
 		rows, err := ParseExcelFromFileHeader(fh, sheetIndex, sheetName)
 		if err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "intl_messages_upload_failed")
 		}
 		if len(rows) == 0 {
-			c.STDOK()
-			return
+			return c.STDOK()
 		}
 		languages := intl.LanguageList()
 		indexLangCodeMap := map[int]string{
@@ -148,9 +146,8 @@ var IntlMessagesUploadRoute = RouteInfo{
 			}
 		}
 		if err := saveIntlMessages(messages, updateMethod == "full"); err != nil {
-			c.STDErr(failedMessage, err)
-			return
+			return c.STDErr(err, "intl_messages_upload_failed")
 		}
-		c.STDOK()
+		return c.STDOK()
 	},
 }

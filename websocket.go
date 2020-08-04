@@ -23,11 +23,11 @@ var ModelWSRoute = RouteInfo{
 	Name:   "模型变更通知WebSocket接口",
 	Method: "GET",
 	Path:   "/model/ws",
-	HandlerFunc: func(c *Context) {
+	HandlerFunc: func(c *Context) *STDReply {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			ERROR("websocket.upgrade: %v", err)
-			return
+			return nil
 		}
 		defer func() {
 			if _, ok := wsConns.Load(conn); ok {
@@ -51,6 +51,7 @@ var ModelWSRoute = RouteInfo{
 				break
 			}
 		}
+		return nil
 	},
 }
 

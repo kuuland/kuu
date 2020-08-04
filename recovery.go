@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"net"
+	"net/http"
 	"net/http/httputil"
 	"os"
 	"strings"
@@ -52,7 +53,7 @@ func recovery() gin.HandlerFunc {
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					STDErr(c, L("sys_exception", "sorry, sys exception, please try again later").C(c), err)
+					c.String(http.StatusOK, "sorry, sys exception, please try again later")
 				}
 			}
 		}()

@@ -18,16 +18,55 @@ var (
 	intlMessagesMu sync.RWMutex
 )
 
-func GetIntlMessages() map[string]map[string]string {
-	intlMessagesMu.RLock()
-	defer intlMessagesMu.RUnlock()
-	return intlMessages
+type IntlError struct {
+	Err           error
+	ID            string
+	DefaultText   string
+	ContextValues interface{}
 }
 
-func ReloadIntlMessages() {
+func (e *IntlError) Error() string {
+	return e.Err.Error()
+}
+
+func NewIntlError(err error, id string, args ...interface{}) error {
+	ie := &IntlError{
+		Err: err,
+		ID:  id,
+	}
+	if len(args) > 0 {
+		if v, ok := args[0].(string); ok {
+			ie.DefaultText = v
+		}
+	}
+	if len(args) > 1 {
+		ie.ContextValues = args[1]
+	}
+	return ie
+}
+
+func GetIntlMessages() map[string]map[string]string {
+	intlMessagesMu.RLock()
+	v := intlMessages
+	intlMessagesMu.RUnlock()
+
+	if len(v) == 0 {
+		v = ReloadIntlMessages()
+	}
+	return v
+}
+
+func GetIntlMessagesByLang(lang string) map[string]string {
+	messages := GetIntlMessages()
+	sm := filterIntlMessagesByLang(messages, lang)
+	return sm
+}
+
+func ReloadIntlMessages() map[string]map[string]string {
 	intlMessagesMu.Lock()
 	defer intlMessagesMu.Unlock()
 	intlMessages = getIntlMessages()
+	return intlMessages
 }
 
 func getLocalesDir() string {
@@ -43,18 +82,6 @@ type IntlMessagesOptions struct {
 	Prefix        string
 	Description   string
 	Keys          string
-}
-
-func getSimpleIntlMessages(opts ...*IntlMessagesOptions) map[string]string {
-	messages := getIntlMessages(opts...)
-	simpleMessages := make(map[string]string)
-	for k, values := range messages {
-		for _, v := range values {
-			simpleMessages[k] = v
-			break
-		}
-	}
-	return simpleMessages
 }
 
 func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string {
@@ -152,6 +179,26 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 	}
 
 	return messagesMap
+}
+
+func getIntlMessagesByLang(opts ...*IntlMessagesOptions) map[string]string {
+	messages := getIntlMessages(opts...)
+	sm := filterIntlMessagesByLang(messages, "")
+	return sm
+}
+
+func filterIntlMessagesByLang(messages map[string]map[string]string, lang string) map[string]string {
+	sm := make(map[string]string)
+	for k, values := range messages {
+		for l, v := range values {
+			if lang != "" && l != lang {
+				continue
+			}
+			sm[k] = v
+			break
+		}
+	}
+	return sm
 }
 
 func saveIntlMessages(messages map[string]map[string]string, replace bool) error {

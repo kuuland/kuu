@@ -1,10 +1,8 @@
 package kuu
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
@@ -103,10 +101,6 @@ func initSys() {
 			PANIC("failed to initialize preset data: %s", err.Error())
 		}
 	}
-	// 启动日志序列化任务
-	_, _ = AddJob("@every 5m", "Log Persistence", LogPersisJob)
-	// 启动历史日志清除任务
-	_, _ = AddJob("@midnight", "History Log Cleanup", LogCleanupJob)
 }
 
 func createRootUser(tx *gorm.DB) {
@@ -399,31 +393,21 @@ func createPresetMenus(tx *gorm.DB) {
 	tx.Create(&metadataMenu)
 }
 
-// GetSignContext
-func GetSignContext(c *gin.Context) (sign *SignContext) {
-	if c != nil {
-		// 解析登录信息
-		if v, exists := c.Get(SignContextKey); exists {
-			sign = v.(*SignContext)
-		} else {
-			if v, err := DecodedContext(c); err == nil {
-				sign = v
-			}
-		}
-	}
-	return
-}
-
 // GetLoginableOrgs
-func GetLoginableOrgs(c *gin.Context, uid uint) ([]Org, error) {
+func GetLoginableOrgs(c *Context, uid uint) ([]Org, error) {
 	var (
 		data []Org
-		db   *gorm.DB
 	)
-	if desc := GetPrivilegesDesc(GetSignContext(c)); desc != nil {
-		db = DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data)
+	sc, err := c.DecodedContext()
+	if err != nil {
+		return nil, err
 	}
-	return data, db.Error
+	if desc := GetPrivilegesDesc(sc); desc != nil {
+		if err := DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data).Error; err != nil {
+			return nil, err
+		}
+	}
+	return data, nil
 }
 
 func GetActOrg(c *Context, actOrgID uint) (actOrg Org, err error) {
@@ -431,7 +415,7 @@ func GetActOrg(c *Context, actOrgID uint) (actOrg Org, err error) {
 		err = c.IgnoreAuth().DB().First(&actOrg, "id = ?", actOrgID).Error
 	} else {
 		var list []Org
-		if list, err = GetLoginableOrgs(c.Context, c.SignInfo.UID); err != nil {
+		if list, err = GetLoginableOrgs(c, c.SignInfo.UID); err != nil {
 			return
 		}
 		if len(list) > 0 {
@@ -492,8 +476,7 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 	}{}
 	// 解析请求参数
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		resp.Error = err
-		return
+		return &LoginHandlerResponse{Error: err}
 	}
 	// 判断是否需要需要校验验证码
 	failedTimesKey := getFailedTimesKey(body.Username)
@@ -502,9 +485,8 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 		SetCacheInt(failedTimesKey, failedTimes+1)
 	}
 	resp = &LoginHandlerResponse{
-		Username:        body.Username,
-		Password:        body.Password,
-		LanguageMessage: c.L("acc_login_failed", "Login failed"),
+		Username: body.Username,
+		Password: body.Password,
 	}
 	if failedTimesValid(failedTimes) {
 		// 校验验证码
@@ -516,8 +498,9 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 		}
 		verifyResult := VerifyCaptcha(body.CaptchaID, body.CaptchaValue)
 		if !verifyResult {
-			resp.Error = errors.New("verify captcha failed")
-			resp.LanguageMessage = c.L("captcha_failed", "Incorrect captcha code")
+			resp.Error = fmt.Errorf("incorrect captcha code: input_id = %s, input_value = %s", body.CaptchaID, body.CaptchaValue)
+			resp.LocaleMessageID = "incorrect_captcha_code"
+			resp.LocaleMessageDefaultText = "Incorrect captcha code."
 			return
 		}
 	}
@@ -530,7 +513,9 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 	}
 	// 检测账号是否有效
 	if user.Disable.Bool {
-		resp.LanguageMessage = c.L("acc_login_disabled", "Account has been disabled")
+		resp.Error = fmt.Errorf("account has been disabled: %v", user.ID)
+		resp.LocaleMessageID = "acc_account_disabled"
+		resp.LocaleMessageDefaultText = "Account has been disabled."
 		cacheFailedTimes()
 		return
 	}
@@ -555,7 +540,7 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 	resp.Payload = SetPayloadAttrs(resp.Payload, &user)
 	// 处理Lang参数
 	if user.Lang == "" {
-		user.Lang = ParseLang(c.Context)
+		user.Lang = c.Lang()
 	}
 	resp.Payload["Lang"] = user.Lang
 	resp.Lang = user.Lang
@@ -584,10 +569,8 @@ func GetUserFromCache(uid uint) (user User) {
 // Sys
 func Sys() *Mod {
 	return &Mod{
-		Code: "sys",
-		Middleware: gin.HandlersChain{
-			LogMiddleware,
-		},
+		Code:       "sys",
+		Middleware: HandlersChain{},
 		Models: []interface{}{
 			&ImportRecord{},
 			&User{},
@@ -602,9 +585,6 @@ func Sys() *Mod {
 			&Metadata{},
 			&MetadataField{},
 			&Route{},
-			&Language{},
-			&LanguageMessage{},
-			&Log{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
@@ -620,13 +600,7 @@ func Sys() *Mod {
 			CaptchaRoute,
 			ModelDocsRoute,
 			ModelWSRoute,
-			LangmsgsRoute,
-			LangtransGetRoute,
-			LangtransPostRoute,
-			LanglistPostRoute,
-			LangtransImportRoute,
 			LangSwitchRoute,
-			LogOverviewRoute,
 			LoginAsRoute,
 			LoginAsUsersRoute,
 			LoginAsOutRoute,

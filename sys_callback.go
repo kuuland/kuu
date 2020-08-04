@@ -82,10 +82,6 @@ func registerCallbacks() {
 	if callback.Delete().Get("kuu:model_change") == nil {
 		callback.Delete().After("gorm:after_delete").Register("kuu:model_change", modelChangeCallback)
 	}
-	// 注册审计callback
-	if C().DefaultGetBool("audit:callbacks", true) {
-		registerAuditCallbacks(callback)
-	}
 }
 
 func uuidCreateCallback(scope *gorm.Scope) {

@@ -6,10 +6,10 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "令牌类型不正确",
 		"zh-Hant": "令牌類型不正確",
 	},
-	"acc_login_disabled": {
-		"en":      "Account has been disabled",
-		"zh-Hans": "账号已停用",
-		"zh-Hant": "賬號已停用",
+	"acc_account_disabled": {
+		"en":      "Account has been disabled.",
+		"zh-Hans": "账号已被停用。",
+		"zh-Hant": "賬號已被停用。",
 	},
 	"acc_login_failed": {
 		"en":      "Login failed",
@@ -36,10 +36,10 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "登录会话已过期",
 		"zh-Hant": "登錄會話已過期",
 	},
-	"acc_token_expired": {
-		"en":      "Token has expired",
-		"zh-Hans": "令牌已过期",
-		"zh-Hant": "令牌已過期",
+	"acc_invalid_token": {
+		"en":      "Invalid token.",
+		"zh-Hans": "令牌不正确或已过期。",
+		"zh-Hant": "令牌不正確或已過期。",
 	},
 	"acc_token_failed": {
 		"en":      "Token signing failed",
@@ -56,10 +56,10 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "鉴权失败",
 		"zh-Hant": "鑒權失敗",
 	},
-	"captcha_failed": {
-		"en":      "Incorrect captcha code",
-		"zh-Hans": "验证码不正确",
-		"zh-Hant": "驗證碼不正確",
+	"incorrect_captcha_code": {
+		"en":      "Incorrect captcha code.",
+		"zh-Hans": "验证码不正确。",
+		"zh-Hant": "驗證碼不正確。",
 	},
 	"fano_form_btncancel": {
 		"en":      "Cancel",

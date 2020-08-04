@@ -12,16 +12,12 @@ type MessageDescriptor struct {
 	Description    string `json:"description"`
 }
 
-type Translations map[string]*MessageDescriptor
-
-func FormatMessage(translations Translations, descriptor *MessageDescriptor, contextValues ...interface{}) string {
-	if len(translations) > 0 {
-		if v, has := translations[descriptor.ID]; has && v != nil {
-			descriptor = v
-		}
+func FormatMessage(translations map[string]string, id, defaultMessage string, contextValues ...interface{}) string {
+	if translations == nil {
+		return defaultMessage
 	}
-	reg := regexp.MustCompile(`{ *([\w\d]+) *}`)
-	str := descriptor.DefaultMessage
+	reg := regexp.MustCompile(`{{ *([\w\d]+) *}}`)
+	str := defaultMessage
 	str = reg.ReplaceAllString(str, "{{.$1}}")
 
 	var values interface{}
@@ -34,5 +30,5 @@ func FormatMessage(translations Translations, descriptor *MessageDescriptor, con
 	if err := v.Execute(&b, values); err == nil {
 		return b.String()
 	}
-	return descriptor.ID
+	return id
 }
