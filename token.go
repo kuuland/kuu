@@ -24,7 +24,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		return nil, err
 	}
 	if desc.IsAPIKey && desc.Desc == "" {
-		return nil, errors.New("API & Keys needs a usage description")
+		return nil, errors.New("API Keys needs a description")
 	}
 
 	// 设置JWT令牌信息

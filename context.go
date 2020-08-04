@@ -313,6 +313,8 @@ func (c *Context) Lang() (lang string) {
 	if lang == "" {
 		lang = "en"
 	}
+
+	lang = intl.ConvertLanguageCode(lang)
 	c.Set(cacheKey, lang)
 	return
 }
@@ -328,15 +330,6 @@ func (c *Context) parseAcceptLanguage() string {
 		if s != "" {
 			break
 		}
-	}
-	switch s {
-	case "zh":
-	case "zh-CN":
-		return "zh-Hans"
-	case "zh-TW":
-		return "zh-Hant"
-	case "en-US":
-		return "en"
 	}
 	return s
 }

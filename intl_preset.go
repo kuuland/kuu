@@ -832,9 +832,9 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hant": "例如：https://kuu.example.com/api",
 	},
 	"kuu_navbar_apikeys": {
-		"en":      "API & Keys",
-		"zh-Hans": "API & Keys",
-		"zh-Hant": "API & Keys",
+		"en":      "API Keys",
+		"zh-Hans": "API Keys",
+		"zh-Hant": "API Keys",
 	},
 	"kuu_navbar_changepass": {
 		"en":      "Change password",

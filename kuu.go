@@ -186,7 +186,7 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				kc.RoutineCaches = make(RoutineCaches)
 				sc, err := kc.DecodedContext()
 				if err == nil && sc.IsValid() {
-					desc := GetPrivilegesDesc(kc.SignInfo)
+					desc := GetPrivilegesDesc(sc)
 					kc.PrisDesc = desc
 					kc.SignInfo = sc
 				}

@@ -125,7 +125,7 @@ var APIKeyRoute = RouteInfo{
 	Method: "POST",
 	Path:   "/apikeys",
 	IntlMessages: map[string]string{
-		"apikeys_failed": "Create API & Keys failed.",
+		"apikeys_failed": "Create API Keys failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
 		var body GenTokenDesc

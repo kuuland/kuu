@@ -39,10 +39,12 @@ var IntlMessagesRoute = RouteInfo{
 		}
 		if simple {
 			if query.LanguageCodes == "" {
-				return c.STDErr(nil, "intl_messages_failed")
-			} else if split := strings.Split(query.LanguageCodes, ","); len(split) > 1 {
-				return c.STDErr(nil, "intl_messages_failed")
+				query.LanguageCodes = c.Lang()
 			}
+			if strings.Contains(query.LanguageCodes, ",") {
+				query.LanguageCodes = strings.Split(query.LanguageCodes, ",")[0]
+			}
+			query.LanguageCodes = intl.ConvertLanguageCode(query.LanguageCodes)
 		}
 		opts := IntlMessagesOptions{
 			LanguageCodes: query.LanguageCodes,

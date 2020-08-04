@@ -74,6 +74,7 @@ func getLocalesDir() string {
 	if v := C().GetString("localesDir"); v != "" {
 		localesDir = v
 	}
+	EnsureDir(localesDir)
 	return localesDir
 }
 
@@ -126,7 +127,12 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 		}
 		currentValues := messagesMap[k]
 		if len(currentValues) == 0 {
-			messagesMap[k] = presetValues
+			for l, v := range presetValues {
+				if messagesMap[k] == nil {
+					messagesMap[k] = make(map[string]string)
+				}
+				messagesMap[k][l] = v
+			}
 		} else {
 			for l, v := range presetValues {
 				if vv, has := currentValues[l]; has && vv != "" {
@@ -183,12 +189,15 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 
 func getIntlMessagesByLang(opts ...*IntlMessagesOptions) map[string]string {
 	messages := getIntlMessages(opts...)
-	sm := filterIntlMessagesByLang(messages, "")
+	sm := filterIntlMessagesByLang(messages, opts[0].LanguageCodes)
 	return sm
 }
 
 func filterIntlMessagesByLang(messages map[string]map[string]string, lang string) map[string]string {
 	sm := make(map[string]string)
+	if strings.Contains(lang, ",") {
+		lang = strings.Split(lang, ",")[0]
+	}
 	for k, values := range messages {
 		for l, v := range values {
 			if lang != "" && l != lang {
@@ -305,7 +314,7 @@ func saveMessageFile(langCode string, content interface{}) error {
 	case []byte:
 		buf = v
 	default:
-		vv, err := json.Marshal(content)
+		vv, err := JSON().MarshalIndent(content, "", "  ")
 		if err != nil {
 			return err
 		}
