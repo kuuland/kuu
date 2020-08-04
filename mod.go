@@ -96,7 +96,9 @@ func (app *Engine) Import(mods ...*Mod) {
 				key := fmt.Sprintf("%s %s", route.Method, routePath)
 				routesMap[key] = route
 			}
-
+			if len(route.IntlMessages) > 0 {
+				AddDefaultIntlMessage(route.IntlMessages)
+			}
 		}
 		for _, model := range mod.Models {
 			desc := RESTful(app, routePrefix, model)

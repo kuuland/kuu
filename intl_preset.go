@@ -1,5 +1,11 @@
 package kuu
 
+import (
+	"github.com/kuuland/kuu/intl"
+	"sync"
+)
+
+var presetIntlMessagesMu sync.RWMutex
 var presetIntlMessages = map[string]map[string]string{
 	"acc_incorrect_token": {
 		"en":      "Incorrect token type",
@@ -1376,4 +1382,42 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "用户菜单查询失败",
 		"zh-Hant": "用戶菜單查詢失敗",
 	},
+}
+
+func AddPresetIntlMessage(messages map[string]map[string]string) {
+	presetIntlMessagesMu.Lock()
+	defer presetIntlMessagesMu.Unlock()
+
+	for k, values := range messages {
+		if len(values) == 0 {
+			continue
+		}
+		if presetIntlMessages[k] == nil {
+			presetIntlMessages[k] = make(map[string]string)
+		}
+		for l, v := range values {
+			presetIntlMessages[k][l] = v
+		}
+	}
+}
+
+func AddDefaultIntlMessage(messages map[string]string) {
+	m := make(map[string]map[string]string)
+	languageMap := intl.LanguageMap()
+	for k, defaultText := range messages {
+		if m[k] == nil {
+			m[k] = make(map[string]string)
+		}
+		for l := range languageMap {
+			m[k][l] = defaultText
+		}
+	}
+	AddPresetIntlMessage(m)
+}
+
+func GetPresetIntlMessage() map[string]map[string]string {
+	presetIntlMessagesMu.RLock()
+	defer presetIntlMessagesMu.RUnlock()
+
+	return presetIntlMessages
 }
