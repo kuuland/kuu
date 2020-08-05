@@ -347,6 +347,31 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "{{total}} 条记录",
 		"zh-Hant": "{{total}} 條記錄",
 	},
+	"fano_icon_choose": {
+		"en":      "Choose Icon",
+		"zh-Hans": "选择图标",
+		"zh-Hant": "選擇圖標",
+	},
+	"fano_icon_search_placeholder": {
+		"en":      "Search icons here",
+		"zh-Hans": "输入关键字搜索图标",
+		"zh-Hant": "輸入關鍵字搜索圖標",
+	},
+	"fano_icon_theme_outlined": {
+		"en":      "Outlined",
+		"zh-Hans": "线框风格",
+		"zh-Hant": "線框風格",
+	},
+	"fano_icon_theme_filled": {
+		"en":      "Filled",
+		"zh-Hans": "实底风格",
+		"zh-Hant": "實底風格",
+	},
+	"fano_icon_theme_twotone": {
+		"en":      "Two Tone",
+		"zh-Hans": "双色风格",
+		"zh-Hant": "雙色風格",
+	},
 	"import_empty": {
 		"en":      "Import data is empty",
 		"zh-Hans": "导入记录为空",
