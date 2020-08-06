@@ -16,8 +16,13 @@ func FormatMessage(translations map[string]string, id, defaultMessage string, co
 	if translations == nil {
 		return defaultMessage
 	}
+	var str string
+	if v, has := translations[id]; has && v != "" {
+		str = v
+	} else {
+		str = defaultMessage
+	}
 	reg := regexp.MustCompile(`{{ *([\w\d]+) *}}`)
-	str := defaultMessage
 	str = reg.ReplaceAllString(str, "{{.$1}}")
 
 	var values interface{}
