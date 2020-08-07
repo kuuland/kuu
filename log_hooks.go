@@ -3,10 +3,8 @@ package kuu
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"log"
 	"os"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -25,7 +23,7 @@ func (h *LogDailyFileHook) Fire(entry *logrus.Entry) error {
 		DailyFileName = now
 		changeLoggerOutput(now)
 	}
-	log.Println(fmt.Sprintf("[KUU-%s] %s", strings.ToUpper(entry.Level.String()), entry.Message))
+	logrus.StandardLogger().WithFields(entry.Data).Log(entry.Level, entry.Message)
 	return nil
 }
 

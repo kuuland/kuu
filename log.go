@@ -3,7 +3,6 @@ package kuu
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"time"
@@ -19,17 +18,18 @@ var (
 )
 
 func init() {
+	// logrus默认实例用于输出到控制台
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{})
+
 	if C().GetString("env") == "prod" {
 		IsProduction = true
 	}
-	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.DebugLevel)
 	if IsProduction {
-		logrus.SetFormatter(&logrus.JSONFormatter{})
 		Logger.SetFormatter(&logrus.JSONFormatter{})
-		log.Println("==> 生产环境自动启用文件模式存储日志")
+		logrus.Info("==> 生产环境自动启用文件模式存储日志")
 	} else {
-		logrus.SetFormatter(&logrus.TextFormatter{})
 		Logger.SetFormatter(&logrus.TextFormatter{})
 	}
 	LogDir = C().DefaultGetString("logs", "logs")

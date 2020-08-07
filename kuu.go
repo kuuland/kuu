@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/json-iterator/go"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,7 +30,7 @@ var (
 	GLSRoutineCachesKey = "RoutineCaches"
 	// GLSRequestContextKey
 	GLSRequestContextKey = "RequestContext"
-	GLSRequestIDKey      = "RequestID"
+	GLSRequestIDKey      = "Request ID"
 	// Uptime
 	Uptime time.Time
 	// IsProduction
@@ -180,6 +179,7 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				}
 				v *STDReply
 			)
+			requestId := kc.RequestID()
 			if middleware {
 				v = handler(kc)
 			} else {
@@ -195,7 +195,7 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				glsVals[GLSPrisDescKey] = kc.PrisDesc
 				glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
 				glsVals[GLSRequestContextKey] = kc
-				glsVals[GLSRequestIDKey] = uuid.NewV4().String()
+				glsVals[GLSRequestIDKey] = requestId
 				SetGLSValues(glsVals, func() {
 					if kc.InWhitelist() {
 						IgnoreAuth()
@@ -423,7 +423,6 @@ func (app *Engine) init() {
 			c.AbortWithStatus(http.StatusNoContent)
 			return nil
 		}
-		c.RequestID()
 		return nil
 	})
 	app.UseGin(session.New())
