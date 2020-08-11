@@ -61,6 +61,10 @@ func (c *JobContext) Error(err error) {
 	c.errs = append(c.errs, err)
 }
 
+func (c *JobContext) Name() string {
+	return c.name
+}
+
 // AddJobEntry
 func AddJobEntry(j *Job) error {
 	jobsMu.Lock()
