@@ -38,8 +38,8 @@ func init() {
 type Job struct {
 	Spec        string              `json:"spec" valid:"required"`
 	Cmd         func(c *JobContext) `json:"-,omitempty"`
+	Code        string              `json:"code"`
 	Name        string              `json:"name" valid:"required"`
-	Alias       string              `json:"alias"`
 	RunAfterAdd bool                `json:"runAfterAdd"`
 	EntryID     cron.EntryID        `json:"entryID,omitempty"`
 	cmd         func()
@@ -116,15 +116,14 @@ func AddJobEntry(j *Job) error {
 		j.cmd = cmd
 		jobs[j.EntryID] = j
 
-		alias := j.Alias
-		if alias == "" {
-			alias = j.Name
+		jobEntryIDsMu.Lock()
+		if v := strings.TrimSpace(j.Code); v != "" {
+			jobEntryIDs[v] = j.EntryID
 		}
-		if alias != "" {
-			jobEntryIDsMu.Lock()
-			jobEntryIDs[alias] = j.EntryID
-			jobEntryIDsMu.Unlock()
+		if v := strings.TrimSpace(j.Name); v != "" {
+			jobEntryIDs[v] = j.EntryID
 		}
+		jobEntryIDsMu.Unlock()
 	}
 	return err
 }
@@ -140,7 +139,7 @@ func runAllRunAfterJobs() {
 	}
 }
 
-func runJobByAlias(names string, sync ...bool) error {
+func runJobByCodeOrName(names string, sync ...bool) error {
 	names = strings.TrimSpace(names)
 	if names == "" {
 		return nil
