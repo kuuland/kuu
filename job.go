@@ -7,6 +7,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -19,6 +20,9 @@ var (
 
 	jobs   = make(map[cron.EntryID]*Job)
 	jobsMu sync.RWMutex
+
+	jobEntryIDs   = make(map[string]cron.EntryID)
+	jobEntryIDsMu sync.RWMutex
 
 	isJobInstance   = false
 	outputKuuJobLog = false
@@ -35,6 +39,7 @@ type Job struct {
 	Spec        string              `json:"spec" valid:"required"`
 	Cmd         func(c *JobContext) `json:"-,omitempty"`
 	Name        string              `json:"name" valid:"required"`
+	Alias       string              `json:"alias"`
 	RunAfterAdd bool                `json:"runAfterAdd"`
 	EntryID     cron.EntryID        `json:"entryID,omitempty"`
 	cmd         func()
@@ -110,6 +115,16 @@ func AddJobEntry(j *Job) error {
 		j.EntryID = v
 		j.cmd = cmd
 		jobs[j.EntryID] = j
+
+		alias := j.Alias
+		if alias == "" {
+			alias = j.Name
+		}
+		if alias != "" {
+			jobEntryIDsMu.Lock()
+			jobEntryIDs[alias] = j.EntryID
+			jobEntryIDsMu.Unlock()
+		}
 	}
 	return err
 }
@@ -123,6 +138,26 @@ func runAllRunAfterJobs() {
 			job.cmd()
 		}
 	}
+}
+
+func runJobByAlias(alias string, sync ...bool) error {
+	alias = strings.TrimSpace(alias)
+	if alias == "" {
+		return nil
+	}
+	jobEntryIDsMu.RLock()
+	defer jobEntryIDsMu.RUnlock()
+
+	if v, has := jobEntryIDs[alias]; has {
+		if len(sync) > 0 && sync[0] {
+			DefaultCron.Entry(v).Job.Run()
+		} else {
+			go DefaultCron.Entry(v).Job.Run()
+		}
+	} else {
+		return fmt.Errorf("job '%s' not found", alias)
+	}
+	return nil
 }
 
 // AddJob

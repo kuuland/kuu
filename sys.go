@@ -608,6 +608,7 @@ func Sys() *Mod {
 			IntlMessagesRoute,
 			IntlMessagesSaveRoute,
 			IntlMessagesUploadRoute,
+			JobRunRoute,
 		},
 		AfterImport: initSys,
 	}

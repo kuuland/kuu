@@ -962,3 +962,16 @@ var LoginAsUsersRoute = RouteInfo{
 		return c.STD(records)
 	},
 }
+
+// JobRunRoute
+var JobRunRoute = RouteInfo{
+	Name:   "触发定时任务立即运行接口",
+	Method: http.MethodPost,
+	Path:   "/job/run",
+	HandlerFunc: func(c *Context) *STDReply {
+		if err := runJobByAlias(c.Query("name")); err != nil {
+			return c.STDErr(err)
+		}
+		return c.STDOK()
+	},
+}
