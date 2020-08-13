@@ -140,22 +140,30 @@ func runAllRunAfterJobs() {
 	}
 }
 
-func runJobByAlias(alias string, sync ...bool) error {
-	alias = strings.TrimSpace(alias)
-	if alias == "" {
+func runJobByAlias(names string, sync ...bool) error {
+	names = strings.TrimSpace(names)
+	if names == "" {
 		return nil
 	}
 	jobEntryIDsMu.RLock()
 	defer jobEntryIDsMu.RUnlock()
 
-	if v, has := jobEntryIDs[alias]; has {
-		if len(sync) > 0 && sync[0] {
-			DefaultCron.Entry(v).Job.Run()
+	split := strings.Split(names, ",")
+	isSync := len(sync) > 0 && sync[0]
+	var errs []error
+	for _, item := range split {
+		if v, has := jobEntryIDs[item]; has {
+			if isSync {
+				DefaultCron.Entry(v).Job.Run()
+			} else {
+				go DefaultCron.Entry(v).Job.Run()
+			}
 		} else {
-			go DefaultCron.Entry(v).Job.Run()
+			errs = append(errs, fmt.Errorf("job '%s' not found", item))
 		}
-	} else {
-		return fmt.Errorf("job '%s' not found", alias)
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }

@@ -142,6 +142,9 @@ func (c *Context) stdErr(data interface{}, code int, args []interface{}) *STDRep
 			args = append(args, v.ContextValues)
 		}
 	}
+	if v, ok := data.(error); ok {
+		c.ERROR(v)
+	}
 	message := c.resolveLocaleMessage(args, c.Lang())
 	if code == 0 {
 		code = -1

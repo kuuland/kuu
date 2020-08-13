@@ -47,6 +47,16 @@ func parseArgs(v []interface{}) (fields logrus.Fields, format string, args []int
 		if len(v) > 1 {
 			args = v[1:]
 		}
+	} else if vv, ok := v[0].(error); ok {
+		format = vv.Error()
+		if len(v) > 1 {
+			args = v[1:]
+		}
+	} else if vv, ok := v[0].([]error); ok {
+		format = fmt.Sprintf("%v", vv)
+		if len(v) > 1 {
+			args = v[1:]
+		}
 	} else {
 		indirectValue := reflect.Indirect(reflect.ValueOf(v[0]))
 		switch indirectValue.Kind() {
