@@ -135,7 +135,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	)
 	switch cond.(type) {
 	case string:
-		_ = JSONParse(cond.(string), data)
+		_ = JSONParse(cond.(string), &data)
 	case map[string]interface{}:
 		data = cond.(map[string]interface{})
 	default:
