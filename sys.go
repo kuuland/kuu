@@ -511,6 +511,14 @@ func defaultLoginHandler(c *Context) (resp *LoginHandlerResponse) {
 		cacheFailedTimes()
 		return
 	}
+	// 检测账号是否禁止登录
+	if user.DenyLogin.Bool {
+		resp.Error = fmt.Errorf("account deny login: %v", user.ID)
+		resp.LocaleMessageID = "acc_account_deny"
+		resp.LocaleMessageDefaultText = "Account deny login."
+		cacheFailedTimes()
+		return
+	}
 	// 检测账号是否有效
 	if user.Disable.Bool {
 		resp.Error = fmt.Errorf("account has been disabled: %v", user.ID)

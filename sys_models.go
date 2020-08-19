@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
 	"strings"
 	"time"
@@ -92,7 +93,7 @@ type User struct {
 	IsBuiltIn   null.Bool    `name:"是否内置"`
 	SubDocIDs   string       `name:"扩展档案ID映射（令牌类型为键、ID为值的JSON字符串，如{\"ADMIN\":3,\"WECHAT:COMPANY\":2}）"`
 	Lang        string       `name:"最近使用语言"`
-	AllowLogin  bool         `name:"允许登录"`
+	DenyLogin   null.Bool    `name:"禁止登录"`
 	ActOrgID    uint         `name:"当前组织"`
 }
 
@@ -212,10 +213,6 @@ func OrgIDMap(list []Org) map[uint]Org {
 
 // FillOrgFullInfo
 func FillOrgFullInfo(list []Org) []Org {
-	type info struct {
-		fullPid  string
-		fullName string
-	}
 	var (
 		childrenMap = make(map[uint][]Org)
 		fullPidMap  = make(map[uint]string)
@@ -386,15 +383,23 @@ func (m *Menu) AfterDelete(db *gorm.DB) {
 type File struct {
 	Model `rest:"*" displayName:"文件"`
 	ExtendField
-	Class  string `name:"文件分类"`
-	RefID  uint   `name:"关联ID" `
-	UID    string `name:"文件唯一ID" `
-	Type   string `name:"文件Mine-Type" `
-	Size   int64  `name:"文件大小" `
-	Name   string `name:"文件名称" `
-	Status string `name:"文件状态" `
-	URL    string `name:"文件下载路径"`
-	Path   string `name:"文件存储路径"`
+	Class     string `name:"文件分类"`
+	OwnerID   uint   `name:"归属数据ID"`
+	OwnerType string `name:"归属数据类型"`
+
+	UID  string `name:"文件唯一ID" gorm:"not null"`
+	Type string `name:"文件Mine-Type" gorm:"not null"`
+	Size int64  `name:"文件大小" gorm:"not null"`
+	Name string `name:"文件名称" gorm:"not null"`
+	URL  string `name:"文件下载路径" gorm:"not null"`
+	Path string `name:"文件存储路径" gorm:"not null"`
+}
+
+// BeforeCreate
+func (f *File) BeforeCreate() {
+	if f.UID == "" {
+		f.UID = uuid.NewV4().String()
+	}
 }
 
 // Param

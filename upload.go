@@ -3,7 +3,7 @@ package kuu
 import (
 	"crypto/md5"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -29,17 +29,18 @@ func saveFile(file *multipart.FileHeader, dst string) error {
 	return err
 }
 
-// SaveUploadedFile
-func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File) (f *File, err error) {
+func GetUploadDir() string {
 	uploadDir := C().GetString("uploadDir")
-	uploadPrefix := C().GetString("uploadPrefix")
 	if uploadDir == "" {
 		uploadDir = "assets/upload"
 	}
-	if uploadPrefix == "" {
-		uploadPrefix = uploadDir
-	}
 	EnsureDir(uploadDir)
+	return uploadDir
+}
+
+// SaveUploadedFile
+func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File) (f *File, err error) {
+	uploadDir := GetUploadDir()
 
 	src, err := fh.Open()
 	if err != nil {
@@ -53,7 +54,7 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 	body, err := ioutil.ReadAll(src)
 	md5Sum := fmt.Sprintf("%x", md5.Sum(body))
 
-	//保存文件
+	// 保存文件
 	md5Name := fmt.Sprintf("%s%s", md5Sum, path.Ext(fh.Filename))
 	dst := path.Join(uploadDir, md5Name)
 	if err := saveFile(fh, dst); err != nil {
@@ -61,19 +62,19 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 	}
 
 	f = &File{
-		UID:    uuid.NewV4().String(),
-		Type:   fh.Header["Content-Type"][0],
-		Size:   fh.Size,
-		Name:   fh.Filename,
-		Status: "done",
-		URL:    fmt.Sprintf("/%s/%s", strings.Trim(uploadPrefix, "/"), md5Name),
-		Path:   dst,
+		UID:  uuid.NewV4().String(),
+		Type: fh.Header["Content-Type"][0],
+		Size: fh.Size,
+		Name: fh.Filename,
+		URL:  fmt.Sprintf("/%s/%s", strings.Trim(uploadDir, "/"), md5Name),
+		Path: dst,
 	}
 
 	if len(extraData) > 0 && extraData[0] != nil {
 		extra := extraData[0]
-		f.RefID = extra.RefID
 		f.Class = extra.Class
+		f.OwnerType = extra.OwnerType
+		f.OwnerID = extra.OwnerID
 	}
 	if save2db {
 		if err := DB().Create(&f).Error; err != nil {

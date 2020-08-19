@@ -12,6 +12,11 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "令牌类型不正确",
 		"zh-Hant": "令牌類型不正確",
 	},
+	"acc_account_deny": {
+		"en":      "Account deny login.",
+		"zh-Hans": "账号不允许登录。",
+		"zh-Hant": "賬號不允許登錄。",
+	},
 	"acc_account_disabled": {
 		"en":      "Account has been disabled.",
 		"zh-Hans": "账号已被停用。",

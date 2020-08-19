@@ -139,16 +139,17 @@ var UserMenusRoute = RouteInfo{
 }
 
 func getFileExtraData(c *Context) (*File, error) {
-	class := c.PostForm("class")
-	refid := (uint)(0)
-	if v := c.PostForm("refid"); v != "" {
-		temp, err := strconv.ParseUint(v, 10, 64)
+	class := c.PostForm("Class")
+	ownerID := (uint)(0)
+	if v := c.PostForm("OwnerID"); v != "" {
+		vv, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		refid = (uint)(temp)
+		ownerID = (uint)(vv)
 	}
-	return &File{Class: class, RefID: refid}, nil
+	ownerType := c.PostForm("OwnerType")
+	return &File{Class: class, OwnerID: ownerID, OwnerType: ownerType}, nil
 }
 
 // UploadRoute
