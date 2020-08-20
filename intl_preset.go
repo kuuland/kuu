@@ -297,6 +297,16 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "保存成功",
 		"zh-Hant": "保存成功",
 	},
+	"kuu_save_success": {
+		"en":      "Saved successfully",
+		"zh-Hans": "保存成功",
+		"zh-Hant": "保存成功",
+	},
+	"kuu_copy_success": {
+		"en":      "Copy successfully.",
+		"zh-Hans": "复制成功",
+		"zh-Hant": "複製成功",
+	},
 	"fano_table_search": {
 		"en":      "Search",
 		"zh-Hans": "搜索",
@@ -1247,95 +1257,65 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "无权操作",
 		"zh-Hant": "無權操作",
 	},
-	"menu_audit_logs": {
-		"en":      "Audit Logs",
-		"zh-Hans": "系统审计",
-		"zh-Hant": "系統審計",
+	"menu_default": {
+		"en":      "Default Menu",
+		"zh-Hans": "默认菜单",
+		"zh-Hant": "默認菜單",
 	},
-	"menu_auth_mgr": {
+	"menu_auth": {
 		"en":      "Authorization Management",
 		"zh-Hans": "权限管理",
 		"zh-Hant": "權限管理",
 	},
-	"menu_authority_doc": {
-		"en":      "Authority Management",
-		"zh-Hans": "权限管理",
-		"zh-Hant": "權限管理",
-	},
-	"menu_default": {
-		"en":      "Default",
-		"zh-Hans": "默认菜单",
-		"zh-Hant": "默認菜單",
-	},
-	"menu_file_doc": {
-		"en":      "File Management",
-		"zh-Hans": "文件管理",
-		"zh-Hant": "文件管理",
-	},
-	"menu_i18n": {
-		"en":      "Internationalization",
-		"zh-Hans": "国际化",
-		"zh-Hant": "國際化",
-	},
-	"menu_import_doc": {
-		"en":      "Import Management",
-		"zh-Hans": "导入记录",
-		"zh-Hant": "導入記錄",
-	},
-	"menu_menu_doc": {
+	"menu_auth_menu": {
 		"en":      "Menu Management",
 		"zh-Hans": "菜单管理",
 		"zh-Hant": "菜單管理",
 	},
-	"menu_message": {
-		"en":      "Message Center",
-		"zh-Hans": "消息中心",
-		"zh-Hant": "消息中心",
-	},
-	"menu_metadata": {
-		"en":      "Metadata Management",
-		"zh-Hans": "元数据",
-		"zh-Hant": "元數據",
-	},
-	"menu_org_doc": {
+	"menu_auth_org": {
 		"en":      "Organization Management",
 		"zh-Hans": "组织管理",
 		"zh-Hant": "組織管理",
 	},
-	"menu_org_mgr": {
-		"en":      "Organization Management",
-		"zh-Hans": "组织管理",
-		"zh-Hant": "組織管理",
+	"menu_auth_user": {
+		"en":      "User Management",
+		"zh-Hans": "用户管理",
+		"zh-Hant": "用戶管理",
 	},
-	"menu_param_doc": {
-		"en":      "Parameter Management",
-		"zh-Hans": "参数管理",
-		"zh-Hant": "參數管理",
-	},
-	"menu_role_doc": {
+	"menu_auth_role": {
 		"en":      "Role Management",
 		"zh-Hans": "角色管理",
 		"zh-Hant": "角色管理",
 	},
-	"menu_sys_mgr": {
+	"menu_auth_permission": {
+		"en":      "Permission Management",
+		"zh-Hans": "权限管理",
+		"zh-Hant": "權限管理",
+	},
+	"menu_sys": {
 		"en":      "System Management",
 		"zh-Hans": "系统管理",
 		"zh-Hant": "系統管理",
 	},
-	"menu_sys_monitor": {
-		"en":      "System Monitor",
-		"zh-Hans": "系统监控",
-		"zh-Hant": "系統監控",
+	"menu_sys_param": {
+		"en":      "Param Management",
+		"zh-Hans": "参数管理",
+		"zh-Hant": "參數管理",
 	},
-	"menu_sys_settings": {
-		"en":      "System Settings",
-		"zh-Hans": "系统设置",
-		"zh-Hant": "系統設置",
+	"menu_sys_file": {
+		"en":      "File Management",
+		"zh-Hans": "文件管理",
+		"zh-Hant": "上傳管理",
 	},
-	"menu_user_doc": {
-		"en":      "User Management",
-		"zh-Hans": "用户管理",
-		"zh-Hant": "用戶管理",
+	"menu_sys_import": {
+		"en":      "Import Management",
+		"zh-Hans": "导入文件",
+		"zh-Hant": "導入文件",
+	},
+	"menu_sys_languages": {
+		"en":      "Languages",
+		"zh-Hans": "多语言",
+		"zh-Hant": "多語言",
 	},
 	"model_docs_failed": {
 		"en":      "Model document query failed",

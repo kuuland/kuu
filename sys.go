@@ -75,35 +75,38 @@ func preflight() bool {
 	return false
 }
 
-func initSys() {
-	if !preflight() {
-		// 初始化预置数据
-		err := WithTransaction(func(tx *gorm.DB) error {
-			// 初始化预置用户
-			createRootUser(tx)
-			// 初始化预置组织
-			createRootOrg(tx)
-			// 初始化字典、菜单
-			createPresetMenus(tx)
-			// 初始化预置用户权限
-			createRootPrivileges(tx)
-			// 保存初始化标记
-			param := Param{
-				Code:      initCode,
-				IsBuiltIn: null.NewBool(true, true),
-				Name:      "System initialization label",
-				Value:     "ok",
-			}
-			tx.Create(&param)
-			return tx.Error
-		})
-		if err != nil {
-			PANIC("failed to initialize preset data: %s", err.Error())
+func initSys() error {
+	// 初始化预置数据
+	err := WithTransaction(func(tx *gorm.DB) error {
+		// 初始化预置用户
+		if err := createRootUser(tx); err != nil {
+			return err
 		}
-	}
+		// 初始化预置组织
+		if err := createRootOrg(tx); err != nil {
+			return err
+		}
+		// 初始化字典、菜单
+		if err := createPresetMenus(tx); err != nil {
+			return err
+		}
+		// 初始化预置用户权限
+		if err := createRootPrivileges(tx); err != nil {
+			return err
+		}
+		// 保存初始化标记
+		param := Param{
+			Code:      initCode,
+			IsBuiltIn: null.NewBool(true, true),
+			Name:      "System initialization flag",
+			Value:     "ok",
+		}
+		return tx.Create(&param).Error
+	})
+	return err
 }
 
-func createRootUser(tx *gorm.DB) {
+func createRootUser(tx *gorm.DB) error {
 	root := User{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
@@ -113,11 +116,11 @@ func createRootUser(tx *gorm.DB) {
 		Password:    MD5("kuu"),
 		IsBuiltIn:   null.NewBool(true, true),
 	}
-	tx.Create(&root)
 	rootUser = &root
+	return tx.Create(rootUser).Error
 }
 
-func createRootOrg(tx *gorm.DB) {
+func createRootOrg(tx *gorm.DB) error {
 	root := Org{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
@@ -125,23 +128,25 @@ func createRootOrg(tx *gorm.DB) {
 		Name:        "Default",
 		IsBuiltIn:   null.NewBool(true, true),
 	}
-	tx.Create(&root)
 	rootOrg = &root
+	return tx.Create(rootOrg).Error
 }
 
-func createRootPrivileges(tx *gorm.DB) {
+func createRootPrivileges(tx *gorm.DB) error {
 	// 创建角色
 	rootRole := &Role{
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
 		OrgID:       RootOrgID(),
 		Code:        "root_role",
-		Name:        "Default",
+		Name:        "Root Role",
 		IsBuiltIn:   null.NewBool(true, true),
 	}
-	tx.Create(rootRole)
+	if err := tx.Create(rootRole).Error; err != nil {
+		return err
+	}
 	// 创建数据权限记录
-	tx.Create(&DataPrivileges{
+	if err := tx.Create(&DataPrivileges{
 		Model: Model{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
@@ -151,246 +156,115 @@ func createRootPrivileges(tx *gorm.DB) {
 		TargetOrgID:   RootOrgID(),
 		ReadableRange: DataScopeCurrentFollowing,
 		WritableRange: DataScopeCurrentFollowing,
-	})
+	}).Error; err != nil {
+		return err
+	}
 	// 创建分配记录
-	tx.Create(&RoleAssign{
+	if err := tx.Create(&RoleAssign{
 		ModelExOrg: ModelExOrg{
 			CreatedByID: RootUID(),
 			UpdatedByID: RootUID(),
 		},
 		RoleID: rootRole.ID,
 		UserID: RootUID(),
-	})
+	}).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
-func createPresetMenus(tx *gorm.DB) {
-	rootMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+func createPresetMenus(tx *gorm.DB) error {
+	menus := []Menu{
+		{
+			Name: "Default Menu",
+			Code: "default",
 		},
-		Name:      "Default",
-		LocaleKey: "menu_default",
-		Sort:      100,
-	}
-	tx.Create(&rootMenu)
-	sysMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		// 权限管理 Authorization Management
+		{
+			ParentCode: null.StringFrom("default"),
+			Name:       "Authorization Management",
+			Code:       "auth",
+			Icon:       null.StringFrom("key"),
 		},
-		Pid:       rootMenu.ID,
-		Name:      "System Management",
-		LocaleKey: "menu_sys_mgr",
-		Icon:      "setting",
-		Sort:      100,
-	}
-	tx.Create(&sysMenu)
-	orgMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("auth"),
+			Name:       "Menu Management",
+			Code:       "auth_menu",
+			Icon:       null.StringFrom("bars"),
+			URI:        null.NewString("/sys/menu", true),
 		},
-		Pid:       sysMenu.ID,
-		Name:      "Organization Management",
-		LocaleKey: "menu_org_mgr",
-		Icon:      "apartment",
-		Sort:      100,
-	}
-	tx.Create(&orgMenu)
-	userMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("auth"),
+			Name:       "Organization Management",
+			Code:       "auth_org",
+			Icon:       null.StringFrom("apartment"),
+			URI:        null.NewString("/sys/org", true),
 		},
-		Pid:       orgMenu.ID,
-		Name:      "User Management",
-		LocaleKey: "menu_user_doc",
-		Icon:      "user",
-		URI:       null.NewString("/sys/user", true),
-		Sort:      100,
-	}
-	tx.Create(&userMenu)
-	sysOrgMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("auth"),
+			Name:       "User Management",
+			Code:       "auth_user",
+			Icon:       null.StringFrom("user"),
+			URI:        null.NewString("/sys/user", true),
 		},
-		Pid:       orgMenu.ID,
-		Name:      "Organization Management",
-		LocaleKey: "menu_org_doc",
-		Icon:      "cluster",
-		URI:       null.NewString("/sys/org", true),
-		Sort:      200,
-	}
-	tx.Create(&sysOrgMenu)
-	permissionMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("auth"),
+			Name:       "Role Management",
+			Code:       "auth_role",
+			Icon:       null.StringFrom("team"),
+			URI:        null.NewString("/sys/role", true),
 		},
-		Pid:       sysMenu.ID,
-		Name:      "Authorization Management",
-		LocaleKey: "menu_auth_mgr",
-		Icon:      "dropbox",
-		Sort:      200,
-	}
-	tx.Create(&permissionMenu)
-	roleMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("auth"),
+			Name:       "Permission Management",
+			Code:       "auth_permission",
+			Icon:       null.StringFrom("key"),
+			URI:        null.NewString("/sys/permission", true),
 		},
-		Pid:       permissionMenu.ID,
-		Name:      "Role Management",
-		LocaleKey: "menu_role_doc",
-		Icon:      "team",
-		URI:       null.NewString("/sys/role", true),
-		Sort:      100,
-	}
-	tx.Create(&roleMenu)
-	settingMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		// 系统设置 System Management
+		{
+			ParentCode: null.StringFrom("default"),
+			Name:       "System Management",
+			Code:       "sys",
+			Icon:       null.StringFrom("setting"),
 		},
-		Pid:       sysMenu.ID,
-		Name:      "System Settings",
-		LocaleKey: "menu_sys_settings",
-		Icon:      "tool",
-		Sort:      300,
-	}
-	tx.Create(&settingMenu)
-	menuMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("sys"),
+			Name:       "Param Management",
+			Code:       "sys_param",
+			Icon:       null.StringFrom("profile"),
+			URI:        null.NewString("/sys/param", true),
 		},
-		Pid:       settingMenu.ID,
-		Name:      "Menu Management",
-		LocaleKey: "menu_menu_doc",
-		Icon:      "bars",
-		URI:       null.NewString("/sys/menu", true),
-		Sort:      100,
-	}
-	tx.Create(&menuMenu)
-	importMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("sys"),
+			Name:       "File Management",
+			Code:       "sys_file",
+			Icon:       null.StringFrom("file"),
+			URI:        null.NewString("/sys/file", true),
 		},
-		Pid:       settingMenu.ID,
-		Name:      "Import Management",
-		LocaleKey: "menu_import_doc",
-		Icon:      "import",
-		URI:       null.NewString("/sys/import", true),
-		Sort:      200,
-	}
-	tx.Create(&importMenu)
-	authorityMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("sys"),
+			Name:       "Import Management",
+			Code:       "sys_import",
+			Icon:       null.StringFrom("import"),
+			URI:        null.NewString("/sys/import", true),
 		},
-		Pid:       settingMenu.ID,
-		Name:      "Authority Management",
-		LocaleKey: "menu_authority_doc",
-		Icon:      "key",
-		URI:       null.NewString("/sys/permission", true),
-		Sort:      300,
-	}
-	tx.Create(&authorityMenu)
-	paramMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
+		{
+			ParentCode: null.StringFrom("sys"),
+			Name:       "Languages",
+			Code:       "sys_languages",
+			Icon:       null.StringFrom("global"),
+			URI:        null.NewString("/sys/i18n", true),
 		},
-		Pid:       settingMenu.ID,
-		Name:      "Parameter Management",
-		LocaleKey: "menu_param_doc",
-		Icon:      "profile",
-		URI:       null.NewString("/sys/param", true),
-		Sort:      400,
 	}
-	tx.Create(&paramMenu)
-	monitorMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "System Monitor",
-		LocaleKey: "menu_sys_monitor",
-		Icon:      "monitor",
-		URI:       null.NewString("/sys/statics", true),
-		Sort:      500,
+	for i, item := range menus {
+		item.LocaleKey = null.StringFrom(fmt.Sprintf("menu_%s", item.Code))
+		item.Sort = null.IntFrom(int64((i + 1) * 100))
+		if err := tx.Create(&item).Error; err != nil {
+			return err
+		}
 	}
-	tx.Create(&monitorMenu)
-	auditMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "Audit Logs",
-		LocaleKey: "menu_audit_logs",
-		Icon:      "book",
-		URI:       null.NewString("/sys/audit", true),
-		Sort:      600,
-	}
-	tx.Create(&auditMenu)
-	fileMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "File Management",
-		LocaleKey: "menu_file_doc",
-		Icon:      "file",
-		URI:       null.NewString("/sys/file", true),
-		Sort:      700,
-	}
-	tx.Create(&fileMenu)
-	i18nMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "Internationalization",
-		LocaleKey: "menu_i18n",
-		Icon:      "global",
-		URI:       null.NewString("/sys/i18n", true),
-		Sort:      800,
-	}
-	tx.Create(&i18nMenu)
-	messageMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "Message Center",
-		LocaleKey: "menu_message",
-		Icon:      "message",
-		URI:       null.NewString("/sys/message", true),
-		Sort:      900,
-	}
-	tx.Create(&messageMenu)
-	metadataMenu := Menu{
-		ModelExOrg: ModelExOrg{
-			CreatedByID: RootUID(),
-			UpdatedByID: RootUID(),
-		},
-		Pid:       settingMenu.ID,
-		Name:      "Metadata Management",
-		LocaleKey: "menu_metadata",
-		Icon:      "appstore",
-		URI:       null.NewString("/sys/metadata", true),
-		Sort:      1000,
-	}
-	tx.Create(&metadataMenu)
+	return nil
 }
 
 // GetLoginableOrgs
@@ -590,9 +464,6 @@ func Sys() *Mod {
 			&Menu{},
 			&File{},
 			&Param{},
-			&Metadata{},
-			&MetadataField{},
-			&Route{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
@@ -618,6 +489,6 @@ func Sys() *Mod {
 			IntlMessagesUploadRoute,
 			JobRunRoute,
 		},
-		AfterImport: initSys,
+		OnInit: initSys,
 	}
 }

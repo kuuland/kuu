@@ -104,12 +104,12 @@ var UserMenusRoute = RouteInfo{
 			return c.STDErr(err, "user_menus_failed")
 		}
 		var (
-			totalMap  = make(map[uint]Menu)
+			codeMap   = make(map[string]Menu)
 			existsMap = make(map[uint]bool)
 			finded    = make(map[uint]bool)
 		)
 		for _, item := range total {
-			totalMap[item.ID] = item
+			codeMap[item.Code] = item
 		}
 		for _, item := range menus {
 			existsMap[item.ID] = true
@@ -119,8 +119,8 @@ var UserMenusRoute = RouteInfo{
 			recall := false
 			for _, item := range result {
 				if !finded[item.ID] {
-					pitem := totalMap[item.Pid]
-					if item.Pid != 0 && pitem.ID != 0 && !existsMap[pitem.ID] {
+					pitem := codeMap[item.ParentCode.String]
+					if item.ParentCode.String != "" && pitem.ID != 0 && !existsMap[pitem.ID] {
 						result = append(result, pitem)
 						recall = true
 						existsMap[pitem.ID] = true

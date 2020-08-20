@@ -22,8 +22,8 @@ type Metadata struct {
 	LocaleKey     string
 	FullName      string
 	Fields        []MetadataField
-	RestDesc      *RestDesc         `json:"-"`
-	reflectType   reflect.Type      `json:"-"`
+	RestDesc      *RestDesc `json:"-"`
+	reflectType   reflect.Type
 	SubDocIDNames []string          `json:"-" gorm:"-"`
 	UIDNames      []string          `json:"-" gorm:"-"`
 	OrgIDNames    []string          `json:"-" gorm:"-"`

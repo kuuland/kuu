@@ -95,6 +95,16 @@ func GetGLSValue(key interface{}) (value interface{}, ok bool) {
 }
 
 func beforeRun() {
+	if !preflight() {
+		for _, mod := range modMap {
+			if mod.OnInit != nil {
+				if err := mod.OnInit(); err != nil {
+					// 模块初始化失败直接退出
+					panic(err)
+				}
+			}
+		}
+	}
 	DefaultCron.Start()
 	runAllRunAfterJobs()
 }

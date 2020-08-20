@@ -3,8 +3,8 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/inflection"
+	"gopkg.in/guregu/null.v3"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -14,26 +14,24 @@ var (
 	tableNames       = make(map[string]string)
 	tableNameMetaMap = make(map[string]*Metadata)
 	routesMap        = make(map[string]RouteInfo)
-	ModMap           = make(map[string]*Mod)
+	modMap           = make(map[string]*Mod)
 )
 
 func init() {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-		if strings.HasPrefix(defaultTableName, "raw:") {
-			subs := regexp.MustCompile(`raw:(.*)`).FindAllStringSubmatch(defaultTableName, -1)[0]
-			if len(subs) > 1 {
-				return subs[1]
-			}
+		if v, ok := tableNames[defaultTableName]; ok && v != "" {
+			return v
 		}
-		v, ok := tableNames[defaultTableName]
-		if !ok || v == "" {
-			if defaultTableName != "" {
-				WARN("自定义表名：%s", defaultTableName)
-			}
-			return defaultTableName
-		}
-		return v
+		return defaultTableName
 	}
+}
+
+type tabler interface {
+	TableName() string
+}
+
+type dbTabler interface {
+	TableName(*gorm.DB) string
 }
 
 // HandlerFunc defines the handler used by ok middleware as return value.
@@ -49,7 +47,9 @@ type Mod struct {
 	Middleware  HandlersChain
 	Routes      RoutesInfo
 	Models      []interface{}
-	AfterImport func()
+	OnImport    func() error
+	OnInit      func() error
+	TablePrefix null.String
 }
 
 // Import
@@ -105,19 +105,36 @@ func (app *Engine) Import(mods ...*Mod) {
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
 				meta.ModCode = mod.Code
-				defaultTableName := gorm.ToTableName(meta.Name)
-				pluralTableName := inflection.Plural(defaultTableName)
 
-				tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
-				tableNames[defaultTableName] = tableName
-				tableNames[pluralTableName] = tableName
+				if v, ok := model.(tabler); ok {
+					tableName := v.TableName()
+					tableNames[tableName] = tableName
+				} else if v, ok := model.(dbTabler); ok {
+					tableName := v.TableName(DB())
+					tableNames[tableName] = tableName
+				} else {
+					gormTableName := gorm.ToTableName(meta.Name)
+					pluralTableName := inflection.Plural(gormTableName)
+					var kuuTableName string
+					if v := mod.TablePrefix; v.Valid {
+						if v.String != "" {
+							kuuTableName = fmt.Sprintf("%s_%s", v.String, pluralTableName)
+						} else {
+							kuuTableName = pluralTableName
+						}
+					} else {
+						kuuTableName = fmt.Sprintf("%s_%s", mod.Code, pluralTableName)
+					}
 
-				db := DB()
-				tn := db.NewScope(model).GetModelStruct().TableName(db)
-				if tn != "" {
-					tableNameMetaMap[tn] = meta
+					tableNames[gormTableName] = kuuTableName
+					tableNames[pluralTableName] = kuuTableName
+					tableNames[kuuTableName] = kuuTableName
 				}
 
+				metaTableName := DB().NewScope(model).TableName()
+				if metaTableName != "" {
+					tableNameMetaMap[metaTableName] = meta
+				}
 			}
 			if migrate {
 				DB().AutoMigrate(model)
@@ -127,16 +144,19 @@ func (app *Engine) Import(mods ...*Mod) {
 				}
 			}
 		}
-		if mod.AfterImport != nil {
-			mod.AfterImport()
+		if mod.OnImport != nil {
+			if err := mod.OnImport(); err != nil {
+				// 模块导入失败直接退出
+				panic(err)
+			}
 		}
-		ModMap[mod.Code] = mod
+		modMap[mod.Code] = mod
 	}
 }
 
 // GetModPrefix
 func GetModPrefix(modCode string) string {
-	mod, ok := ModMap[modCode]
+	mod, ok := modMap[modCode]
 	if ok {
 		return mod.Prefix
 	}
