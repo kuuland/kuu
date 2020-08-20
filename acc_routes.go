@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"github.com/jinzhu/gorm"
 	"regexp"
 	"time"
 )
@@ -66,25 +67,31 @@ var LogoutRoute = RouteInfo{
 		"acc_logout_failed": "Logout failed",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		if c.SignInfo != nil && c.SignInfo.IsValid() {
-			var (
-				secretData SignSecret
-				db         = DB()
-			)
-			db.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secretData)
-			if !db.NewRecord(&secretData) {
-				if err := db.Model(&secretData).Updates(&SignSecret{Method: SignMethodLogout}).Error; err != nil {
-					return c.STDErr(err, "acc_logout_failed")
-				}
-				// 保存登出历史
-				saveHistory(&secretData)
-				// 设置Cookie过期
-				c.SetCookie(TokenKey, secretData.Token, -1, "/", "", false, true)
-				c.SetCookie(LangKey, "", -1, "/", "", false, true)
-			}
+		if err := Logout(c, c.DB()); err != nil {
+			return c.STDErr(err, "acc_logout_failed")
 		}
 		return c.STDOK()
 	},
+}
+
+func Logout(c *Context, tx *gorm.DB) error {
+	if c.SignInfo != nil && c.SignInfo.IsValid() {
+		var secret SignSecret
+		if err := tx.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secret).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if secret.ID != 0 {
+			if err := tx.Model(&secret).Updates(&SignSecret{Method: SignMethodLogout}).Error; err != nil {
+				return err
+			}
+			// 保存登出历史
+			saveHistory(&secret)
+			// 设置Cookie过期
+			c.SetCookie(TokenKey, secret.Token, -1, "/", "", false, true)
+			c.SetCookie(LangKey, "", -1, "/", "", false, true)
+		}
+	}
+	return nil
 }
 
 // ValidRoute
