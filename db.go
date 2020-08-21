@@ -121,7 +121,8 @@ func DS(name string) *gorm.DB {
 func WithTransaction(fn func(*gorm.DB) error) (err error) {
 	tx := DB().Begin()
 	if tx.Error != nil {
-		return tx.Error
+		err = tx.Error
+		return
 	}
 	defer func() {
 		if err != nil {
