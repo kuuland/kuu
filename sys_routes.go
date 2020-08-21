@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -84,6 +85,21 @@ var UserRoleAssigns = RouteInfo{
 	},
 }
 
+type MenuList []Menu
+
+func (ml MenuList) Len() int {
+	return len(ml)
+}
+
+func (ml MenuList) Less(i, j int) bool {
+	return ml[i].Sort.Int64 < ml[j].Sort.Int64
+}
+func (ml MenuList) Swap(i, j int) {
+	tmp := ml[i]
+	ml[i] = ml[j]
+	ml[j] = tmp
+}
+
 // UserMenusRoute
 var UserMenusRoute = RouteInfo{
 	Name:   "查询用户菜单",
@@ -93,13 +109,13 @@ var UserMenusRoute = RouteInfo{
 		"user_menus_failed": "User menus query failed",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		var menus []Menu
+		var menus MenuList
 		// 查询授权菜单
 		if err := c.DB().Find(&menus).Error; err != nil {
 			return c.STDErr(err, "user_menus_failed")
 		}
 		// 补全父级菜单
-		var total []Menu
+		var total MenuList
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
 			return c.STDErr(err, "user_menus_failed")
 		}
@@ -114,8 +130,8 @@ var UserMenusRoute = RouteInfo{
 		for _, item := range menus {
 			existsMap[item.ID] = true
 		}
-		var fall func(result []Menu) []Menu
-		fall = func(result []Menu) []Menu {
+		var fall func(result MenuList) MenuList
+		fall = func(result MenuList) MenuList {
 			recall := false
 			for _, item := range result {
 				if !finded[item.ID] {
@@ -134,6 +150,16 @@ var UserMenusRoute = RouteInfo{
 			return result
 		}
 		menus = fall(menus)
+		if strings.ToLower(c.DefaultQuery("default", "true")) == "false" {
+			var filtered MenuList
+			for _, item := range menus {
+				if item.Code != "default" {
+					filtered = append(filtered, item)
+				}
+			}
+			menus = filtered
+		}
+		sort.Sort(menus)
 		return c.STD(menus)
 	},
 }

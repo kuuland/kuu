@@ -337,7 +337,7 @@ func (m *Menu) BeforeCreate(scope *gorm.Scope) error {
 			return err
 		}
 	}
-	if err := m.updateParentCodes(scope, m.ParentCode.String, m.ParentCodes.String); err != nil {
+	if _, err := m.setParentCodes(scope); err != nil {
 		return err
 	}
 	return nil
@@ -345,13 +345,16 @@ func (m *Menu) BeforeCreate(scope *gorm.Scope) error {
 
 // BeforeUpdate
 func (m *Menu) BeforeUpdate(scope *gorm.Scope) error {
-	tx := scope.NewDB()
 	if m.ID != 0 && m.ParentCode.Valid {
 		var old Menu
-		if err := tx.Model(&Menu{}).Where(&Menu{ModelExOrg: ModelExOrg{ID: m.ID}}).First(&old).Error; err != nil {
+		if err := scope.NewDB().Model(&Menu{}).Where(&Menu{ModelExOrg: ModelExOrg{ID: m.ID}}).First(&old).Error; err != nil {
 			return err
 		}
-		if err := m.updateParentCodes(scope, old.Code, old.ParentCodes.String); err != nil {
+		newParentCodes, err := m.setParentCodes(scope)
+		if err != nil {
+			return err
+		}
+		if err := m.updateChildrenParentCodes(scope, old.Code, old.ParentCodes.String, newParentCodes); err != nil {
 			return err
 		}
 	}
@@ -412,13 +415,12 @@ func (m *Menu) updatePresetRolePrivileges(tx *gorm.DB) error {
 	}
 	return nil
 }
-func (m *Menu) updateParentCodes(scope *gorm.Scope, oldCode, oldAllParentCodes string) error {
-	tx := scope.NewDB()
+func (m *Menu) setParentCodes(scope *gorm.Scope) (string, error) {
 	var newParentCodes string
 	if m.ParentCode.String != "" {
 		var parent Menu
-		if err := tx.Model(&Menu{}).Where(&Menu{Code: m.ParentCode.String}).First(&parent).Error; err != nil {
-			return err
+		if err := scope.NewDB().Model(&Menu{}).Where(&Menu{Code: m.ParentCode.String}).First(&parent).Error; err != nil {
+			return newParentCodes, err
 		}
 		newParentCodes = fmt.Sprintf("%s%s,", parent.ParentCodes.String, parent.Code)
 	} else {
@@ -426,8 +428,13 @@ func (m *Menu) updateParentCodes(scope *gorm.Scope, oldCode, oldAllParentCodes s
 	}
 	f, _ := scope.FieldByName("ParentCodes")
 	if err := scope.SetColumn(f.DBName, newParentCodes); err != nil {
-		return err
+		return newParentCodes, err
 	}
+	return newParentCodes, nil
+}
+
+func (m *Menu) updateChildrenParentCodes(scope *gorm.Scope, oldCode, oldParentCodes, newParentCodes string) error {
+	f, _ := scope.FieldByName("ParentCodes")
 	quoteColumnName := scope.Quote(f.DBName)
 	sql := fmt.Sprintf("UPDATE %s SET %s = REPLACE(%s, ?, ?) WHERE %s LIKE '%s'",
 		scope.QuotedTableName(),
@@ -436,7 +443,7 @@ func (m *Menu) updateParentCodes(scope *gorm.Scope, oldCode, oldAllParentCodes s
 		quoteColumnName,
 		"%,"+oldCode+",%",
 	)
-	if err := tx.Exec(sql, oldAllParentCodes, newParentCodes).Error; err != nil {
+	if err := scope.NewDB().Exec(sql, oldParentCodes, newParentCodes).Error; err != nil {
 		return err
 	}
 	return nil

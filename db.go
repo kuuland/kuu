@@ -123,13 +123,15 @@ func WithTransaction(fn func(*gorm.DB) error) (err error) {
 	if tx.Error != nil {
 		return tx.Error
 	}
-	if err := fn(tx); err != nil {
-		return err
-	}
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-	return tx.Rollback().Error
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit().Error
+		}
+	}()
+	err = fn(tx)
+	return
 }
 
 func releaseDB() {

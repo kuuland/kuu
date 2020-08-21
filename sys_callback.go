@@ -381,7 +381,7 @@ func createOrUpdateItem(scope *gorm.Scope, item interface{}) {
 		return
 	}
 
-	tx := scope.DB()
+	tx := scope.NewDB()
 	if tx.NewRecord(item) {
 		if err := tx.Create(item).Error; err != nil {
 			_ = scope.Err(err)
