@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -205,32 +206,38 @@ func deleteCallback(scope *gorm.Scope) {
 		}
 
 		if !scope.Search.Unscoped && hasDeletedAtField {
-			var sql string
+			var (
+				sqlbuf bytes.Buffer
+				attrs  []interface{}
+			)
+			sqlbuf.WriteString("UPDATE %v SET ")
+			attrs = append(attrs, scope.QuotedTableName())
+			// 更新DeletedByID
 			if desc != nil {
-				deletedByField, hasDeletedByField := scope.FieldByName("DeletedByID")
-				if !scope.Search.Unscoped && hasDeletedByField {
-					sql = fmt.Sprintf(
-						"UPDATE %v SET %v=%v,%v=%v%v%v",
-						scope.QuotedTableName(),
-						scope.Quote(deletedByField.DBName),
+				if f, has := scope.FieldByName("DeletedByID"); has {
+					sqlbuf.WriteString("%v=%v,")
+					attrs = append(attrs,
+						scope.Quote(f.DBName),
 						scope.AddToVars(desc.UID),
-						scope.Quote(deletedAtField.DBName),
-						scope.AddToVars(gorm.NowFunc()),
-						AddExtraSpaceIfExist(scope.CombinedConditionSql()),
-						AddExtraSpaceIfExist(extraOption),
 					)
 				}
 			}
-			if sql == "" {
-				sql = fmt.Sprintf(
-					"UPDATE %v SET %v=%v%v%v",
-					scope.QuotedTableName(),
-					scope.Quote(deletedAtField.DBName),
-					scope.AddToVars(gorm.NowFunc()),
-					AddExtraSpaceIfExist(scope.CombinedConditionSql()),
-					AddExtraSpaceIfExist(extraOption),
+			// 更新Dr
+			if f, has := scope.FieldByName("Dr"); has {
+				sqlbuf.WriteString("%v=%v,")
+				attrs = append(attrs,
+					scope.Quote(f.DBName),
+					scope.AddToVars(time.Now().Unix()),
 				)
 			}
+			sqlbuf.WriteString("%v=%v%v%v")
+			attrs = append(attrs,
+				scope.Quote(deletedAtField.DBName),
+				scope.AddToVars(gorm.NowFunc()),
+				AddExtraSpaceIfExist(scope.CombinedConditionSql()),
+				AddExtraSpaceIfExist(extraOption),
+			)
+			sql := fmt.Sprintf(sqlbuf.String(), attrs...)
 			scope.Raw(sql).Exec()
 		} else {
 			scope.Raw(fmt.Sprintf(

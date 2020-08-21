@@ -14,7 +14,7 @@ type Model struct {
 	ID          uint        `gorm:"primary_key"`
 	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"UNIQUE_INDEX:kuu_unique"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	OrgID       uint        `name:"所属组织ID（默认字段）"`
 	CreatedByID uint        `name:"创建人ID（默认字段）"`
 	UpdatedByID uint        `name:"修改人ID（默认字段）"`
@@ -32,7 +32,7 @@ type ModelExOrg struct {
 	ID          uint        `gorm:"primary_key"`
 	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"UNIQUE_INDEX:kuu_unique"`
+	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	CreatedByID uint        `name:"创建人ID（默认字段）"`
 	UpdatedByID uint        `name:"修改人ID（默认字段）"`
 	DeletedByID uint        `name:"删除人ID（默认字段）"`
@@ -58,7 +58,7 @@ type User struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"UNIQUE_INDEX:kuu_unique"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -158,7 +158,8 @@ type Org struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"UNIQUE_INDEX:kuu_unique"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -171,7 +172,7 @@ type Org struct {
 	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
-	Code      string `name:"组织编码" gorm:"not null"`
+	Code      string `name:"组织编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
 	Name      string `name:"组织名称" gorm:"not null"`
 	Pid       uint   `name:"父组织ID"`
 	Sort      int    `name:"排序值"`
@@ -254,7 +255,8 @@ type Role struct {
 	ID          uint       `gorm:"primary_key" rest:"*" displayName:"角色"`
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index" gorm:"UNIQUE_INDEX:kuu_unique"`
+	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -267,7 +269,7 @@ type Role struct {
 	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
-	Code                string                `name:"角色编码" gorm:"not null"`
+	Code                string                `name:"角色编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
 	Name                string                `name:"角色名称" gorm:"not null"`
 	OperationPrivileges []OperationPrivileges `name:"角色操作权限"`
 	DataPrivileges      []DataPrivileges      `name:"角色数据权限"`
@@ -301,8 +303,9 @@ func (m *DataPrivileges) BeforeSave(scope *gorm.Scope) {
 type Menu struct {
 	ModelExOrg `rest:"*" displayName:"菜单"`
 	ExtendField
-	Code          string      `name:"菜单编码" gorm:"not null;UNIQUE_INDEX:kuu_unique" valid:"required"`
-	Name          string      `name:"菜单名称" gorm:"not null" valid:"required"`
+	Code          string      `name:"菜单编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
+	Dr            int64       `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
+	Name          string      `name:"菜单名称" gorm:"not null"`
 	URI           null.String `name:"菜单地址"`
 	Icon          null.String `name:"菜单图标"`
 	ParentCode    null.String `name:"直接父菜单编号"`
@@ -342,9 +345,10 @@ func (m *Menu) BeforeCreate(scope *gorm.Scope) error {
 
 // BeforeUpdate
 func (m *Menu) BeforeUpdate(scope *gorm.Scope) error {
+	tx := scope.NewDB()
 	if m.ID != 0 && m.ParentCode.Valid {
 		var old Menu
-		if err := scope.DB().Model(&Menu{}).Where(&Menu{ModelExOrg: ModelExOrg{ID: m.ID}}).First(&old).Error; err != nil {
+		if err := tx.Model(&Menu{}).Where(&Menu{ModelExOrg: ModelExOrg{ID: m.ID}}).First(&old).Error; err != nil {
 			return err
 		}
 		if err := m.updateParentCodes(scope, old.Code, old.ParentCodes.String); err != nil {
@@ -355,8 +359,8 @@ func (m *Menu) BeforeUpdate(scope *gorm.Scope) error {
 }
 
 // AfterSave
-func (m *Menu) AfterSave(scope *gorm.Scope) error {
-	if err := m.updatePresetRolePrivileges(scope.DB()); err != nil {
+func (m *Menu) AfterSave(tx *gorm.DB) error {
+	if err := m.updatePresetRolePrivileges(tx); err != nil {
 		return err
 	}
 	return nil
@@ -364,20 +368,20 @@ func (m *Menu) AfterSave(scope *gorm.Scope) error {
 
 // BeforeDelete
 func (m *Menu) BeforeDelete(scope *gorm.Scope) error {
-	tx := scope.DB()
+	tx := scope.NewDB()
 	var old Menu
 	if err := tx.Model(&Menu{}).Where(&Menu{ModelExOrg: ModelExOrg{ID: m.ID}}).First(&old).Error; err != nil {
 		return err
 	}
 	f, _ := scope.FieldByName("ParentCodes")
-	sql := fmt.Sprintf("%s LIKE '%s'", scope.Quote(f.DBName), "%,"+old.Code+",%")
+	sql := fmt.Sprintf("%s.%s LIKE '%s'", scope.QuotedTableName(), scope.Quote(f.DBName), "%,"+old.Code+",%")
 	scope.Search.Or(sql)
 	return nil
 }
 
 // AfterDelete
-func (m *Menu) AfterDelete(scope *gorm.Scope) error {
-	if err := m.updatePresetRolePrivileges(scope.DB()); err != nil {
+func (m *Menu) AfterDelete(tx *gorm.DB) error {
+	if err := m.updatePresetRolePrivileges(tx); err != nil {
 		return err
 	}
 	return nil
@@ -409,7 +413,7 @@ func (m *Menu) updatePresetRolePrivileges(tx *gorm.DB) error {
 	return nil
 }
 func (m *Menu) updateParentCodes(scope *gorm.Scope, oldCode, oldAllParentCodes string) error {
-	tx := scope.DB()
+	tx := scope.NewDB()
 	var newParentCodes string
 	if m.ParentCode.String != "" {
 		var parent Menu
@@ -432,7 +436,7 @@ func (m *Menu) updateParentCodes(scope *gorm.Scope, oldCode, oldAllParentCodes s
 		quoteColumnName,
 		"%,"+oldCode+",%",
 	)
-	if err := scope.DB().Model(&Menu{}).Exec(sql, oldAllParentCodes, newParentCodes).Error; err != nil {
+	if err := tx.Exec(sql, oldAllParentCodes, newParentCodes).Error; err != nil {
 		return err
 	}
 	return nil
@@ -465,7 +469,8 @@ func (f *File) BeforeCreate() {
 type Param struct {
 	gorm.Model `rest:"*" displayName:"参数"`
 	ExtendField
-	Code      string    `name:"参数编码" gorm:"not null"`
+	Dr        int64     `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
+	Code      string    `name:"参数编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
 	Name      string    `name:"参数名称" gorm:"not null"`
 	Value     string    `name:"参数值" gorm:"type:text"`
 	Type      string    `name:"参数类型"`
@@ -478,7 +483,7 @@ func (l *Param) RepairDBTypes() {
 		db        = DB()
 		scope     = db.NewScope(l)
 		tableName = scope.QuotedTableName()
-		textType  = C().DefaultGetString("logs:textType", "MEDIUMTEXT")
+		textType  = "MEDIUMTEXT"
 	)
 	if db.Dialect().GetName() == "mysql" {
 		fields := []string{
