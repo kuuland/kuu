@@ -273,7 +273,7 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hant": "刪除行",
 	},
 	"fano_table_row_action_del_text": {
-		"en":      "DELETE",
+		"en":      "Delete",
 		"zh-Hans": "删除",
 		"zh-Hant": "刪除",
 	},
@@ -283,7 +283,7 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hant": "編輯行",
 	},
 	"fano_table_row_action_edit_text": {
-		"en":      "EDIT",
+		"en":      "Edit",
 		"zh-Hans": "编辑",
 		"zh-Hant": "編輯",
 	},
@@ -386,6 +386,16 @@ var presetIntlMessages = map[string]map[string]string{
 		"en":      "Two Tone",
 		"zh-Hans": "双色风格",
 		"zh-Hant": "雙色風格",
+	},
+	"fano_group_add_item": {
+		"en":      "Add Item",
+		"zh-Hans": "增加",
+		"zh-Hant": "增加",
+	},
+	"fano_upload_button": {
+		"en":      "Click to Upload",
+		"zh-Hans": "点击上传",
+		"zh-Hant": "點擊上傳",
 	},
 	"import_empty": {
 		"en":      "Import data is empty",
@@ -587,40 +597,35 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "文件地址",
 		"zh-Hant": "文件地址",
 	},
-	"kuu_i18n_actions_languages": {
-		"en":      "Languages",
-		"zh-Hans": "语言管理",
-		"zh-Hant": "語言管理",
-	},
 	"kuu_i18n_key": {
 		"en":      "Key",
-		"zh-Hans": "国际化键",
-		"zh-Hant": "國際化鍵",
+		"zh-Hans": "翻译键",
+		"zh-Hant": "翻譯鍵",
 	},
 	"kuu_i18n_key_required": {
 		"en":      "Key is required",
-		"zh-Hans": "消息键是必须的",
-		"zh-Hant": "消息鍵是必須的",
+		"zh-Hans": "翻译键是必须的",
+		"zh-Hant": "翻譯鍵是必須的",
 	},
-	"kuu_i18n_keyword_placeholder": {
-		"en":      "Search keywords",
-		"zh-Hans": "输入关键字",
-		"zh-Hant": "輸入關鍵字",
+	"kuu_i18n_description": {
+		"en":      "Description",
+		"zh-Hans": "用途描述",
+		"zh-Hant": "用途描述",
 	},
-	"kuu_i18n_languages_langcode": {
-		"en":      "Language code",
-		"zh-Hans": "语言编码",
-		"zh-Hant": "語言編碼",
+	"kuu_i18n_upload": {
+		"en":      "Click to Upload",
+		"zh-Hans": "点击上传",
+		"zh-Hant": "點擊上傳",
 	},
-	"kuu_i18n_languages_langname": {
-		"en":      "Language name",
-		"zh-Hans": "语言名称",
-		"zh-Hant": "語言名稱",
+	"kuu_i18n_overwrite_update": {
+		"en":      "Overwrite Update",
+		"zh-Hans": "覆盖更新",
+		"zh-Hant": "覆蓋更新",
 	},
-	"kuu_i18n_value_required": {
-		"en":      "Value is required",
-		"zh-Hans": "值不能为空",
-		"zh-Hant": "值不能為空",
+	"kuu_i18n_incremental_update": {
+		"en":      "Incremental Update",
+		"zh-Hans": "增量更新",
+		"zh-Hant": "增量更新",
 	},
 	"kuu_import_channel": {
 		"en":      "Channel",

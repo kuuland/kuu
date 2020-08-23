@@ -147,7 +147,7 @@ var IntlMessagesUploadRoute = RouteInfo{
 				messages[key][lang] = value
 			}
 		}
-		if err := saveIntlMessages(messages, updateMethod == "full"); err != nil {
+		if err := saveIntlMessages(messages, updateMethod == "overwrite"); err != nil {
 			return c.STDErr(err, "intl_messages_upload_failed")
 		}
 		return c.STDOK()

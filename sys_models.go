@@ -59,6 +59,7 @@ type User struct {
 	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
 	OrgID       uint       `name:"所属组织ID（默认字段）"`
 	CreatedByID uint       `name:"创建人ID（默认字段）"`
 	UpdatedByID uint       `name:"修改人ID（默认字段）"`
@@ -71,7 +72,7 @@ type User struct {
 	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
-	Username    string       `name:"账号" gorm:"not null"`
+	Username    string       `name:"账号" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
 	Password    string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
 	Name        string       `name:"姓名"`
 	Avatar      string       `name:"头像"`

@@ -210,7 +210,7 @@ func filterIntlMessagesByLang(messages map[string]map[string]string, lang string
 	return sm
 }
 
-func saveIntlMessages(messages map[string]map[string]string, replace bool) error {
+func saveIntlMessages(messages map[string]map[string]string, overwrite bool) error {
 	if len(messages) == 0 {
 		return nil
 	}
@@ -247,7 +247,7 @@ func saveIntlMessages(messages map[string]map[string]string, replace bool) error
 			}
 			// 读取原文件
 			var currentContent map[string]string
-			if replace {
+			if overwrite {
 				currentContent = make(map[string]string)
 			} else {
 				buf, err := ioutil.ReadFile(filePath)

@@ -80,15 +80,19 @@ func CreateOrg(args *CreateOrgArgs) (reply *CreateOrgReply, err error) {
 		}
 		// 2.创建管理用户
 		if adminUser.ID == 0 {
+			var password string
 			if args.GeneratePassword {
 				reply.GeneratedPlaintextPassword = GenPassword()
+				password = MD5(reply.GeneratedPlaintextPassword)
+			} else {
+				password = args.AdminPassword
 			}
 			adminUser = User{
 				OrgID:       reply.OrgID,
 				CreatedByID: RootUID(),
 				UpdatedByID: RootUID(),
 				Username:    args.AdminUsername,
-				Password:    MD5(reply.GeneratedPlaintextPassword),
+				Password:    password,
 				IsBuiltIn:   null.BoolFrom(true),
 			}
 			if err := mergo.Merge(&adminUser, args.ExtraAdminUserInfo); err != nil {
