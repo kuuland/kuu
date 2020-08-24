@@ -10,7 +10,8 @@ import (
 )
 
 type GenTokenDesc struct {
-	UID      uint   `binding:"required"`
+	UID      uint `binding:"required"`
+	Username string
 	Exp      int64  `binding:"required"`
 	Type     string `binding:"required"`
 	Desc     string
@@ -44,6 +45,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	// 生成新密钥
 	secretData = &SignSecret{
 		UID:      desc.UID,
+		Username: desc.Username,
 		Secret:   uuid.NewV4().String(),
 		Iat:      iat,
 		Exp:      desc.Exp,

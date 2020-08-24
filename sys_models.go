@@ -458,12 +458,12 @@ type File struct {
 	OwnerID   uint   `name:"归属数据ID"`
 	OwnerType string `name:"归属数据类型"`
 
-	UID  string `name:"文件唯一ID" gorm:"not null"`
-	Type string `name:"文件Mine-Type" gorm:"not null"`
-	Size int64  `name:"文件大小" gorm:"not null"`
-	Name string `name:"文件名称" gorm:"not null"`
-	URL  string `name:"文件下载路径" gorm:"not null"`
-	Path string `name:"文件存储路径" gorm:"not null"`
+	UID  string `name:"文件唯一ID" json:"uid" gorm:"not null"`
+	Type string `name:"文件Mine-Type" json:"type" gorm:"not null"`
+	Size int64  `name:"文件大小" json:"size" gorm:"not null"`
+	Name string `name:"文件名称" json:"name" gorm:"not null"`
+	URL  string `name:"文件下载路径" json:"url" gorm:"not null"`
+	Path string `name:"文件存储路径" json:"path" gorm:"not null"`
 }
 
 // BeforeCreate

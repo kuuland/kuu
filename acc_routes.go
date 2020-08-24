@@ -33,10 +33,11 @@ var LoginRoute = RouteInfo{
 		}
 		// 调用令牌签发
 		secretData, err := GenToken(GenTokenDesc{
-			UID:     resp.UID,
-			Payload: resp.Payload,
-			Exp:     time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
-			Type:    AdminSignType,
+			UID:      resp.UID,
+			Username: resp.Username,
+			Payload:  resp.Payload,
+			Exp:      time.Now().Add(time.Second * time.Duration(ExpiresSeconds)).Unix(),
+			Type:     AdminSignType,
 		})
 		if err != nil {
 			return c.STDErr(err, "acc_login_failed")

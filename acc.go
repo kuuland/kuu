@@ -141,6 +141,7 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 		return
 	}
 	sign.UID = secret.UID
+	sign.Username = secret.Username
 	// 验证令牌
 	if secret.Secret == "" {
 		err = ErrSecretNotFound

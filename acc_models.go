@@ -20,6 +20,7 @@ type SignHistory struct {
 type SignSecret struct {
 	gorm.Model `rest:"*" displayName:"令牌密钥"`
 	UID        uint      `name:"用户ID"`
+	Username   string    `name:"用户账号"`
 	SubDocID   uint      `name:"扩展档案ID"`
 	Desc       string    `name:"令牌描述"`
 	Secret     string    `name:"令牌密钥"`
@@ -37,6 +38,7 @@ type SignContext struct {
 	Type     string
 	Lang     string
 	UID      uint
+	Username string
 	SubDocID uint
 	Payload  jwt.MapClaims
 	Secret   *SignSecret
