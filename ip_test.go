@@ -5,7 +5,7 @@ import (
 )
 
 func TestGetIPInfo(t *testing.T) {
-	if info, err := GetIPInfo("61.140.27.206"); err != nil {
+	if info, err := GetIPInfo("13.229.188.59"); err != nil {
 		t.Error(err)
 	} else {
 		t.Log(info)
