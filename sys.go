@@ -464,6 +464,7 @@ func Sys() *Mod {
 			&Menu{},
 			&File{},
 			&Param{},
+			&Message{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,

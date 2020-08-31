@@ -503,3 +503,35 @@ func (l *Param) RepairDBTypes() {
 		}
 	}
 }
+
+type Message struct {
+	Model `rest:"*" displayName:"系统消息"`
+
+	MessageID   string `name:"消息唯一ID" gorm:"not null"`
+	Subject     string `name:"消息标题"`
+	Content     string `name:"消息内容"`
+	Attachments []File `name:"消息附件" gorm:"polymorphic:Owner;polymorphic_value:Message.Attachments"`
+
+	SenderID       uint      `name:"发送人ID"`
+	SenderUsername string    `name:"发送人账号"`
+	Sender         *User     `name:"发送人" gorm:"foreignkey:SenderID"`
+	SenderSourceIP string    `name:"发送人IP地址"`
+	SentAt         time.Time `name:"发送时间"`
+
+	RecipientID       uint      `name:"接收人ID"`
+	RecipientUsername string    `name:"接收人账号"`
+	Recipient         *User     `name:"接收人" gorm:"foreignkey:RecipientID"`
+	RecipientSourceIP string    `name:"接收人IP地址"`
+	ReceivedAt        null.Time `name:"接收时间"`
+}
+
+// BeforeCreate
+func (m *Message) BeforeCreate() {
+	m.MessageID = uuid.NewV4().String()
+	m.SentAt = time.Now()
+	if c := GetRoutineRequestContext(); c != nil {
+		m.SenderSourceIP = c.ClientIP()
+		m.SenderID = c.SignInfo.UID
+		m.SenderUsername = c.SignInfo.Username
+	}
+}
