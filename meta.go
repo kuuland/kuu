@@ -41,7 +41,8 @@ type MetadataField struct {
 	IsRef      bool
 	IsPassword bool
 	IsArray    bool
-	Value      interface{} `json:"-" gorm:"-"`
+	Value      interface{}       `json:"-" gorm:"-"`
+	Tag        reflect.StructTag `json:"-" gorm:"-"`
 }
 
 // NewValue
@@ -132,6 +133,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 			Kind:      fieldStruct.Type.String(),
 			Enum:      fieldStruct.Tag.Get("enum"),
 			LocaleKey: fieldStruct.Tag.Get("locale"),
+			Tag:       fieldStruct.Tag,
 		}
 		switch field.Kind {
 		case "bool", "null.Bool":

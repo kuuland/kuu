@@ -167,28 +167,29 @@ type DefaultAuthProcessor struct{}
 
 // AllowCreate
 func (por *DefaultAuthProcessor) AllowCreate(auth AuthProcessorDesc) (err error) {
-	if auth.PrisDesc.IsValid() {
-		signType := auth.PrisDesc.SignInfo.Type
-		if replace, custErr := InjectCreateAuth(signType, auth); custErr != nil {
-			return custErr
-		} else if replace {
-			return
+	if auth.Meta == nil || !auth.PrisDesc.IsValid() {
+		return
+	}
+	signType := auth.PrisDesc.SignInfo.Type
+	if replace, custErr := InjectCreateAuth(signType, auth); custErr != nil {
+		return custErr
+	} else if replace {
+		return
+	}
+	desc := auth.PrisDesc
+	if desc.SignInfo.SubDocID != 0 && len(auth.SubDocIDNames) > 0 {
+		// 基于扩展档案ID的数据权限
+		if auth.HasCreatedByIDField && auth.CreatedByID != desc.UID {
+			return fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID)
 		}
-		desc := auth.PrisDesc
-		if desc.SignInfo.SubDocID != 0 && len(auth.SubDocIDNames) > 0 {
-			// 基于扩展档案ID的数据权限
+	} else {
+		// 基于组织的数据权限
+		if auth.OrgID == 0 {
 			if auth.HasCreatedByIDField && auth.CreatedByID != desc.UID {
 				return fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID)
 			}
-		} else {
-			// 基于组织的数据权限
-			if auth.OrgID == 0 {
-				if auth.HasCreatedByIDField && auth.CreatedByID != desc.UID {
-					return fmt.Errorf("用户 %d 只拥有个人可写权限", desc.UID)
-				}
-			} else if auth.HasOrgIDField && !desc.IsWritableOrgID(auth.OrgID) {
-				return fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, auth.OrgID)
-			}
+		} else if auth.HasOrgIDField && !desc.IsWritableOrgID(auth.OrgID) {
+			return fmt.Errorf("用户 %d 在组织 %d 中无可写权限", desc.UID, auth.OrgID)
 		}
 	}
 	return
@@ -196,34 +197,36 @@ func (por *DefaultAuthProcessor) AllowCreate(auth AuthProcessorDesc) (err error)
 
 // AddWritableWheres
 func (por *DefaultAuthProcessor) AddWritableWheres(auth AuthProcessorDesc) (err error) {
-	if auth.PrisDesc.IsValid() {
-		signType := auth.PrisDesc.SignInfo.Type
-		if replace, custErr := InjectWritableAuth(signType, auth); custErr != nil {
-			return custErr
-		} else if replace {
-			return
-		}
-		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.WritableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
-		if len(sqls) > 0 {
-			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
-		}
+	if auth.Meta == nil || !auth.PrisDesc.IsValid() {
+		return
+	}
+	signType := auth.PrisDesc.SignInfo.Type
+	if replace, custErr := InjectWritableAuth(signType, auth); custErr != nil {
+		return custErr
+	} else if replace {
+		return
+	}
+	sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.WritableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
+	if len(sqls) > 0 {
+		auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 	}
 	return
 }
 
 // AddReadableWheres
 func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err error) {
-	if auth.PrisDesc.IsValid() {
-		signType := auth.PrisDesc.SignInfo.Type
-		if replace, custErr := InjectReadableAuth(signType, auth); custErr != nil {
-			return custErr
-		} else if replace {
-			return
-		}
-		sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.ReadableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
-		if len(sqls) > 0 {
-			auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
-		}
+	if auth.Meta == nil || !auth.PrisDesc.IsValid() {
+		return
+	}
+	signType := auth.PrisDesc.SignInfo.Type
+	if replace, custErr := InjectReadableAuth(signType, auth); custErr != nil {
+		return custErr
+	} else if replace {
+		return
+	}
+	sqls, attrs := GetDataScopeWheres(auth.Scope, auth.PrisDesc, auth.PrisDesc.ReadableOrgIDs, auth.PrisDesc.PersonalWritableOrgIDMap)
+	if len(sqls) > 0 {
+		auth.Scope.Search.Where(strings.Join(sqls, " OR "), attrs...)
 	}
 	return
 }
