@@ -16,13 +16,13 @@ type STDReply struct {
 	HTTPAction func(code int, jsonObj interface{}) `json:"-"`
 	HTTPCode   int                                 `json:"-"`
 	Code       int                                 `json:"code"`
-	Data       interface{}                         `json:"data"`
+	Data       interface{}                         `json:"data,omitempt"`
 	Message    string                              `json:"msg,omitempty"`
 }
 
 func (s *STDReply) MarshalJSON() ([]byte, error) {
 	data := map[string]interface{}{"code": s.Code}
-	if !IsNil(s.Data) {
+	if !IsNil(s.Data) && s.Code == 0 {
 		data["data"] = s.Data
 	}
 	if s.Message != "" {
