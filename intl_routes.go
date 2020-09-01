@@ -28,6 +28,8 @@ var IntlMessagesRoute = RouteInfo{
 		var query struct {
 			LanguageCodes string `form:"langs"`
 			Prefix        string `form:"prefix"`
+			Suffix        string `form:"suffix"`
+			Contains      string `form:"contains"`
 			Description   string `form:"desc"`
 			Keys          string `form:"keys"`
 			Simple        string `form:"simple"`
@@ -49,6 +51,8 @@ var IntlMessagesRoute = RouteInfo{
 		opts := IntlMessagesOptions{
 			LanguageCodes: query.LanguageCodes,
 			Prefix:        query.Prefix,
+			Suffix:        query.Suffix,
+			Contains:      query.Contains,
 			Description:   query.Description,
 			Keys:          query.Keys,
 		}

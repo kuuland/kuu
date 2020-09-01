@@ -81,6 +81,8 @@ func getLocalesDir() string {
 type IntlMessagesOptions struct {
 	LanguageCodes string
 	Prefix        string
+	Suffix        string
+	Contains      string
 	Description   string
 	Keys          string
 }
@@ -92,6 +94,8 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 	}
 	query.LanguageCodes = strings.TrimSpace(query.LanguageCodes)
 	query.Prefix = strings.TrimSpace(query.Prefix)
+	query.Suffix = strings.TrimSpace(query.Suffix)
+	query.Contains = strings.TrimSpace(query.Contains)
 	query.Description = strings.TrimSpace(query.Description)
 	query.Keys = strings.TrimSpace(query.Keys)
 
@@ -144,6 +148,8 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 	}
 	// 关键字过滤
 	lowerPrefix := strings.ToLower(query.Prefix)
+	lowerSuffix := strings.ToLower(query.Suffix)
+	lowerContains := strings.ToLower(query.Contains)
 	lowerDescription := strings.ToLower(query.Description)
 	lowerLanguageCodes := strings.ToLower(query.LanguageCodes)
 	lowerKeys := strings.ToLower(query.Keys)
@@ -155,6 +161,18 @@ func getIntlMessages(opts ...*IntlMessagesOptions) map[string]map[string]string 
 		lowerKey := strings.ToLower(k)
 		if query.Prefix != "" {
 			if !strings.HasPrefix(lowerKey, lowerPrefix) {
+				delete(messagesMap, k)
+				continue
+			}
+		}
+		if query.Suffix != "" {
+			if !strings.HasSuffix(lowerKey, lowerSuffix) {
+				delete(messagesMap, k)
+				continue
+			}
+		}
+		if query.Contains != "" {
+			if !strings.Contains(lowerKey, lowerContains) {
 				delete(messagesMap, k)
 				continue
 			}
