@@ -105,6 +105,8 @@ func (app *Engine) Import(mods ...*Mod) {
 			if meta := parseMetadata(model); meta != nil {
 				meta.RestDesc = desc
 				meta.ModCode = mod.Code
+				gormTableName := gorm.ToTableName(meta.Name)
+				pluralTableName := inflection.Plural(gormTableName)
 
 				if v, ok := model.(tabler); ok {
 					tableName := v.TableName()
@@ -112,9 +114,11 @@ func (app *Engine) Import(mods ...*Mod) {
 				} else if v, ok := model.(dbTabler); ok {
 					tableName := v.TableName(DB())
 					tableNames[tableName] = tableName
+				} else if C().GetBool("legacy_table_name") {
+					tableName := fmt.Sprintf("%s_%s", mod.Code, meta.Name)
+					tableNames[gormTableName] = tableName
+					tableNames[pluralTableName] = tableName
 				} else {
-					gormTableName := gorm.ToTableName(meta.Name)
-					pluralTableName := inflection.Plural(gormTableName)
 					var kuuTableName string
 					if v := mod.TablePrefix; v.Valid {
 						if v.String != "" {
