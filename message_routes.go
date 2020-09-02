@@ -150,7 +150,7 @@ func findReadableMessages(uid uint, orgIDs []uint, rolesCode []string, page, siz
 		return nil, err
 	}
 	db := DB().Model(&Message{}).Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs)
-	db = db.Offset((page - 1) * size).Limit(size)
+	db = db.Order(fmt.Sprintf("%s DESC", db.Dialect().Quote("created_at"))).Offset((page - 1) * size).Limit(size)
 	var messages []Message
 	if err := db.Find(&messages).Error; err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func findUnreadMessages(uid uint, orgIDs []uint, rolesCode []string, page, size 
 	}
 	db = db.Offset((page - 1) * size).Limit(size)
 	var messages []Message
-	if err := db.Find(&messages).Error; err != nil {
+	if err := db.Order(fmt.Sprintf("%s DESC", db.Dialect().Quote("created_at"))).Find(&messages).Error; err != nil {
 		return nil, err
 	}
 	return messages, nil
