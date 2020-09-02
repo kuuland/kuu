@@ -68,7 +68,7 @@ var MessagesReadRoute = RouteInfo{
 		"messages_read_failed": "Read status update failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		var bodystruct {
+		var body struct {
 			MessageIDs []uint `binding:"required"`
 			All        bool
 		}
