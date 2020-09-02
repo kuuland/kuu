@@ -18,7 +18,8 @@ var MessagesRoute = RouteInfo{
 		"messages_failed": "Get messages failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		messages, err := findReadableMessages(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
+		page, size := c.GetPagination()
+		messages, err := findReadableMessages(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, page, size)
 		if err != nil {
 			return c.STDErr(err, "messages_failed")
 		}
@@ -34,7 +35,8 @@ var MessagesUnreadRoute = RouteInfo{
 		"messages_unread_failed": "Get unread messages failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		messages, err := findUnreadMessages(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
+		page, size := c.GetPagination()
+		messages, err := findUnreadMessages(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, page, size)
 		if err != nil {
 			return c.STDErr(err, "messages_unread_count_failed")
 		}
@@ -66,8 +68,9 @@ var MessagesReadRoute = RouteInfo{
 		"messages_read_failed": "Read status update failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		var body struct {
+		var bodystruct {
 			MessageIDs []uint `binding:"required"`
+			All        bool
 		}
 		if err := c.ShouldBindJSON(&body); err != nil {
 			return c.STDErr(err, "messages_read_failed")
@@ -80,6 +83,9 @@ var MessagesReadRoute = RouteInfo{
 			readableMessageIDMap := make(map[uint]bool)
 			for _, item := range readableMessageIDs {
 				readableMessageIDMap[item] = true
+			}
+			if body.All {
+				body.MessageIDs = readableMessageIDs
 			}
 			for _, item := range body.MessageIDs {
 				if !readableMessageIDMap[item] {
@@ -138,23 +144,26 @@ func findReadableMessageIDs(uid uint, orgIDs []uint, rolesCode []string) ([]uint
 	return messageIDs, nil
 }
 
-func findReadableMessages(uid uint, orgIDs []uint, rolesCode []string) ([]Message, error) {
+func findReadableMessages(uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]Message, error) {
 	messageIDs, err := findReadableMessageIDs(uid, orgIDs, rolesCode)
 	if err != nil {
 		return nil, err
 	}
+	db := DB().Model(&Message{}).Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs)
+	db = db.Offset((page - 1) * size).Limit(size)
 	var messages []Message
-	if err := DB().Model(&Message{}).Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs).Find(&messages).Error; err != nil {
+	if err := db.Find(&messages).Error; err != nil {
 		return nil, err
 	}
 	return messages, nil
 }
 
-func findUnreadMessages(uid uint, orgIDs []uint, rolesCode []string) ([]Message, error) {
+func findUnreadMessages(uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]Message, error) {
 	db, err := findUnreadMessagesPrepareDB(uid, orgIDs, rolesCode)
 	if err != nil {
 		return nil, err
 	}
+	db = db.Offset((page - 1) * size).Limit(size)
 	var messages []Message
 	if err := db.Find(&messages).Error; err != nil {
 		return nil, err
