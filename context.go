@@ -16,7 +16,7 @@ type STDReply struct {
 	HTTPAction func(code int, jsonObj interface{}) `json:"-"`
 	HTTPCode   int                                 `json:"-"`
 	Code       int                                 `json:"code"`
-	Data       interface{}                         `json:"data,omitempt"`
+	Data       interface{}                         `json:"data,omitempty"`
 	Message    string                              `json:"msg,omitempty"`
 }
 
