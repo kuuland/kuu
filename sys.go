@@ -465,6 +465,8 @@ func Sys() *Mod {
 			&File{},
 			&Param{},
 			&Message{},
+			&MessageRange{},
+			&MessageReceipt{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
@@ -489,6 +491,10 @@ func Sys() *Mod {
 			IntlMessagesSaveRoute,
 			IntlMessagesUploadRoute,
 			JobRunRoute,
+			MessagesRoute,
+			MessagesUnreadRoute,
+			MessagesUnreadCountRoute,
+			MessagesReadRoute,
 		},
 		OnInit: initSys,
 	}
