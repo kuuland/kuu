@@ -5,73 +5,118 @@ import (
 	"github.com/jinzhu/gorm"
 	"gopkg.in/guregu/null.v3"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var MessagesRoute = RouteInfo{
-	Name:   "查询当前用户所有消息",
+type Messages []Message
+
+func (m Messages) Len() int {
+	return len(m)
+}
+
+func (m Messages) Less(i, j int) bool {
+	return m[i].CreatedAt.Before(m[j].CreatedAt)
+}
+
+func (m Messages) Swap(i, j int) {
+	tmp := m[i]
+	m[i] = m[j]
+	m[j] = tmp
+}
+
+var MessagesLatestRoute = RouteInfo{
+	Name:   "查询当前用户最新消息",
 	Method: http.MethodGet,
-	Path:   "/messages",
+	Path:   "/messages/latest",
 	IntlMessages: map[string]string{
-		"messages_failed": "Get messages failed.",
+		"messages_latest_failed": "Get latest messages failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
 		c.IgnoreAuth()
 		defer c.IgnoreAuth(true)
 
-		page, size := c.GetPagination(true)
-		db := getMessageCommonDB(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, page, size)
-		if _, v, err := c.ParseCond(&Message{}, db); err != nil {
-			return c.STDErr(err, "messages_failed")
+		var query struct {
+			Limit        string `form:"limit"`
+			RecipientIDs string `form:"recipient_ids"`
+		}
+		if err := c.ShouldBindQuery(&query); err != nil {
+			return c.STDErr(err, "messages_latest_failed")
+		}
+		var (
+			limit        int
+			recipientIDs []uint
+		)
+		if s := c.DefaultQuery("limit", "10"); s != "" {
+			if v, err := strconv.Atoi(s); err == nil {
+				limit = v
+			}
+		}
+		if s := c.Query("recipient_ids"); s != "" {
+			ss := strings.Split(s, ",")
+			for _, item := range ss {
+				item = strings.TrimSpace(item)
+				if item == "" {
+					continue
+				}
+				if v, err := strconv.Atoi(item); err == nil {
+					recipientIDs = append(recipientIDs, uint(v))
+				}
+			}
+		}
+		type replyItem struct {
+			Messages    Messages
+			UnreadCount int
+		}
+		var reply struct {
+			replyItem
+			RecipientMap map[uint]replyItem `json:",omitempty"`
+		}
+		if len(recipientIDs) > 0 {
+			reply.RecipientMap = make(map[uint]replyItem)
+			for _, itemId := range recipientIDs {
+				baseMessageDB := c.DB().Model(&Message{}).Where("sender_id = ? OR recipient_user_ids LIKE ?", itemId, "%"+fmt.Sprintf("%d", itemId)+"%")
+				messsagesDB := GetMessageCommonDB(baseMessageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 1, limit)
+				if _, v, err := c.ParseCond(&Message{}, messsagesDB); err != nil {
+					return c.STDErr(err, "messages_latest_failed")
+				} else {
+					messsagesDB = v
+				}
+				var messages Messages
+				if err := messsagesDB.Preload("Attachments").Find(&messages).Error; err != nil {
+					return c.STDErr(err, "messages_latest_failed")
+				}
+				sort.Sort(messages)
+				item := replyItem{Messages: messages}
+				count, err := FindUnreadMessagesCount(baseMessageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
+				if err != nil {
+					return c.STDErr(err, "messages_latest_failed")
+				}
+				item.UnreadCount = count
+				reply.RecipientMap[itemId] = item
+			}
 		} else {
-			db = v
+			messsagesDB := GetMessageCommonDB(c.DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 1, limit)
+			if _, v, err := c.ParseCond(&Message{}, messsagesDB); err != nil {
+				return c.STDErr(err, "messages_latest_failed")
+			} else {
+				messsagesDB = v
+			}
+			var messages Messages
+			if err := messsagesDB.Preload("Attachments").Find(&messages).Error; err != nil {
+				return c.STDErr(err, "messages_latest_failed")
+			}
+			sort.Sort(messages)
+			reply.Messages = messages
 		}
-		var messages []Message
-		if err := db.Preload("Attachments").Find(&messages).Error; err != nil {
-			return c.STDErr(err, "messages_failed")
-		}
-		return c.STD(messages)
-	},
-}
-
-var MessagesUnreadRoute = RouteInfo{
-	Name:   "查询当前用户所有未读消息",
-	Method: http.MethodGet,
-	Path:   "/messages/unread",
-	IntlMessages: map[string]string{
-		"messages_unread_failed": "Get unread messages failed.",
-	},
-	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
-		defer c.IgnoreAuth(true)
-
-		page, size := c.GetPagination()
-		messages, err := findUnreadMessages(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, page, size)
+		count, err := FindUnreadMessagesCount(c.DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
 		if err != nil {
-			return c.STDErr(err, "messages_unread_count_failed")
+			return c.STDErr(err, "messages_latest_failed")
 		}
-		return c.STD(messages)
-	},
-}
-
-var MessagesUnreadCountRoute = RouteInfo{
-	Name:   "查询当前用户所有未读消息总数",
-	Method: http.MethodGet,
-	Path:   "/messages/unread/count",
-	IntlMessages: map[string]string{
-		"messages_unread_count_failed": "Get unread messages count failed.",
-	},
-	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
-		defer c.IgnoreAuth(true)
-
-		count, err := findUnreadMessagesCount(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
-		if err != nil {
-			return c.STDErr(err, "messages_unread_count_failed")
-		}
-		return c.STD(count)
+		reply.UnreadCount = count
+		return c.STD(&reply)
 	},
 }
 
@@ -80,35 +125,35 @@ var MessagesReadRoute = RouteInfo{
 	Method: http.MethodPost,
 	Path:   "/messages/read",
 	IntlMessages: map[string]string{
-		"messages_read_failed": "Read status update failed.",
+		"messages_read_failed": "Update message status failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
 		c.IgnoreAuth()
 		defer c.IgnoreAuth(true)
 
-		var body struct {
-			MessageIDs []uint `binding:"required"`
-			All        bool
+		var bodystruct {
+			MessageIDs   []uint `binding:"required"`
+			RecipientIDs []uint
+			All          bool
 		}
 		if err := c.ShouldBindJSON(&body); err != nil {
 			return c.STDErr(err, "messages_read_failed")
 		}
 		err := c.WithTransaction(func(tx *gorm.DB) error {
-			readableMessageIDs, err := findReadableMessageIDs(c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 0, 0)
+			messageDB := tx.Model(&Message{})
+			if !body.All {
+				if len(body.MessageIDs) > 0 {
+					messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", messageDB.Dialect().Quote("id")), body.MessageIDs)
+				}
+				if len(body.RecipientIDs) > 0 {
+					messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", messageDB.Dialect().Quote("sender_id")), body.RecipientIDs)
+				}
+			}
+			messageIDs, err := FindReadableMessageIDs(messageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 0, 0)
 			if err != nil {
 				return err
 			}
-			readableMessageIDMap := make(map[uint]bool)
-			for _, item := range readableMessageIDs {
-				readableMessageIDMap[item] = true
-			}
-			if body.All {
-				body.MessageIDs = readableMessageIDs
-			}
-			for _, item := range body.MessageIDs {
-				if !readableMessageIDMap[item] {
-					continue
-				}
+			for _, item := range messageIDs {
 				if err := tx.Model(&MessageReceipt{}).Create(&MessageReceipt{
 					MessageID:         item,
 					RecipientID:       c.SignInfo.UID,
@@ -128,7 +173,7 @@ var MessagesReadRoute = RouteInfo{
 	},
 }
 
-func getMessageCommonDB(uid uint, orgIDs []uint, rolesCode []string, page, size int) *gorm.DB {
+func GetMessageCommonDB(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string, page, size int) *gorm.DB {
 	var (
 		sqls  []string
 		attrs []interface{}
@@ -152,7 +197,7 @@ func getMessageCommonDB(uid uint, orgIDs []uint, rolesCode []string, page, size 
 	sqls = append(sqls, fmt.Sprintf("%s = ?", DB().Dialect().Quote("sender_id")))
 	attrs = append(attrs, uid)
 
-	db := DB().Model(&Message{}).Where(strings.Join(sqls, " OR "), attrs...)
+	db := messageDB.Where(strings.Join(sqls, " OR "), attrs...)
 	db = db.Order(fmt.Sprintf("%s DESC", db.Dialect().Quote("created_at")))
 	if size > 0 {
 		db = db.Limit(size)
@@ -163,8 +208,8 @@ func getMessageCommonDB(uid uint, orgIDs []uint, rolesCode []string, page, size 
 	return db
 }
 
-func findReadableMessageIDs(uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]uint, error) {
-	db := getMessageCommonDB(uid, orgIDs, rolesCode, page, size)
+func FindReadableMessageIDs(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]uint, error) {
+	db := GetMessageCommonDB(messageDB, uid, orgIDs, rolesCode, page, size)
 
 	var messages []Message
 	if err := db.Select(fmt.Sprintf("%s", DB().Dialect().Quote("id"))).Find(&messages).Error; err != nil {
@@ -177,17 +222,8 @@ func findReadableMessageIDs(uid uint, orgIDs []uint, rolesCode []string, page, s
 	return messageIDs, nil
 }
 
-func findReadableMessages(uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]Message, error) {
-	db := getMessageCommonDB(uid, orgIDs, rolesCode, page, size)
-	var messages []Message
-	if err := db.Find(&messages).Error; err != nil {
-		return nil, err
-	}
-	return messages, nil
-}
-
-func findUnreadMessages(uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]Message, error) {
-	db, err := findUnreadMessagesPrepareDB(uid, orgIDs, rolesCode)
+func FindUnreadMessages(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]Message, error) {
+	db, err := FindUnreadMessagesPrepareDB(messageDB, uid, orgIDs, rolesCode)
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +240,8 @@ func findUnreadMessages(uid uint, orgIDs []uint, rolesCode []string, page, size 
 	return messages, nil
 }
 
-func findUnreadMessagesCount(uid uint, orgIDs []uint, rolesCode []string) (int, error) {
-	db, err := findUnreadMessagesPrepareDB(uid, orgIDs, rolesCode)
+func FindUnreadMessagesCount(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string) (int, error) {
+	db, err := FindUnreadMessagesPrepareDB(messageDB, uid, orgIDs, rolesCode)
 	if err != nil {
 		return 0, err
 	}
@@ -216,8 +252,8 @@ func findUnreadMessagesCount(uid uint, orgIDs []uint, rolesCode []string) (int, 
 	return count, nil
 }
 
-func findUnreadMessagesPrepareDB(uid uint, orgIDs []uint, rolesCode []string) (*gorm.DB, error) {
-	messageIDs, err := findReadableMessageIDs(uid, orgIDs, rolesCode, 0, 0)
+func FindUnreadMessagesPrepareDB(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string) (*gorm.DB, error) {
+	messageIDs, err := FindReadableMessageIDs(messageDB, uid, orgIDs, rolesCode, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -232,8 +268,7 @@ func findUnreadMessagesPrepareDB(uid uint, orgIDs []uint, rolesCode []string) (*
 	for _, item := range receipts {
 		readMessageIDs = append(readMessageIDs, item.MessageID)
 	}
-	db := DB().Model(&Message{}).
-		Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs).
+	messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs).
 		Where(fmt.Sprintf("%s NOT IN (?)", DB().Dialect().Quote("id")), readMessageIDs)
-	return db, nil
+	return messageDB, nil
 }
