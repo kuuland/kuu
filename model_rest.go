@@ -128,7 +128,7 @@ type CondDesc struct {
 }
 
 // ParseCond parse the cond parameter.
-func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc CondDesc, db *gorm.DB) {
+func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc *CondDesc, db *gorm.DB) {
 	var (
 		data  map[string]interface{}
 		scope = DB().NewScope(model)
@@ -141,6 +141,7 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc Cond
 	default:
 		_ = Copy(cond, data)
 	}
+	desc = new(CondDesc)
 
 	if len(data) > 0 {
 		for key, val := range data {

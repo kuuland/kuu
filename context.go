@@ -48,7 +48,7 @@ func (c *Context) RequestID() string {
 	if v, has := c.Get(cacheKey); has {
 		idVal = v.(string)
 	} else {
-		idVal = uuid.NewV4().String()
+		idVal = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 		c.Set(cacheKey, idVal)
 	}
 
@@ -202,9 +202,22 @@ func (c *Context) GetPagination(ignoreDefault ...bool) (int, int) {
 }
 
 // ParseCond
-func (c *Context) ParseCond(cond interface{}, model interface{}) CondDesc {
-	desc, _ := ParseCond(cond, model)
-	return desc
+func (c *Context) ParseCond(model interface{}, db *gorm.DB) (map[string]interface{}, *gorm.DB, error) {
+	var (
+		cond map[string]interface{}
+		ret  map[string]interface{}
+	)
+	raw := c.Query("cond")
+	if raw != "" {
+		if err := JSONParse(raw, &cond); err != nil {
+			return nil, nil, err
+		}
+		if err := JSONParse(raw, &ret); err != nil {
+			return nil, nil, err
+		}
+	}
+	_, db = ParseCond(cond, model, db)
+	return ret, db, nil
 }
 
 // Pagination

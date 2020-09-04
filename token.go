@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
+	"strings"
 	"time"
 )
 
@@ -46,7 +47,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	secretData = &SignSecret{
 		UID:      desc.UID,
 		Username: desc.Username,
-		Secret:   uuid.NewV4().String(),
+		Secret:   strings.ReplaceAll(uuid.NewV4().String(), "-", ""),
 		Iat:      iat,
 		Exp:      desc.Exp,
 		Method:   SignMethodLogin,

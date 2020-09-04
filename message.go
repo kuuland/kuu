@@ -7,12 +7,25 @@ import (
 	"time"
 )
 
+const (
+	MessageStatusDraft = 100
+	MessageStatusSent  = 200
+)
+
+func init() {
+	Enum("MessageStatus", "消息状态").
+		Add(MessageStatusDraft, "草稿").
+		Add(MessageStatusSent, "已发送")
+}
+
 type Message struct {
 	Model `rest:"*" displayName:"系统消息"`
 
-	Subject     string `name:"消息标题"`
-	Content     string `name:"消息内容"`
-	Attachments []File `name:"消息附件" gorm:"polymorphic:Owner;polymorphic_value:Message.Attachments"`
+	Subject     string      `name:"消息标题"`
+	Content     null.String `name:"消息内容" gorm:"not null"`
+	Attachments []File      `name:"消息附件" gorm:"polymorphic:Owner;polymorphic_value:Message.Attachments"`
+
+	Status int `name:"消息状态" enum:"MessageStatus"`
 
 	SenderID       uint      `name:"发送人ID"`
 	SenderUsername string    `name:"发送人账号"`
@@ -20,43 +33,34 @@ type Message struct {
 	SenderSourceIP string    `name:"发送人IP地址"`
 	SentAt         time.Time `name:"发送时间"`
 
-	Range    MessageRange     `name:"消息接收范围"`
-	Receipts []MessageReceipt `name:"消息接收/阅读回执"`
+	RecipientOrgIDs    string           `name:"关联接收组织ID（多个以英文逗号分隔）"`
+	RecipientUserIDs   string           `name:"关联接收人ID（多个以英文逗号分隔）"`
+	RecipientRoleCodes string           `name:"关联接收角色编码（多个以英文逗号分隔）"`
+	RecipientReceipts  []MessageReceipt `name:"消息接收/阅读回执"`
 }
 
 // BeforeCreate
 func (m *Message) BeforeCreate() {
+	if m.Status == 0 {
+		m.Status = MessageStatusDraft
+	}
 	m.SentAt = time.Now()
 	if c := GetRoutineRequestContext(); c != nil {
 		m.SenderSourceIP = c.ClientIP()
 		m.SenderID = c.SignInfo.UID
 		m.SenderUsername = c.SignInfo.Username
 	}
-}
-
-type MessageRange struct {
-	Model     `rest:"*" displayName:"消息通知范围"`
-	MessageID uint     `name:"关联消息ID" gorm:"not null"`
-	Message   *Message `name:"关联消息"`
-
-	OrgIDs    string `name:"关联接收组织ID（多个以英文逗号分隔）"`
-	UserIDs   string `name:"关联接收人ID（多个以英文逗号分隔）"`
-	RoleCodes string `name:"关联接收角色编码（多个以英文逗号分隔）"`
-}
-
-// BeforeCreate
-func (m *MessageRange) BeforeCreate() {
-	m.UserIDs = strings.TrimSpace(m.UserIDs)
-	m.RoleCodes = strings.TrimSpace(m.RoleCodes)
-	m.OrgIDs = strings.TrimSpace(m.OrgIDs)
-	if m.UserIDs != "" {
-		m.UserIDs = fmt.Sprintf(",%s,", strings.Trim(m.UserIDs, ","))
+	m.RecipientUserIDs = strings.TrimSpace(m.RecipientUserIDs)
+	m.RecipientRoleCodes = strings.TrimSpace(m.RecipientRoleCodes)
+	m.RecipientOrgIDs = strings.TrimSpace(m.RecipientOrgIDs)
+	if m.RecipientUserIDs != "" {
+		m.RecipientUserIDs = fmt.Sprintf(",%s,", strings.Trim(m.RecipientUserIDs, ","))
 	}
-	if m.RoleCodes != "" {
-		m.RoleCodes = fmt.Sprintf(",%s,", strings.Trim(m.RoleCodes, ","))
+	if m.RecipientRoleCodes != "" {
+		m.RecipientRoleCodes = fmt.Sprintf(",%s,", strings.Trim(m.RecipientRoleCodes, ","))
 	}
-	if m.OrgIDs != "" {
-		m.OrgIDs = fmt.Sprintf(",%s,", strings.Trim(m.OrgIDs, ","))
+	if m.RecipientOrgIDs != "" {
+		m.RecipientOrgIDs = fmt.Sprintf(",%s,", strings.Trim(m.RecipientOrgIDs, ","))
 	}
 }
 

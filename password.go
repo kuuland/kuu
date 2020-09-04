@@ -5,6 +5,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"math/big"
 	"strconv"
+	"strings"
 )
 
 var keyMap = map[int]string{
@@ -17,7 +18,7 @@ var keyMap = map[int]string{
 func GenPassword(passwordSize ...int) string {
 	var (
 		size   int
-		hexStr = MD5(uuid.NewV4().String())
+		hexStr = MD5(strings.ReplaceAll(uuid.NewV4().String(), "-", ""))
 	)
 	if len(passwordSize) > 0 {
 		size = passwordSize[0]

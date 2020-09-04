@@ -465,7 +465,6 @@ func Sys() *Mod {
 			&File{},
 			&Param{},
 			&Message{},
-			&MessageRange{},
 			&MessageReceipt{},
 		},
 		Routes: RoutesInfo{

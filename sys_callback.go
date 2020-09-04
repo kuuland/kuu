@@ -91,7 +91,7 @@ func uuidCreateCallback(scope *gorm.Scope) {
 	if v, exists := meta.TagSettings["UUID"]; exists && v != "" {
 		reflectValue := indirectValue(scope.Value)
 		fieldValue := reflect.Indirect(reflectValue).FieldByName(v)
-		fieldValue.SetString(uuid.NewV4().String())
+		fieldValue.SetString(strings.ReplaceAll(uuid.NewV4().String(), "-", ""))
 	}
 }
 

@@ -469,7 +469,7 @@ type File struct {
 // BeforeCreate
 func (f *File) BeforeCreate() {
 	if f.UID == "" {
-		f.UID = uuid.NewV4().String()
+		f.UID = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 	}
 }
 

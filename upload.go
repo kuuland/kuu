@@ -62,7 +62,7 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 	}
 
 	f = &File{
-		UID:  uuid.NewV4().String(),
+		UID:  strings.ReplaceAll(uuid.NewV4().String(), "-", ""),
 		Type: fh.Header["Content-Type"][0],
 		Size: fh.Size,
 		Name: fh.Filename,

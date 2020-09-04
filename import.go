@@ -74,7 +74,7 @@ type ImportRecord struct {
 
 // BeforeCreate
 func (imp *ImportRecord) BeforeCreate() {
-	imp.ImportSn = uuid.NewV4().String()
+	imp.ImportSn = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 	imp.Status = ImportStatusImporting
 }
 
