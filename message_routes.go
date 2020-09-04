@@ -131,7 +131,7 @@ var MessagesReadRoute = RouteInfo{
 		c.IgnoreAuth()
 		defer c.IgnoreAuth(true)
 
-		var bodystruct {
+		var body struct {
 			MessageIDs   []uint `binding:"required"`
 			RecipientIDs []uint
 			All          bool
