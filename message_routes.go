@@ -132,12 +132,15 @@ var MessagesReadRoute = RouteInfo{
 		defer c.IgnoreAuth(true)
 
 		var body struct {
-			MessageIDs   []uint `binding:"required"`
+			MessageIDs   []uint
 			RecipientIDs []uint
 			All          bool
 		}
 		if err := c.ShouldBindJSON(&body); err != nil {
 			return c.STDErr(err, "messages_read_failed")
+		}
+		if !body.All && len(body.MessageIDs) == 0 && len(body.RecipientIDs) == 0 {
+			return c.STDOK()
 		}
 		err := c.WithTransaction(func(tx *gorm.DB) error {
 			messageDB := tx.Model(&Message{})
@@ -146,7 +149,15 @@ var MessagesReadRoute = RouteInfo{
 					messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", messageDB.Dialect().Quote("id")), body.MessageIDs)
 				}
 				if len(body.RecipientIDs) > 0 {
-					messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", messageDB.Dialect().Quote("sender_id")), body.RecipientIDs)
+					var (
+						sqls  []string
+						attrs []interface{}
+					)
+					for _, itemId := range body.RecipientIDs {
+						sqls = append(sqls, "(sender_id = ? OR recipient_user_ids LIKE ?)")
+						attrs = append(attrs, itemId, "%"+fmt.Sprintf("%d", itemId)+"%")
+					}
+					messageDB = messageDB.Where(strings.Join(sqls, " OR "), attrs...)
 				}
 			}
 			messageIDs, err := FindReadableMessageIDs(messageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 0, 0)
@@ -268,7 +279,9 @@ func FindUnreadMessagesPrepareDB(messageDB *gorm.DB, uid uint, orgIDs []uint, ro
 	for _, item := range receipts {
 		readMessageIDs = append(readMessageIDs, item.MessageID)
 	}
-	messageDB = messageDB.Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs).
-		Where(fmt.Sprintf("%s NOT IN (?)", DB().Dialect().Quote("id")), readMessageIDs)
+	messageDB = messageDB.Where("sender_id <> ?", uid).Where(fmt.Sprintf("%s IN (?)", DB().Dialect().Quote("id")), messageIDs)
+	if len(readMessageIDs) > 0 {
+		messageDB = messageDB.Where(fmt.Sprintf("%s NOT IN (?)", DB().Dialect().Quote("id")), readMessageIDs)
+	}
 	return messageDB, nil
 }
