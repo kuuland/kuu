@@ -160,11 +160,11 @@ var MessagesReadRoute = RouteInfo{
 					messageDB = messageDB.Where(strings.Join(sqls, " OR "), attrs...)
 				}
 			}
-			messageIDs, err := FindReadableMessageIDs(messageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 0, 0)
+			unreadMessageIDs, err := FindUnreadMessageIDs(messageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 0, 0)
 			if err != nil {
 				return err
 			}
-			for _, item := range messageIDs {
+			for _, item := range unreadMessageIDs {
 				if err := tx.Model(&MessageReceipt{}).Create(&MessageReceipt{
 					MessageID:         item,
 					RecipientID:       c.SignInfo.UID,
@@ -249,6 +249,28 @@ func FindUnreadMessages(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode [
 		return nil, err
 	}
 	return messages, nil
+}
+
+func FindUnreadMessageIDs(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string, page, size int) ([]uint, error) {
+	db, err := FindUnreadMessagesPrepareDB(messageDB, uid, orgIDs, rolesCode)
+	if err != nil {
+		return nil, err
+	}
+	if size > 0 {
+		db = db.Limit(size)
+	}
+	if page > 0 && size > 0 {
+		db = db.Offset((page - 1) * size)
+	}
+	var messages []Message
+	if err := db.Select(fmt.Sprintf("%s", DB().Dialect().Quote("id"))).Order(fmt.Sprintf("%s DESC", db.Dialect().Quote("created_at"))).Find(&messages).Error; err != nil {
+		return nil, err
+	}
+	var messageIDs []uint
+	for _, item := range messages {
+		messageIDs = append(messageIDs, item.ID)
+	}
+	return messageIDs, nil
 }
 
 func FindUnreadMessagesCount(messageDB *gorm.DB, uid uint, orgIDs []uint, rolesCode []string) (int, error) {
