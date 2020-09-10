@@ -146,7 +146,7 @@ func CreateOrg(args *CreateOrgArgs) (reply *CreateOrgReply, err error) {
 		}
 		if len(args.ExtraAssignRoleCodes) > 0 {
 			var extraRoles []Role
-			if err := tx.Model(&Role{}).Where(fmt.Sprintf("%s IN (?)", tx.Dialect().Quote("id")), args.ExtraAssignRoleCodes).Find(&extraRoles).Error; err != nil {
+			if err := tx.Model(&Role{}).Where(fmt.Sprintf("%s IN (?)", tx.Dialect().Quote("code")), args.ExtraAssignRoleCodes).Find(&extraRoles).Error; err != nil {
 				return nil, err
 			}
 			for _, role := range extraRoles {
