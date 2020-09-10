@@ -106,7 +106,7 @@ func beforeRun() {
 		}
 	}
 	DefaultCron.Start()
-	runAllRunAfterJobs()
+	RunAllRunAfterJobs()
 }
 
 func shutdown(srv *http.Server) {

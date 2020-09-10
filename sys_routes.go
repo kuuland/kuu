@@ -996,7 +996,7 @@ var JobRunRoute = RouteInfo{
 	Method: http.MethodPost,
 	Path:   "/job/run",
 	HandlerFunc: func(c *Context) *STDReply {
-		if err := runJobByCodeOrName(c.Query("code")); err != nil {
+		if err := RunJob(c.Query("code")); err != nil {
 			return c.STDErr(err)
 		}
 		return c.STDOK()

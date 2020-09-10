@@ -128,7 +128,7 @@ func AddJobEntry(j *Job) error {
 	return err
 }
 
-func runAllRunAfterJobs() {
+func RunAllRunAfterJobs() {
 	jobsMu.RLock()
 	defer jobsMu.RUnlock()
 
@@ -139,15 +139,15 @@ func runAllRunAfterJobs() {
 	}
 }
 
-func runJobByCodeOrName(names string, sync ...bool) error {
-	names = strings.TrimSpace(names)
-	if names == "" {
+func RunJob(codesOrNames string, sync ...bool) error {
+	codesOrNames = strings.TrimSpace(codesOrNames)
+	if codesOrNames == "" {
 		return nil
 	}
 	jobEntryIDsMu.RLock()
 	defer jobEntryIDsMu.RUnlock()
 
-	split := strings.Split(names, ",")
+	split := strings.Split(codesOrNames, ",")
 	isSync := len(sync) > 0 && sync[0]
 	var errs []error
 	for _, item := range split {
