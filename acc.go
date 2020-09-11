@@ -100,27 +100,49 @@ func saveHistory(secretData *SignSecret) {
 }
 
 func (c *Context) Token() string {
-	cacheKey := "__kuu_token__"
+	return c.GetKey("Authorization", "api_key", TokenKey)
+}
+
+func (c *Context) GetKey(names ...string) (value string) {
+	if len(names) == 0 {
+		return
+	}
+	cacheKey := fmt.Sprintf("__%s__", strings.Join(names, "_"))
 	if v, has := c.Get(cacheKey); has {
 		return v.(string)
 	}
-
 	// querystring > header > cookie
-	token := c.QueryCI(TokenKey)
-	if token == "" {
-		token = c.GetHeader(TokenKey)
-		if token == "" {
-			token = c.GetHeader("Authorization")
+	for _, name := range names {
+		if name == "" {
+			continue
 		}
-		if token == "" {
-			token = c.GetHeader("api_key")
+		value = c.QueryCI(name)
+		if value != "" {
+			return value
 		}
 	}
-	if token == "" {
-		token, _ = c.Cookie(TokenKey)
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		value = c.GetHeader(name)
+		if value != "" {
+			return value
+		}
 	}
-	c.Set(cacheKey, token)
-	return token
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		for _, s := range []string{strings.ToUpper(name), name} {
+			value, _ = c.Cookie(s)
+			if value != "" {
+				return value
+			}
+		}
+	}
+	c.Set(cacheKey, value)
+	return
 }
 
 // DecodedContext

@@ -293,35 +293,8 @@ func QueryCI(c *gin.Context, key string) (v string) {
 }
 
 func (c *Context) Lang() (lang string) {
-	cacheKey := "__kuu_lang__"
-	if v, has := c.Get(cacheKey); has {
-		return v.(string)
-	}
-
-	keys := []string{"Lang", "lang", "l"}
-	// querystring > header > cookie
-	for _, key := range keys {
-		if val := c.Query(key); val != "" {
-			lang = val
-			break
-		}
-	}
-	if lang == "" {
-		for _, key := range keys {
-			if val := c.GetHeader(key); val != "" {
-				lang = val
-				break
-			}
-		}
-	}
-	if lang == "" {
-		for _, key := range keys {
-			if val, _ := c.Cookie(key); val != "" {
-				lang = val
-				break
-			}
-		}
-	}
+	names := []string{"Lang", "lang", "l"}
+	lang = c.GetKey(names...)
 	if lang == "" {
 		lang = c.parseAcceptLanguage()
 	}
@@ -331,7 +304,6 @@ func (c *Context) Lang() (lang string) {
 	}
 
 	lang = intl.ConvertLanguageCode(lang)
-	c.Set(cacheKey, lang)
 	return
 }
 
