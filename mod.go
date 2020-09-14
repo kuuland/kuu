@@ -42,14 +42,15 @@ type HandlersChain []HandlerFunc
 
 // Mod
 type Mod struct {
-	Code        string
-	Prefix      string
-	Middleware  HandlersChain
-	Routes      RoutesInfo
-	Models      []interface{}
-	OnImport    func() error
-	OnInit      func() error
-	TablePrefix null.String
+	Code         string
+	Prefix       string
+	Middleware   HandlersChain
+	Routes       RoutesInfo
+	Models       []interface{}
+	IntlMessages map[string]string
+	OnImport     func() error
+	OnInit       func() error
+	TablePrefix  null.String
 }
 
 // Import
@@ -65,6 +66,9 @@ func (app *Engine) Import(mods ...*Mod) {
 	for _, mod := range mods {
 		if mod.Code == "" {
 			PANIC("模块编码不能为空")
+		}
+		if len(mod.IntlMessages) > 0 {
+			AddDefaultIntlMessage(mod.IntlMessages)
 		}
 		mod.Code = strings.ToLower(mod.Code)
 		routePrefix := path.Join(C().GetString("prefix"), mod.Prefix)
