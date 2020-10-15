@@ -94,21 +94,22 @@ func RegisterImportCallback(callback *ImportCallback) {
 }
 
 // CallImportCallback
-func CallImportCallback(c *Context, info *ImportRecord) {
+func CallImportCallback(c *Context, info *ImportRecord) (*ImportRecord, error) {
 	if info == nil {
-		return
+		return nil, nil
 	}
 
 	var rows [][]string
 	if err := JSONParse(info.Data, &rows); err != nil {
 		ERROR(err)
-		return
+		return nil, err
 	}
 
 	callback := importCallbackMap[info.Channel]
 	if callback == nil {
-		ERROR("no import callback registered for this channel: %s", info.Channel)
-		return
+		err := fmt.Errorf("no import callback registered for this channel: %s", info.Channel)
+		ERROR(err)
+		return nil, err
 	}
 	args := callback
 	result := args.Processor(c, rows)
@@ -131,7 +132,9 @@ func CallImportCallback(c *Context, info *ImportRecord) {
 	}
 	if err := db.Update(&doc).Error; err != nil {
 		ERROR(err)
+		return nil, err
 	}
+	return &doc, result.Error
 }
 
 // ImportRoute
@@ -202,9 +205,16 @@ var ImportRoute = RouteInfo{
 		}
 		// 触发导入回调
 		if record.Sync {
-			CallImportCallback(c, &record)
+			if _, err := CallImportCallback(c, &record); err != nil {
+				if _, ok := err.(*IntlError); ok {
+					return c.STDErr(err)
+				}
+				return c.STDErr(err, "import_failed")
+			}
 		} else {
-			go CallImportCallback(c, &record)
+			go func() {
+				_, _ = CallImportCallback(c, &record)
+			}()
 		}
 		// 响应请求
 		return c.STD(record.ImportSn)
