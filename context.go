@@ -22,7 +22,7 @@ type STDReply struct {
 
 func (s *STDReply) MarshalJSON() ([]byte, error) {
 	data := map[string]interface{}{"code": s.Code}
-	if !IsNil(s.Data) {
+	if _, isErr := s.Data.(error); !isErr && !IsNil(s.Data) {
 		data["data"] = s.Data
 	}
 	if s.Message != "" {
