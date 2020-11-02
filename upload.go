@@ -75,6 +75,8 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 		f.Class = extra.Class
 		f.OwnerType = extra.OwnerType
 		f.OwnerID = extra.OwnerID
+		f.ExtendField = extra.ExtendField
+		f.Model = extra.Model
 	}
 	if save2db {
 		if err := DB().Create(&f).Error; err != nil {
