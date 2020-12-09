@@ -67,6 +67,7 @@ func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
 // Default
 func Default() (app *Engine) {
 	app = &Engine{Engine: gin.Default()}
+	app.RemoveExtraSlash = true
 	app.UseGin(Recovery)
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		app.GET("/", func(c *Context) *STDReply {
@@ -80,6 +81,7 @@ func Default() (app *Engine) {
 // New
 func New() (app *Engine) {
 	app = &Engine{Engine: gin.New()}
+	app.RemoveExtraSlash = true
 	app.init()
 	return
 }
@@ -194,12 +196,36 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				v = handler(kc)
 			} else {
 				kc.RoutineCaches = make(RoutineCaches)
-				sc, err := kc.DecodedContext()
+				var requestCache struct {
+					SignInfo *SignContext
+					PrisDesc *PrivilegesDesc
+				}
+				if s := GetCacheString(requestId); s != "" {
+					_ = JSONParse(s, &requestCache)
+				}
+				var (
+					sc  *SignContext
+					err error
+				)
+				if requestCache.SignInfo == nil {
+					sc, err = kc.DecodedContext()
+					requestCache.SignInfo = sc
+				} else {
+					sc = requestCache.SignInfo
+				}
 				if err == nil && sc.IsValid() {
-					desc := GetPrivilegesDesc(sc)
+					var desc *PrivilegesDesc
+					if requestCache.PrisDesc == nil {
+						desc = GetPrivilegesDesc(sc)
+						requestCache.PrisDesc = desc
+					} else {
+						desc = requestCache.PrisDesc
+					}
 					kc.PrisDesc = desc
 					kc.SignInfo = sc
 				}
+				// 更新请求缓存
+				SetCacheString(requestId, JSONStringify(requestCache), 30*time.Minute)
 				glsVals := make(gls.Values)
 				glsVals[GLSSignInfoKey] = kc.SignInfo
 				glsVals[GLSPrisDescKey] = kc.PrisDesc
