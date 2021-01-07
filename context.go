@@ -39,6 +39,7 @@ type Context struct {
 	SignInfo      *SignContext
 	PrisDesc      *PrivilegesDesc
 	RoutineCaches RoutineCaches
+	RouteInfo     *RouteInfo
 }
 
 func (c *Context) RequestID() string {

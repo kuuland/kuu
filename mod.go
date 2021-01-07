@@ -6,6 +6,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/jinzhu/gorm"
 )
@@ -13,8 +14,12 @@ import (
 var (
 	tableNames       = make(map[string]string)
 	tableNameMetaMap = make(map[string]*Metadata)
-	routesMap        = make(map[string]RouteInfo)
 	modMap           = make(map[string]*Mod)
+)
+
+var (
+	routesMap   = make(map[string]RouteInfo)
+	routesMapMu sync.RWMutex
 )
 
 func init() {
@@ -93,12 +98,16 @@ func (app *Engine) Import(mods ...*Mod) {
 				app.Any(routePath, route.HandlerFunc)
 				for _, method := range []string{"GET", "POST", "PUT", "PATCH", "HEAD", "OPTIONS", "DELETE", "CONNECT", "TRACE"} {
 					key := fmt.Sprintf("%s %s", method, routePath)
+					routesMapMu.Lock()
 					routesMap[key] = route
+					routesMapMu.Unlock()
 				}
 			} else {
 				app.Handle(route.Method, routePath, route.HandlerFunc)
 				key := fmt.Sprintf("%s %s", route.Method, routePath)
+				routesMapMu.Lock()
 				routesMap[key] = route
+				routesMapMu.Unlock()
 			}
 			if len(route.IntlMessages) > 0 {
 				AddDefaultIntlMessage(route.IntlMessages)
