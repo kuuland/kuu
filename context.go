@@ -169,6 +169,16 @@ func (c *Context) GetIntlMessages() map[string]string {
 	return messages
 }
 
+func (c *Context) FormatMessage(id, defaultMessage string, contextValues ...interface{}) string {
+	messages := c.GetIntlMessages()
+	result := intl.FormatMessage(messages, id, defaultMessage, contextValues...)
+	return result
+}
+
+func (c *Context) L(id, defaultMessage string, contextValues ...interface{}) string {
+	return c.FormatMessage(id, defaultMessage, contextValues...)
+}
+
 func (c *Context) resolveLocaleMessage(args []interface{}, lang string) string {
 	var (
 		messageName    string
@@ -187,9 +197,7 @@ func (c *Context) resolveLocaleMessage(args []interface{}, lang string) string {
 	if lang == "" {
 		lang = c.Lang()
 	}
-	messages := c.GetIntlMessages()
-	result := intl.FormatMessage(messages, messageName, messageContent, messageValues)
-	return result
+	return c.FormatMessage(messageName, messageContent, messageValues)
 }
 
 // DB
