@@ -55,7 +55,15 @@ func (c *Context) InWhitelist() bool {
 	if len(Whitelist) == 0 {
 		return false
 	}
-	input := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path) // 格式为：GET /api/user
+	cacheKey := "__kuu_path_in_whitelist__"
+	if v, has := c.Get(cacheKey); has && v != nil {
+		b, _ := v.(bool)
+		return b
+	}
+	var (
+		input  = fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path) // 格式为：GET /api/user
+		result bool
+	)
 	for _, item := range Whitelist {
 		if v, ok := item.(string); ok {
 			// 字符串忽略大小写
@@ -64,24 +72,28 @@ func (c *Context) InWhitelist() bool {
 			prefix := C().GetString("prefix")
 			if v == lowerInput {
 				// 完全匹配
-				return true
+				result = true
+				break
 			} else if C().DefaultGetBool("whitelist:prefix", true) && prefix != "" {
 				// 加上全局prefix匹配
 				old := strings.ToLower(fmt.Sprintf("%s ", c.Request.Method))
 				with := strings.ToLower(fmt.Sprintf("%s %s", c.Request.Method, prefix))
 				v = strings.Replace(v, old, with, 1)
 				if v == lowerInput {
-					return true
+					result = true
+					break
 				}
 			}
 		} else if v, ok := item.(*regexp.Regexp); ok {
 			// 正则匹配
 			if v.MatchString(input) {
-				return true
+				result = true
+				break
 			}
 		}
 	}
-	return false
+	c.Set(cacheKey, result)
+	return result
 }
 
 // AddWhitelist support string and *regexp.Regexp.

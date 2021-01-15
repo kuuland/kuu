@@ -220,6 +220,7 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				} else {
 					sc = requestCache.SignInfo
 				}
+
 				if err == nil && sc.IsValid() {
 					var desc *PrivilegesDesc
 					if requestCache.PrisDesc == nil {
@@ -233,7 +234,7 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				}
 				// 更新请求缓存
 				if sc != nil && sc.IsValid() {
-					SetCacheString(requestId, JSONStringify(requestCache), 30*time.Minute)
+					SetCacheString(fmt.Sprintf("login_state_%s", requestId), JSONStringify(requestCache), 30*time.Minute)
 				}
 				glsVals := make(gls.Values)
 				glsVals[GLSSignInfoKey] = kc.SignInfo
