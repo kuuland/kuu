@@ -66,6 +66,9 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	if err = DB().Create(secretData).Error; err != nil {
 		return
 	}
+	// 将secret存入缓存
+	expDur := time.Unix(secretData.Exp, 0).Sub(time.Unix(secretData.Iat, 0))
+	SetCacheString(secretData.Token, JSONStringify(secretData, false), expDur)
 	// 保存登入历史
 	saveHistory(secretData)
 	return

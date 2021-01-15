@@ -169,9 +169,10 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 		return nil, ErrTokenNotFound
 	}
 	sign = &SignContext{Token: token, Lang: c.Lang()}
+
 	// 解析UID
-	var secret SignSecret
-	if err = DB().Where(&SignSecret{Token: token}).Find(&secret).Error; err != nil {
+	secret, err := getSignSecret(token)
+	if secret == nil || err != nil {
 		return
 	}
 	sign.UID = secret.UID
@@ -185,7 +186,7 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 		err = ErrInvalidToken
 		return
 	}
-	sign.Secret = &secret
+	sign.Secret = secret
 	if secret.Type == "" {
 		secret.Type = AdminSignType
 	}
@@ -204,6 +205,22 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 		return nil, ErrInvalidToken
 	}
 	c.Set(cacheKey, sign)
+	return
+}
+
+func getSignSecret(token string) (secret *SignSecret, err error) {
+	if token == "" {
+		return
+	}
+	// 优先从缓存取
+	if s := GetCacheString(token); s != "" {
+		JSONParse(s, secret)
+		return
+	}
+	// 没有再从数据库取
+	if err = DB().Where(&SignSecret{Token: token}).Find(secret).Error; err != nil {
+		return
+	}
 	return
 }
 
