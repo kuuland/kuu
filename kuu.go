@@ -232,7 +232,9 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 					kc.SignInfo = sc
 				}
 				// 更新请求缓存
-				SetCacheString(requestId, JSONStringify(requestCache), 30*time.Minute)
+				if sc != nil && sc.IsValid() {
+					SetCacheString(requestId, JSONStringify(requestCache), 30*time.Minute)
+				}
 				glsVals := make(gls.Values)
 				glsVals[GLSSignInfoKey] = kc.SignInfo
 				glsVals[GLSPrisDescKey] = kc.PrisDesc
