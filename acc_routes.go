@@ -77,16 +77,15 @@ var LogoutRoute = RouteInfo{
 
 func Logout(c *Context, tx *gorm.DB) error {
 	if c.SignInfo != nil && c.SignInfo.IsValid() {
-		var secret SignSecret
-		if err := tx.Where(&SignSecret{UID: c.SignInfo.UID, Token: c.SignInfo.Token}).First(&secret).Error; err != nil && err != gorm.ErrRecordNotFound {
-			return err
-		}
+		secret := c.SignInfo.Secret
 		if secret.ID != 0 {
 			if err := tx.Model(&secret).Updates(&SignSecret{Method: SignMethodLogout}).Error; err != nil {
 				return err
 			}
+			// 删除令牌缓存
+			DelCache(secret.Token)
 			// 保存登出历史
-			saveHistory(&secret)
+			saveHistory(secret)
 			// 设置Cookie过期
 			c.SetCookie(TokenKey, secret.Token, -1, "/", "", false, true)
 			c.SetCookie(LangKey, "", -1, "/", "", false, true)
