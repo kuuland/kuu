@@ -208,20 +208,26 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 	return
 }
 
-func getSignSecret(token string) (secret *SignSecret, err error) {
+func getSignSecret(token string) (*SignSecret, error) {
 	if token == "" {
-		return
+		return nil, nil
 	}
 	// 优先从缓存取
-	if s := GetCacheString(token); s != "" {
-		JSONParse(s, secret)
-		return
+	var secret SignSecret
+	s := GetCacheString(token)
+	if s != "" {
+		err := JSONParse(s, &secret)
+		if err != nil {
+			return nil, err
+		}
+		return &secret, nil
 	}
 	// 没有再从数据库取
-	if err = DB().Where(&SignSecret{Token: token}).Find(secret).Error; err != nil {
-		return
+	err := DB().Where(&SignSecret{Token: token}).Find(&secret).Error
+	if err != nil {
+		return nil, err
 	}
-	return
+	return &secret, nil
 }
 
 // EncodedToken
