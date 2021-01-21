@@ -12,6 +12,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 
 - [Installation](#installation)
 - [Quick start](#quick-start)
+- [Thanks to](#thanks-to)
 - [Features](#features)
     - [Global configuration](#global-configuration)
     - [Data source management](#data-source-management)
@@ -1100,5 +1101,11 @@ func main() {
 ![Kuu and Shino](./docs/kuu_and_shino.png)
 
 ## License
- 
+
 Kuu is available under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+
+## Thanks to
+
+* [JetBrains](https://www.jetbrains.com/?from=Kuu) for their open source license(s).
+
+[![JetBrains](./docs/jetbrains.png)](https://www.jetbrains.com/?from=Kuu)
