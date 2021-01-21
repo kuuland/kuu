@@ -12,7 +12,6 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 
 - [Installation](#installation)
 - [Quick start](#quick-start)
-- [Thanks to](#thanks-to)
 - [Features](#features)
     - [Global configuration](#global-configuration)
     - [Data source management](#data-source-management)
@@ -57,6 +56,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
 - [FAQ](#faq)
     - [Why called Kuu?](#why-called-kuu)
 - [License](#license)
+- [Thanks to](#thanks-to)
 
 ## Installation
 
