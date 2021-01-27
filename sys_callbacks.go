@@ -83,6 +83,51 @@ func registerCallbacks() {
 	if callback.Delete().Get("kuu:model_change") == nil {
 		callback.Delete().After("gorm:after_delete").Register("kuu:model_change", modelChangeCallback)
 	}
+	// 注册持久层Hooks
+	if callback.Create().Get("kuu:exec_before_create_hooks") == nil {
+		callback.Create().After("gorm:before_create").Register("kuu:exec_before_create_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("BeforeSave", scope)
+			execHooksCallback("BeforeCreate", scope)
+		})
+	}
+	if callback.Create().Get("kuu:exec_after_create_hooks") == nil {
+		callback.Create().After("gorm:after_create").Register("kuu:exec_after_create_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("AfterCreate", scope)
+			execHooksCallback("AfterSave", scope)
+		})
+	}
+	if callback.Delete().Get("kuu:exec_before_delete_hooks") == nil {
+		callback.Delete().After("gorm:before_delete").Register("kuu:exec_before_delete_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("BeforeDelete", scope)
+		})
+	}
+	if callback.Delete().Get("kuu:exec_after_delete_hooks") == nil {
+		callback.Delete().After("gorm:after_delete").Register("kuu:exec_after_delete_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("AfterDelete", scope)
+		})
+	}
+	if callback.Update().Get("kuu:exec_before_update_hooks") == nil {
+		callback.Update().After("gorm:before_update").Register("kuu:exec_before_update_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("BeforeSave", scope)
+			execHooksCallback("BeforeUpdate", scope)
+		})
+	}
+	if callback.Update().Get("kuu:exec_after_update_hooks") == nil {
+		callback.Update().After("gorm:after_update").Register("kuu:exec_after_update_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("AfterUpdate", scope)
+			execHooksCallback("AfterSave", scope)
+		})
+	}
+	if callback.Query().Get("kuu:exec_before_update_hooks") == nil {
+		callback.Query().After("kuu:before_query").Register("kuu:exec_before_update_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("BeforeFind", scope)
+		})
+	}
+	if callback.Query().Get("kuu:exec_after_query_hooks") == nil {
+		callback.Query().After("gorm:after_query").Register("kuu:exec_after_query_hooks", func(scope *gorm.Scope) {
+			execHooksCallback("AfterFind", scope)
+		})
+	}
 }
 
 func uuidCreateCallback(scope *gorm.Scope) {
@@ -128,6 +173,41 @@ func updateTsForUpdateCallback(scope *gorm.Scope) {
 			if field, ok := scope.FieldByName("Ts"); ok {
 				_ = field.Set(now)
 				_ = scope.SetColumn(field.DBName, now)
+			}
+		}
+	}
+}
+
+func setMetadata(scope *gorm.Scope) *Metadata {
+	if !scope.HasError() {
+		if scope.Value == nil {
+			return nil
+		}
+		meta := Meta(scope.Value)
+		if meta != nil {
+			scope.InstanceSet("Metadata", meta)
+		}
+		return meta
+	}
+	return nil
+}
+
+func getMetadata(scope *gorm.Scope) *Metadata {
+	var meta *Metadata
+	if v, has := scope.InstanceGet("Metadata"); has {
+		meta = v.(*Metadata)
+	} else if scope.Value != nil {
+		meta = setMetadata(scope)
+	}
+	return meta
+}
+
+func execHooksCallback(partName string, scope *gorm.Scope) {
+	if !scope.HasError() {
+		if meta := getMetadata(scope); meta != nil {
+			if err := execGormHooks(fmt.Sprintf("%s:%s", meta.Name, partName), scope); err != nil {
+				_ = scope.Err(err)
+				return
 			}
 		}
 	}

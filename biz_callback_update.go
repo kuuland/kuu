@@ -1,5 +1,7 @@
 package kuu
 
+import "fmt"
+
 func init() {
 	DefaultCallback.Update().Register("kuu:biz_before_update", bizBeforeUpdateCallback)
 	DefaultCallback.Update().Register("kuu:biz_update", bizUpdateCallback)
@@ -9,6 +11,12 @@ func init() {
 func bizBeforeUpdateCallback(scope *Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BizBeforeUpdate")
+		if scope.Meta != nil {
+			if err := execBizHooks(fmt.Sprintf("%s:BizBeforeUpdate", scope.Meta.Name), scope); err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
 	}
 }
 
@@ -17,6 +25,7 @@ func bizUpdateCallback(scope *Scope) {
 		scope.DB = scope.DB.Model(scope.UpdateCond).Updates(scope.Value)
 		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)
+			return
 		}
 	}
 }
@@ -24,5 +33,11 @@ func bizUpdateCallback(scope *Scope) {
 func bizAfterUpdateCallback(scope *Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BizAfterUpdate")
+		if scope.Meta != nil {
+			if err := execBizHooks(fmt.Sprintf("%s:BizAfterUpdate", scope.Meta.Name), scope); err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
 	}
 }

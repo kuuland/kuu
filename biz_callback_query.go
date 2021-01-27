@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 )
@@ -14,6 +15,12 @@ func init() {
 func bizBeforeQueryCallback(scope *Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BizBeforeFind")
+		if scope.Meta != nil {
+			if err := execBizHooks(fmt.Sprintf("%s:BizBeforeFind", scope.Meta.Name), scope); err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
 	}
 }
 func bizQueryCallback(scope *Scope) {
@@ -41,5 +48,11 @@ func bizQueryCallback(scope *Scope) {
 func bizAfterQueryCallback(scope *Scope) {
 	if !scope.HasError() {
 		scope.CallMethod("BizAfterFind")
+		if scope.Meta != nil {
+			if err := execBizHooks(fmt.Sprintf("%s:BizAfterFind", scope.Meta.Name), scope); err != nil {
+				_ = scope.Err(err)
+				return
+			}
+		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 type Scope struct {
 	skipLeft     bool
 	Value        interface{}
+	Meta         *Metadata
 	ReflectType  reflect.Type
 	Context      *Context
 	DB           *gorm.DB
@@ -55,6 +56,7 @@ func NewBizScope(c *Context, value interface{}, db *gorm.DB) *Scope {
 		Context:     c,
 		DB:          db,
 		Value:       value,
+		Meta:        Meta(value),
 		callbacks:   DefaultCallback,
 		ReflectType: reflectType,
 	}
@@ -124,6 +126,7 @@ func (scope *Scope) callCallbacks(kind string) *Scope {
 			break
 		}
 	}
+
 	return scope
 }
 
