@@ -164,6 +164,11 @@ var ValidRoute = RouteInfo{
 			if user.Lang == "" {
 				user.Lang = ParseLang(c.Context)
 			}
+
+			if c.SignInfo.Payload == nil {
+				c.STDErrHold(c.L("acc_token_expired", "Token has expired")).Code(555).Render()
+				return
+			}
 			c.SetCookie(RequestLangKey, user.Lang, ExpiresSeconds, "/", "", false, true)
 			c.SignInfo.Payload["Lang"] = user.Lang
 			c.SignInfo.Payload["ActOrgID"] = c.PrisDesc.ActOrgID
