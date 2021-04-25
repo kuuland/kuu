@@ -106,6 +106,24 @@ func (desc *PrivilegesDesc) addEmptyOrgs() {
 	desc.PersonalWritableOrgIDMap[0] = zeroOrg
 }
 
+func (desc *PrivilegesDesc) HasPermission(permission string) bool {
+	for _, s := range desc.Permissions {
+		if permission == s {
+			return true
+		}
+	}
+	return false
+}
+
+func (desc *PrivilegesDesc) HasRole(code string) bool {
+	for _, s := range desc.RolesCode {
+		if code == s {
+			return true
+		}
+	}
+	return false
+}
+
 // AuthProcessor
 type AuthProcessor interface {
 	AllowCreate(AuthProcessorDesc) error
