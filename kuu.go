@@ -3,6 +3,7 @@ package kuu
 import (
 	"context"
 	"fmt"
+	session "github.com/go-session/gin-session"
 	"github.com/json-iterator/go"
 	"net/http"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	session "github.com/go-session/gin-session"
 	"github.com/jtolds/gls"
 )
 
@@ -34,8 +34,10 @@ var (
 	// Uptime
 	Uptime time.Time
 	// IsProduction
-	IsProduction = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_PROD") == "true"
-	json         = jsoniter.ConfigCompatibleWithStandardLibrary
+	IsProduction    = os.Getenv("GIN_MODE") == "release" || os.Getenv("KUU_PROD") == "true"
+	json            = jsoniter.ConfigCompatibleWithStandardLibrary
+	handlerLiist    []HandlerFunc
+	ginHandlerLiist []gin.HandlerFunc
 )
 
 func init() {
@@ -273,6 +275,14 @@ func (app *Engine) Use(handlers ...HandlerFunc) *Engine {
 	return app
 }
 
+func BeforeUse(handlers ...HandlerFunc) {
+	handlerLiist = append(handlerLiist, handlers...)
+}
+
+func BeforeUseGin(handlers ...gin.HandlerFunc) {
+	ginHandlerLiist = append(ginHandlerLiist, handlers...)
+}
+
 func (app *Engine) UseGin(handlers ...gin.HandlerFunc) *Engine {
 	app.Engine.Use(handlers...)
 	return app
@@ -400,7 +410,15 @@ func IgnoreAuth(cancel ...bool) (success bool) {
 	return
 }
 
-func (app *Engine) initConfigs() {
+func (app *Engine) initMiddleware() {
+	app.Use(func(c *Context) *STDReply {
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return nil
+		}
+		return nil
+	})
+	app.UseGin(session.New())
 	if C().Has("cors") {
 		if C().GetBool("cors") {
 			config := cors.DefaultConfig()
@@ -423,6 +441,12 @@ func (app *Engine) initConfigs() {
 				app.UseGin(gzip.Gzip(v))
 			}
 		}
+	}
+	if len(ginHandlerLiist) != 0 {
+		app.UseGin(ginHandlerLiist...)
+	}
+	if len(handlerLiist) != 0 {
+		app.Use(handlerLiist...)
 	}
 }
 
@@ -464,17 +488,8 @@ func connectedPrint(name, args string) {
 
 func (app *Engine) init() {
 	initDataSources()
-	app.Use(func(c *Context) *STDReply {
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return nil
-		}
-		return nil
-	})
-	app.UseGin(session.New())
-	app.initConfigs()
+	app.initMiddleware()
 	app.initStatics()
-
 	// Register default callbacks
 	registerCallbacks()
 }
