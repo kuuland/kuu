@@ -367,6 +367,40 @@ var EnumRoute = RouteInfo{
 	},
 }
 
+// DataDictRoute
+var DataDictRoute = RouteInfo{
+	Name:   "查询数据字典",
+	Method: "GET",
+	Path:   "/datadict",
+	HandlerFunc: func(c *Context) *STDReply {
+		var buff strings.Builder
+		buff.WriteString(fmt.Sprintf("# %s数据字典\n\n", C().GetString("name")))
+		var modname string
+		bookmap := map[bool]string{true: "是", false: "否"}
+		for _, meta := range metadataList {
+			if meta.ModCode == "" {
+				continue
+			}
+			if modname != meta.ModCode {
+				modname = meta.ModCode
+				buff.WriteString(fmt.Sprintf("## %s\n\n", meta.ModCode))
+			}
+			buff.WriteString(fmt.Sprintf("### %s %s\n\n", meta.NativeName, meta.DisplayName))
+			buff.WriteString("|字段名|字段类型|是否可空|是否主键|注释|\n")
+			buff.WriteString("| :--- | :--- | :--- | :--- | :--- |\n")
+			for _, field := range meta.Fields {
+				IsBland := bookmap[field.IsBland]
+				IsPrimaryKey := bookmap[field.IsPrimaryKey]
+				line := fmt.Sprintf("| %s | %s | %s | %s | %s |\n", field.NativeName, field.DBType, IsBland, IsPrimaryKey, field.Name)
+				buff.WriteString(line)
+			}
+			buff.WriteString("\n\n")
+		}
+		c.String(http.StatusOK, buff.String())
+		return nil
+	},
+}
+
 // CaptchaRoute
 var CaptchaRoute = RouteInfo{
 	Name:   "查询验证码",

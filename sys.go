@@ -477,6 +477,7 @@ func Sys() *Mod {
 			ImportTemplateRoute,
 			AuthRoute,
 			MetaRoute,
+			DataDictRoute,
 			EnumRoute,
 			CaptchaRoute,
 			ModelDocsRoute,

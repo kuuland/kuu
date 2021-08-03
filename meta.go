@@ -18,6 +18,7 @@ var (
 type Metadata struct {
 	ModCode       string
 	Name          string
+	NativeName    string
 	DisplayName   string
 	LocaleKey     string
 	FullName      string
@@ -32,17 +33,21 @@ type Metadata struct {
 
 // MetadataField
 type MetadataField struct {
-	Code       string
-	Name       string
-	LocaleKey  string
-	Kind       string
-	Type       string
-	Enum       string
-	IsRef      bool
-	IsPassword bool
-	IsArray    bool
-	Value      interface{}       `json:"-" gorm:"-"`
-	Tag        reflect.StructTag `json:"-" gorm:"-"`
+	Code         string
+	Name         string
+	NativeName   string
+	DBType       string
+	IsBland      bool
+	IsPrimaryKey bool
+	LocaleKey    string
+	Kind         string
+	Type         string
+	Enum         string
+	IsRef        bool
+	IsPassword   bool
+	IsArray      bool
+	Value        interface{}       `json:"-" gorm:"-"`
+	Tag          reflect.StructTag `json:"-" gorm:"-"`
 }
 
 // NewValue
@@ -114,6 +119,8 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		FullName:    path.Join(reflectType.PkgPath(), reflectTypeName),
 		reflectType: reflectType,
 	}
+	modelScope := DB().NewScope(value)
+	m.NativeName = modelScope.TableName()
 	for i := 0; i < reflectType.NumField(); i++ {
 		fieldStruct := reflectType.Field(i)
 		displayName := fieldStruct.Tag.Get("displayName")
@@ -135,6 +142,14 @@ func parseMetadata(value interface{}) (m *Metadata) {
 			LocaleKey: fieldStruct.Tag.Get("locale"),
 			Tag:       fieldStruct.Tag,
 		}
+		if modelField, hasModelField := modelScope.FieldByName(field.Code); hasModelField {
+			field.NativeName = modelField.DBName
+			field.IsBland = modelField.IsBlank
+			field.IsPrimaryKey = modelField.IsPrimaryKey
+			if modelField.IsNormal {
+				field.DBType = DB().Dialect().DataTypeOf(modelField.StructField)
+			}
+		}
 		switch field.Kind {
 		case "bool", "null.Bool":
 			field.Type = "boolean"
@@ -147,6 +162,12 @@ func parseMetadata(value interface{}) (m *Metadata) {
 			field.Type = "object"
 		case "null.String", "string":
 			field.Type = "string"
+		case "gorm.Model", "kuu.Model", "kuu.ModelExOrg":
+			temp := parseMetadata(fieldValue)
+			for _, metadataField := range temp.Fields {
+				m.Fields = append(m.Fields, metadataField)
+			}
+
 		default:
 			field.Type = field.Kind
 		}
@@ -186,7 +207,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		if name != "" {
 			field.Name = name
 		}
-		if field.Name != "" {
+		if field.DBType != "" {
 			m.Fields = append(m.Fields, field)
 		}
 	}
