@@ -21,10 +21,10 @@ type Model struct {
 	DeletedByID uint        `name:"删除人ID（默认字段）"`
 	Remark      null.String `name:"备注" gorm:"text"`
 	Ts          time.Time   `name:"时间戳"`
-	Org         *Org        `gorm:"foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User       `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User       `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User       `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	Org         *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 }
 
 // ModelExOrg
@@ -38,9 +38,9 @@ type ModelExOrg struct {
 	DeletedByID uint        `name:"删除人ID（默认字段）"`
 	Remark      null.String `name:"备注" gorm:"text"`
 	Ts          time.Time   `name:"时间戳"`
-	CreatedBy   *User       `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User       `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User       `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 }
 
 // ExtendField
@@ -66,10 +66,10 @@ type User struct {
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Username    string       `name:"账号" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
@@ -167,10 +167,10 @@ type Org struct {
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Code      string `name:"组织编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
@@ -264,10 +264,10 @@ type Role struct {
 	DeletedByID uint       `name:"删除人ID（默认字段）"`
 	Remark      string     `name:"备注" gorm:"text"`
 	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"foreignkey:id;association_foreignkey:deleted_by_id"`
+	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Code                string                `name:"角色编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
