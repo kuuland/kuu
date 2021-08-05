@@ -479,7 +479,7 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 		} else if vmap[orgRange.readable] == 3 {
 			for _, child := range orgList {
 				//if strings.HasPrefix(child.FullPid, org.FullPid) {
-				if strings.HasPrefix(child.FullPid, org.FullPid+",") || child.FullPid == org.FullPid {
+				if strings.HasPrefix(child.FullPid, org.FullPid) || child.FullPid == org.FullPid {
 					readableOrgIDMap[child.ID] = org
 				}
 			}
@@ -489,7 +489,7 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 			writableOrgIDMap[orgID] = org
 		} else if vmap[orgRange.writable] == 3 {
 			for _, child := range orgList {
-				if strings.HasPrefix(child.FullPid, org.FullPid+",") || child.FullPid == org.FullPid {
+				if strings.HasPrefix(child.FullPid, org.FullPid) || child.FullPid == org.FullPid {
 					writableOrgIDMap[child.ID] = org
 				}
 			}

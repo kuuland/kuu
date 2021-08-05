@@ -219,11 +219,11 @@ func FillOrgFullInfo(list []Org) []Org {
 	fall = func(values []Org, pid uint) {
 		for _, item := range values {
 			if _, exists := fullPidMap[pid]; exists {
-				fullPidMap[item.ID] = fmt.Sprintf("%s,%d", fullPidMap[pid], item.ID)
-				fullNameMap[item.ID] = fmt.Sprintf("%s,%s", fullNameMap[pid], item.Name)
+				fullPidMap[item.ID] = fmt.Sprintf("%s,%d,", fullPidMap[pid], item.ID)
+				fullNameMap[item.ID] = fmt.Sprintf("%s,%s,", fullNameMap[pid], item.Name)
 			} else {
-				fullPidMap[item.ID] = fmt.Sprintf("%d", item.ID)
-				fullNameMap[item.ID] = fmt.Sprintf("%s", item.Name)
+				fullPidMap[item.ID] = fmt.Sprintf("%d,", item.ID)
+				fullNameMap[item.ID] = fmt.Sprintf("%s,", item.Name)
 			}
 			children := childrenMap[item.ID]
 			if len(children) > 0 {
