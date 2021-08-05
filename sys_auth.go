@@ -2,10 +2,11 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -553,7 +554,7 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	// 限制读取组织为当前组织或当前组织及以下（不能跨组织树分支或上级组织）
 	filteredReadableOrgIDs := map[uint]Org{actOrg.ID: actOrg}
 	for itemID, itemOrg := range desc.FullReadableOrgIDMap {
-		if strings.HasPrefix(itemOrg.FullPid, actOrg.FullPid) {
+		if strings.HasPrefix(itemOrg.FullPid + ",", actOrg.FullPid + ",") {
 			filteredReadableOrgIDs[itemID] = itemOrg
 		}
 	}
