@@ -420,9 +420,11 @@ func (m *Menu) setParentCodes(scope *gorm.Scope) (string, error) {
 	var newParentCodes string
 	if m.ParentCode.String != "" {
 		var parent Menu
+		IgnoreAuth()
 		if err := scope.NewDB().Model(&Menu{}).Where(&Menu{Code: m.ParentCode.String}).First(&parent).Error; err != nil {
 			return newParentCodes, err
 		}
+		IgnoreAuth(true)
 		newParentCodes = fmt.Sprintf("%s%s,", parent.ParentCodes.String, parent.Code)
 	} else {
 		newParentCodes = "root,"

@@ -466,6 +466,7 @@ func Sys() *Mod {
 			&Param{},
 			&Message{},
 			&MessageReceipt{},
+			&RepeatEvent{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,
@@ -493,6 +494,7 @@ func Sys() *Mod {
 			JobRunRoute,
 			MessagesLatestRoute,
 			MessagesReadRoute,
+			TriggerReoeatEvent,
 		},
 		OnInit: initSys,
 	}
