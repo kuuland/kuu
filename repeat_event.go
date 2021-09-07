@@ -83,10 +83,10 @@ func RegisterRepeatEvent(name string, interval string, data map[string]interface
 	return DB().Create(&event).Error
 }
 
-var TriggerReoeatEvent = RouteInfo{
+var TriggerRepeatEvent = RouteInfo{
 	Name:   "查询数据字典",
 	Method: "GET",
-	Path:   "/TriggerReoeatEvent",
+	Path:   "/TriggerRepeatEvent",
 	HandlerFunc: func(c *Context) *STDReply {
 		c.IgnoreAuth()
 		name := c.Query("name")

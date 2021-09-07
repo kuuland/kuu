@@ -494,7 +494,7 @@ func Sys() *Mod {
 			JobRunRoute,
 			MessagesLatestRoute,
 			MessagesReadRoute,
-			TriggerReoeatEvent,
+			TriggerRepeatEvent,
 		},
 		OnInit: initSys,
 	}
