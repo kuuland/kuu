@@ -84,7 +84,7 @@ func RegisterRepeatEvent(name string, interval string, data map[string]interface
 }
 
 var TriggerRepeatEvent = RouteInfo{
-	Name:   "查询数据字典",
+	Name:   "触发执行可重复事件",
 	Method: "GET",
 	Path:   "/TriggerRepeatEvent",
 	HandlerFunc: func(c *Context) *STDReply {
