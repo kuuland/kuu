@@ -11,10 +11,10 @@ import (
 )
 
 type GenTokenDesc struct {
-	UID      uint `binding:"required"`
+	UID      uint
 	Username string
-	Exp      int64  `binding:"required"`
-	Type     string `binding:"required"`
+	Exp      int64 `binding:"required"`
+	Type     string
 	Desc     string
 	Payload  jwt.MapClaims
 	IsAPIKey bool
