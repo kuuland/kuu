@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jinzhu/gorm"
 	"regexp"
 	"strings"
 )
@@ -172,7 +173,7 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 	sign = &SignContext{Token: token, Lang: c.Lang()}
 
 	// 解析UID
-	secret, err := getSignSecret(token)
+	secret, err := GetSignSecret(token)
 	if secret == nil || err != nil {
 		return
 	}
@@ -209,7 +210,7 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 	return
 }
 
-func getSignSecret(token string) (*SignSecret, error) {
+func GetSignSecret(token string, tx ...*gorm.DB) (*SignSecret, error) {
 	if token == "" {
 		return nil, nil
 	}
@@ -223,8 +224,14 @@ func getSignSecret(token string) (*SignSecret, error) {
 		}
 		return &secret, nil
 	}
+	var db *gorm.DB
+	if len(tx) > 0 && tx[0] != nil {
+		db = tx[0]
+	} else {
+		db = DB()
+	}
 	// 没有再从数据库取
-	err := DB().Where(&SignSecret{Token: token}).Find(&secret).Error
+	err := db.Where(&SignSecret{Token: token}).Find(&secret).Error
 	if err != nil {
 		return nil, err
 	}
