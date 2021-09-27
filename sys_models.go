@@ -2,11 +2,12 @@ package kuu
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"github.com/satori/go.uuid"
-	"gopkg.in/guregu/null.v3"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v3"
 )
 
 // Model
@@ -25,6 +26,21 @@ type Model struct {
 	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
 	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
 	DeletedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+}
+
+// ModelExDel
+type ModelExDel struct {
+	ID          uint        `gorm:"primary_key"`
+	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	OrgID       uint        `name:"所属组织ID（默认字段）"`
+	CreatedByID uint        `name:"创建人ID（默认字段）"`
+	UpdatedByID uint        `name:"修改人ID（默认字段）"`
+	Remark      null.String `name:"备注" gorm:"text"`
+	Ts          time.Time   `name:"时间戳"`
+	Org         *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
 }
 
 // ModelExOrg
