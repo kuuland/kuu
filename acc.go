@@ -105,6 +105,7 @@ func AddWhitelist(rules ...interface{}) {
 
 func saveHistory(secretData *SignSecret) {
 	history := SignHistory{
+		UID:        secretData.UID,
 		SecretID:   secretData.ID,
 		SecretData: secretData.Secret,
 		Token:      secretData.Token,
@@ -205,6 +206,10 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 	}
 	if !sign.IsValid() {
 		return nil, ErrInvalidToken
+	}
+	var payload jwt.MapClaims
+	if err := JSONParse(secret.Payload, &payload); err == nil {
+		sign.Payload = payload
 	}
 	c.Set(cacheKey, sign)
 	return

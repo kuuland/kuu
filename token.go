@@ -11,13 +11,14 @@ import (
 )
 
 type GenTokenDesc struct {
-	UID      uint
-	Username string
-	Exp      int64 `binding:"required"`
-	Type     string
-	Desc     string
-	Payload  jwt.MapClaims
-	IsAPIKey bool
+	UID          uint
+	Username     string
+	Exp          int64 `binding:"required"`
+	Type         string
+	Desc         string
+	Payload      jwt.MapClaims
+	IsAPIKey     bool
+	ForcePayload bool // 是否强制使用Payload参数值作为jwt的payload
 }
 
 // GenToken
@@ -52,12 +53,23 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Exp:      desc.Exp,
 		Method:   SignMethodLogin,
 		SubDocID: subDocID,
+		Payload:  JSONStringify(desc.Payload),
 		Desc:     desc.Desc,
 		Type:     desc.Type,
 		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
 	}
 	// 签发令牌
-	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {
+	var tokenPayload jwt.MapClaims
+	if desc.ForcePayload {
+		tokenPayload = desc.Payload
+	} else {
+		tokenPayload = jwt.MapClaims{
+			"UID": desc.Payload["UID"],
+			"iat": desc.Payload["iat"],
+			"exp": desc.Payload["exp"],
+		}
+	}
+	if signed, err := EncodedToken(tokenPayload, secretData.Secret); err != nil {
 		return secretData, err
 	} else {
 		secretData.Token = signed
