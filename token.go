@@ -34,6 +34,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	iat := time.Now().Unix()
 	desc.Payload["iat"] = iat      // 签发时间：必须用全小写iat
 	desc.Payload["exp"] = desc.Exp // 过期时间：必须用全小写exp
+	desc.Payload["_k"] = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 	// 兼容未传递SubDocID时自动查询
 	var (
 		subDocID uint
@@ -64,6 +65,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		tokenPayload = desc.Payload
 	} else {
 		tokenPayload = jwt.MapClaims{
+			"_k":  desc.Payload["_k"],
 			"UID": desc.Payload["UID"],
 			"iat": desc.Payload["iat"],
 			"exp": desc.Payload["exp"],
