@@ -10,9 +10,10 @@ import (
 // SignHistory
 type SignHistory struct {
 	gorm.Model `rest:"*" displayName:"登录历史"`
+	UID        uint   `name:"用户ID"`
 	SecretID   uint   `name:"密钥ID"`
 	SecretData string `name:"密钥"`
-	Token      string `name:"令牌" gorm:"size:4096"`
+	Token      string `name:"令牌" gorm:"NOT NULL;INDEX:kuu_token;size:767"`
 	Method     string `name:"登录/登出"`
 }
 
@@ -24,7 +25,8 @@ type SignSecret struct {
 	SubDocID   uint      `name:"扩展档案ID"`
 	Desc       string    `name:"令牌描述"`
 	Secret     string    `name:"令牌密钥"`
-	Token      string    `name:"令牌" gorm:"size:4096"`
+	Payload    string    `name:"令牌数据(JSON-String)" gorm:"type:text"`
+	Token      string    `name:"令牌" gorm:"NOT NULL;INDEX:kuu_token;size:767"`
 	Iat        int64     `name:"令牌签发时间戳"`
 	Exp        int64     `name:"令牌过期时间戳"`
 	Method     string    `name:"登录/登出"`

@@ -11,13 +11,14 @@ import (
 )
 
 type GenTokenDesc struct {
-	UID      uint
-	Username string
-	Exp      int64 `binding:"required"`
-	Type     string
-	Desc     string
-	Payload  jwt.MapClaims
-	IsAPIKey bool
+	UID          uint
+	Username     string
+	Exp          int64 `binding:"required"`
+	Type         string
+	Desc         string
+	Payload      jwt.MapClaims
+	IsAPIKey     bool
+	ForcePayload bool // 是否强制使用Payload参数值作为jwt的payload
 }
 
 // GenToken
@@ -33,6 +34,7 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 	iat := time.Now().Unix()
 	desc.Payload["iat"] = iat      // 签发时间：必须用全小写iat
 	desc.Payload["exp"] = desc.Exp // 过期时间：必须用全小写exp
+	desc.Payload["_k"] = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 	// 兼容未传递SubDocID时自动查询
 	var (
 		subDocID uint
@@ -52,12 +54,24 @@ func GenToken(desc GenTokenDesc) (secretData *SignSecret, err error) {
 		Exp:      desc.Exp,
 		Method:   SignMethodLogin,
 		SubDocID: subDocID,
+		Payload:  JSONStringify(desc.Payload),
 		Desc:     desc.Desc,
 		Type:     desc.Type,
 		IsAPIKey: null.NewBool(desc.IsAPIKey, true),
 	}
 	// 签发令牌
-	if signed, err := EncodedToken(desc.Payload, secretData.Secret); err != nil {
+	var tokenPayload jwt.MapClaims
+	if desc.ForcePayload {
+		tokenPayload = desc.Payload
+	} else {
+		tokenPayload = jwt.MapClaims{
+			"_k":  desc.Payload["_k"],
+			"UID": desc.Payload["UID"],
+			"iat": desc.Payload["iat"],
+			"exp": desc.Payload["exp"],
+		}
+	}
+	if signed, err := EncodedToken(tokenPayload, secretData.Secret); err != nil {
 		return secretData, err
 	} else {
 		secretData.Token = signed
