@@ -78,12 +78,7 @@ func (c *CacheRedis) GetString(rawKey string) (val string) {
 		key = BuildKey(rawKey)
 		cmd = c.client.Get(context.Background(), key)
 	)
-	if err := cmd.Err(); err != nil {
-		ERROR(err)
-	} else {
-		val = cmd.Val()
-	}
-	return
+	return cmd.Val()
 }
 
 func (c *CacheRedis) scan(cursor uint64, pattern string, limit int64) (values map[string]string) {
