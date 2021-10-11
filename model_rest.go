@@ -693,7 +693,7 @@ func restQueryHandler(reflectType reflect.Type) HandlerFunc {
 							)
 						}
 					}
-					db = db.Preload(field.Name, preloadCondition)
+					db = db.Preload(item, preloadCondition)
 				} else {
 					db = db.Preload(item)
 				}
