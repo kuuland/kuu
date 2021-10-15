@@ -74,8 +74,7 @@ func LanguageList() []Language {
 
 func ConvertLanguageCode(lang string) string {
 	switch lang {
-	case "zh":
-	case "zh-CN":
+	case "zh", "zh-cn", "zh-CN":
 		lang = "zh-Hans"
 	case "zh-TW":
 		lang = "zh-Hant"
