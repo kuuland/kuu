@@ -373,6 +373,7 @@ var DataDictRoute = RouteInfo{
 	Method: "GET",
 	Path:   "/datadict",
 	HandlerFunc: func(c *Context) *STDReply {
+		modCode := c.Query("modCode")
 		var buff strings.Builder
 		buff.WriteString(fmt.Sprintf("# %s数据字典\n\n", C().GetString("name")))
 		var modname string
@@ -381,11 +382,14 @@ var DataDictRoute = RouteInfo{
 			if meta.ModCode == "" {
 				continue
 			}
+			if modCode != "" && meta.ModCode != modCode {
+				continue
+			}
 			if modname != meta.ModCode {
 				modname = meta.ModCode
 				buff.WriteString(fmt.Sprintf("## %s\n\n", meta.ModCode))
 			}
-			buff.WriteString(fmt.Sprintf("### %s %s\n\n", meta.NativeName, meta.DisplayName))
+			buff.WriteString(fmt.Sprintf("### %s_%s %s\n\n", meta.ModCode, meta.NativeName, meta.DisplayName))
 			buff.WriteString("|字段名|字段类型|是否可空|是否主键|注释|\n")
 			buff.WriteString("| :--- | :--- | :--- | :--- | :--- |\n")
 			for _, field := range meta.Fields {
