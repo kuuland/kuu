@@ -30,11 +30,7 @@ var (
 	Whitelist = []interface{}{
 		"GET /",
 		"GET /favicon.ico",
-		"GET /whitelist",
 		"POST /login",
-		"GET /enum",
-		"GET /meta",
-		"GET /datadict",
 		"GET /model/docs",
 		"GET /model/ws",
 		"GET /language",
