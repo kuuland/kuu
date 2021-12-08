@@ -189,7 +189,7 @@ func (c *Context) FormatMessage(id, defaultMessage string, contextValues ...inte
 	if content == "" {
 		content = id
 	}
-	if c.RouteInfo.IntlWithCode {
+	if c.RouteInfo != nil && c.RouteInfo.IntlWithCode {
 		content = fmt.Sprintf("%s(%s)", content, c.RequestCode())
 	}
 	result := intl.FormatMessage(content, contextValues...)
