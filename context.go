@@ -49,11 +49,21 @@ func (c *Context) RequestID() string {
 	if v, has := c.Get(cacheKey); has {
 		idVal = v.(string)
 	} else {
-		idVal = strings.ReplaceAll(uuid.NewV4().String(), "-", "")
+		idVal = strings.ToUpper(strings.ReplaceAll(uuid.NewV4().String(), "-", ""))
 		c.Set(cacheKey, idVal)
 	}
 
 	return idVal
+}
+
+func (c *Context) RequestCode(withSign ...bool) string {
+	s := c.RequestID()
+	code := s[len(s)-6:]
+
+	if len(withSign) == 0 || (len(withSign) > 0 && withSign[0]) {
+		return fmt.Sprintf("#%s", code)
+	}
+	return code
 }
 
 // STD render a JSON body with code(default is 0), data and message.
@@ -143,9 +153,6 @@ func (c *Context) stdErr(data interface{}, code int, args []interface{}) *STDRep
 			args = append(args, v.ContextValues)
 		}
 	}
-	if v, ok := data.(error); ok {
-		c.ERROR(v)
-	}
 	message := c.resolveLocaleMessage(args, c.Lang())
 	if code == 0 {
 		code = -1
@@ -154,6 +161,10 @@ func (c *Context) stdErr(data interface{}, code int, args []interface{}) *STDRep
 		Data:    data,
 		Code:    code,
 		Message: message,
+	}
+	if v, ok := data.(error); ok {
+		c.ERROR(v)
+		c.ERROR(message)
 	}
 	return &body
 }
@@ -171,7 +182,17 @@ func (c *Context) GetIntlMessages() map[string]string {
 
 func (c *Context) FormatMessage(id, defaultMessage string, contextValues ...interface{}) string {
 	messages := c.GetIntlMessages()
-	result := intl.FormatMessage(messages, id, defaultMessage, contextValues...)
+	content := messages[id]
+	if content == "" {
+		content = defaultMessage
+	}
+	if content == "" {
+		content = id
+	}
+	if c.RouteInfo.IntlWithCode {
+		content = fmt.Sprintf("%s(%s)", content, c.RequestCode())
+	}
+	result := intl.FormatMessage(content, contextValues...)
 	return result
 }
 
@@ -303,7 +324,7 @@ func QueryCI(c *gin.Context, key string) (v string) {
 
 func (c *Context) Lang() (lang string) {
 	names := []string{"Lang", "lang", "l"}
-	lang = c.GetKey(names...)
+	lang = strings.TrimSpace(c.GetKey(names...))
 	if lang == "" {
 		lang = c.parseAcceptLanguage()
 	}

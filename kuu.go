@@ -70,7 +70,7 @@ func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
 func Default() (app *Engine) {
 	app = &Engine{Engine: gin.Default()}
 	app.RemoveExtraSlash = true
-	app.UseGin(Recovery)
+	app.UseGin(gin.Logger(), Recovery)
 	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
 		app.GET("/", func(c *Context) *STDReply {
 			return c.STD(fmt.Sprintf("%s is up.", GetAppName()), "kuu_up", "{{time}}", D{"time": Uptime.Format("2006-01-02 15:04:05")})

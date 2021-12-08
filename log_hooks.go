@@ -23,6 +23,7 @@ func (h *LogDailyFileHook) Fire(entry *logrus.Entry) error {
 		DailyFileName = now
 		changeLoggerOutput(now)
 	}
+	// 输出到控制台
 	logrus.StandardLogger().WithFields(entry.Data).Log(entry.Level, entry.Message)
 	return nil
 }
