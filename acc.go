@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
@@ -111,7 +112,8 @@ func saveHistory(secretData *SignSecret) {
 }
 
 func (c *Context) Token() string {
-	return c.GetKey("Authorization", "api_key", TokenKey)
+	v := c.GetKey("Authorization", "api_key", TokenKey)
+	return strings.TrimPrefix(v, "bearer ")
 }
 
 func (c *Context) GetKey(names ...string) (value string) {
@@ -190,7 +192,11 @@ func (c *Context) DecodedContext() (sign *SignContext, err error) {
 		secret.Type = AdminSignType
 	}
 	sign.Type = secret.Type
-	sign.Payload = DecodedToken(token, secret.Secret)
+	if v, err := DecodedToken(token, secret.Secret); err != nil {
+		return nil, err
+	} else {
+		sign.Payload = v
+	}
 	sign.SubDocID = secret.SubDocID
 	if sign.SubDocID == 0 { // 当取SubDocID失败时，查用户数据（因为令牌签发可能在子档案创建之前）
 		user := GetUserFromCache(sign.UID)
@@ -250,7 +256,7 @@ func EncodedToken(claims jwt.MapClaims, secret string) (signed string, err error
 }
 
 // DecodedToken
-func DecodedToken(tokenString string, secret string) jwt.MapClaims {
+func DecodedToken(tokenString string, secret string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -258,14 +264,18 @@ func DecodedToken(tokenString string, secret string) jwt.MapClaims {
 		return []byte(secret), nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	if token != nil {
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if ok && token.Valid {
-			return claims
+			return claims, nil
 		}
 	}
 	ERROR(err)
-	return nil
+	return nil, errors.New("token invalid")
 }
 
 // Acc
