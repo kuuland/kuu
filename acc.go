@@ -113,7 +113,7 @@ func saveHistory(secretData *SignSecret) {
 
 func (c *Context) Token() string {
 	v := c.GetKey("Authorization", "api_key", TokenKey)
-	return strings.TrimPrefix(v, "bearer ")
+	return strings.TrimPrefix(v, "Bearer ")
 }
 
 func (c *Context) GetKey(names ...string) (value string) {
