@@ -22,6 +22,7 @@ func bizBeforeUpdateCallback(scope *Scope) {
 
 func bizUpdateCallback(scope *Scope) {
 	if !scope.HasError() {
+		scope.DB = scope.DB.Set("__KUU_UPDATE_BEFORE__", JSONStringify(scope.UpdateCond))
 		scope.DB = scope.DB.Model(scope.UpdateCond).Updates(scope.Value)
 		if err := scope.DB.Error; err != nil {
 			_ = scope.Err(err)
