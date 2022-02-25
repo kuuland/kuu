@@ -47,15 +47,17 @@ type HandlersChain []HandlerFunc
 
 // Mod
 type Mod struct {
-	Code         string
-	Prefix       string
-	Middleware   HandlersChain
-	Routes       RoutesInfo
-	Models       []interface{}
-	IntlMessages map[string]string
-	OnImport     func() error
-	OnInit       func() error
-	TablePrefix  null.String
+	Code             string
+	Prefix           string
+	Middleware       HandlersChain
+	Routes           RoutesInfo
+	Models           []interface{}
+	IntlMessages     map[string]string
+	OnImport         func() error
+	OnInit           func() error
+	TablePrefix      null.String
+	IgnoreCrudRoutes bool
+	IgnoreModRoutes  bool
 }
 
 // Import
@@ -78,6 +80,9 @@ func (app *Engine) Import(mods ...*Mod) {
 		mod.Code = strings.ToLower(mod.Code)
 		routePrefix := path.Join(C().GetString("prefix"), mod.Prefix)
 		for _, route := range mod.Routes {
+			if mod.IgnoreModRoutes {
+				continue
+			}
 			if route.Path == "" || route.HandlerFunc == nil {
 				PANIC("Route path and handler can't be nil")
 			}
@@ -114,9 +119,14 @@ func (app *Engine) Import(mods ...*Mod) {
 			}
 		}
 		for _, model := range mod.Models {
-			desc := RESTful(app, routePrefix, model)
+			var desc *RestDesc
+			if !mod.IgnoreCrudRoutes {
+				desc = RESTful(app, routePrefix, model)
+			}
 			if meta := parseMetadata(model); meta != nil {
-				meta.RestDesc = desc
+				if !mod.IgnoreCrudRoutes {
+					meta.RestDesc = desc
+				}
 				meta.ModCode = mod.Code
 				gormTableName := gorm.ToTableName(meta.Name)
 				pluralTableName := inflection.Plural(gormTableName)
