@@ -173,3 +173,42 @@ func (c *CacheBolt) Subscribe(channels []string, handler func(string, string)) e
 func (c *CacheBolt) PSubscribe(patterns []string, handler func(string, string)) error {
 	return nil
 }
+
+func (c *CacheBolt) HGetAll(key string) (val map[string]string) {
+	ERROR(c.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(c.generalBucketName)
+		if bucket != nil {
+			raw := string(bucket.Get([]byte(key)))
+			return JSONParse(raw, &val)
+		}
+		return nil
+	}))
+	return
+}
+
+func (c *CacheBolt) HGet(key, field string) string {
+	m := c.HGetAll(key)
+	return m[field]
+}
+
+func (c *CacheBolt) HSet(key string, values ...string) {
+	ERROR(c.db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists(c.generalBucketName)
+		if err != nil {
+			return err
+		}
+		raw := string(bucket.Get([]byte(key)))
+		if raw != "" {
+			raw = "{}"
+		}
+		var m map[string]string
+		err = JSONParse(raw, &m)
+		if err != nil {
+			return err
+		}
+		for i := 0; i < len(values); i += 2 {
+			m[values[i]] = values[i+1]
+		}
+		return bucket.Put([]byte(key), []byte(JSONStringify(m)))
+	}))
+}

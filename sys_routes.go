@@ -329,39 +329,29 @@ var EnumRoute = RouteInfo{
 		if json != "" {
 			return c.STD(list)
 		} else {
-			var (
-				hashKey = fmt.Sprintf("enum_%s", name)
-				result  string
-			)
-			if v, ok := valueCacheMap.Load(hashKey); ok {
-				result = v.(string)
-			} else {
-				var buffer bytes.Buffer
-				for _, desc := range list {
-					if desc.ClassName != "" {
-						buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.ClassCode, desc.ClassName))
-					} else {
-						buffer.WriteString(fmt.Sprintf("%s {\n", desc.ClassCode))
-					}
-					index := 0
-					for value, label := range desc.Values {
-						if len(label) < 20 {
-							for i := 0; i < 20-len(label); i++ {
-								label += " "
-							}
-						}
-						buffer.WriteString(fmt.Sprintf("\t%s\t%v(%s)", label, value, reflect.ValueOf(value).Type().Kind().String()))
-						if index != len(desc.Values)-1 {
-							buffer.WriteString("\n")
-						}
-						index++
-					}
-					buffer.WriteString(fmt.Sprintf("\n}\n\n"))
+			var buffer bytes.Buffer
+			for _, desc := range list {
+				if desc.ClassName != "" {
+					buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.ClassCode, desc.ClassName))
+				} else {
+					buffer.WriteString(fmt.Sprintf("%s {\n", desc.ClassCode))
 				}
-				result = buffer.String()
-				valueCacheMap.Store(hashKey, result)
+				index := 0
+				for value, label := range desc.Values {
+					if len(label) < 20 {
+						for i := 0; i < 20-len(label); i++ {
+							label += " "
+						}
+					}
+					buffer.WriteString(fmt.Sprintf("\t%s\t%v(%s)", label, value, reflect.ValueOf(value).Type().Kind().String()))
+					if index != len(desc.Values)-1 {
+						buffer.WriteString("\n")
+					}
+					index++
+				}
+				buffer.WriteString(fmt.Sprintf("\n}\n\n"))
 			}
-			c.String(http.StatusOK, result)
+			c.String(http.StatusOK, buffer.String())
 			return nil
 		}
 	},

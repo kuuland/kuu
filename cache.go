@@ -8,7 +8,7 @@ import (
 // DefaultCache
 var DefaultCache Cache
 
-// Cache
+// Cache todo
 type Cache interface {
 	SetString(string, string, ...time.Duration)
 	HasPrefix(string, int) map[string]string
@@ -20,6 +20,10 @@ type Cache interface {
 	Incr(string) int
 	Del(...string)
 	Close()
+
+	HGetAll(string) map[string]string
+	HGet(string, string) string
+	HSet(string, ...string)
 
 	Publish(channel string, message interface{}) error
 	Subscribe(channels []string, handler func(string, string)) error

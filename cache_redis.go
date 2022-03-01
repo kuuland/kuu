@@ -213,3 +213,19 @@ func (c *CacheRedis) PSubscribe(patterns []string, handler func(string, string))
 	}(ch)
 	return nil
 }
+
+func (c *CacheRedis) HGetAll(key string) map[string]string {
+	return c.client.HGetAll(context.Background(), key).Val()
+}
+
+func (c *CacheRedis) HGet(key, field string) string {
+	return c.client.HGet(context.Background(), key, field).Val()
+}
+
+func (c *CacheRedis) HSet(key string, values ...string) {
+	var vs []interface{}
+	for _, value := range values {
+		vs = append(vs, value)
+	}
+	c.client.HSet(context.Background(), key, vs...)
+}
