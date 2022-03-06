@@ -327,9 +327,8 @@ func deleteCallback(scope *gorm.Scope) {
 				AddExtraSpaceIfExist(extraOption),
 			)).Exec()
 		}
-		if scope.DB().RowsAffected < 1 && desc.IsValid() {
-			_ = scope.Err(ErrAffectedDeleteToken)
-			return
+		if scope.DB().RowsAffected < 1 {
+			WARN("未删除任何记录，请检查更新条件或数据权限")
 		}
 	}
 }
@@ -366,9 +365,8 @@ func afterSaveCallback(scope *gorm.Scope) {
 			checkCreateOrUpdateField(scope, field)
 		}
 		// 判断是否写入
-		desc := GetRoutinePrivilegesDesc()
-		if scope.DB().RowsAffected < 1 && desc.IsValid() {
-			_ = scope.Err(ErrAffectedSaveToken)
+		if scope.DB().RowsAffected < 1 {
+			WARN("未新增或修改任何记录，请检查更新条件或数据权限")
 			return
 		}
 	}

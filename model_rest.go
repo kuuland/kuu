@@ -463,7 +463,7 @@ func restUpdateHandler(reflectType reflect.Type) HandlerFunc {
 				queryDB = queryDB.First(result)
 			}
 			if queryDB.RowsAffected < 1 {
-				return ErrAffectedSaveToken
+				WARN("未新增或修改任何记录，请检查更新条件或数据权限")
 			}
 			updateFields := func(val interface{}) error {
 				doc := reflect.New(reflectType).Interface()
@@ -773,7 +773,7 @@ func restDeleteHandler(reflectType reflect.Type) HandlerFunc {
 				result = reflect.New(reflect.SliceOf(reflectType)).Interface()
 				tx = tx.Find(result)
 				if tx.RowsAffected < 1 {
-					return ErrAffectedDeleteToken
+					WARN("未删除任何记录，请检查更新条件或数据权限")
 				}
 				if params.UnSoft {
 					tx = tx.Unscoped()
@@ -789,7 +789,7 @@ func restDeleteHandler(reflectType reflect.Type) HandlerFunc {
 				result = reflect.New(reflectType).Elem().Addr().Interface()
 				tx = tx.First(result)
 				if tx.RowsAffected < 1 {
-					return ErrAffectedDeleteToken
+					WARN("未删除任何记录，请检查更新条件或数据权限")
 				}
 				if params.UnSoft {
 					tx = tx.Unscoped()
