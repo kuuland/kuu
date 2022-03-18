@@ -312,7 +312,7 @@ func parseSlimField(scope *gorm.Scope, name string, value interface{}) (sqls []s
 			if hasSuffix {
 				a = append(a, "%")
 			}
-			sqls = append(sqls, fmt.Sprintf(" %s.%s LIKE ?", scope.QuotedTableName(), scope.Quote(name)))
+			sqls = append(sqls, fmt.Sprintf("LOWER(%s.%s) LIKE LOWER(?)", scope.QuotedTableName(), scope.Quote(name)))
 			attrs = append(attrs, strings.Join(a, ""))
 		} else if raw, has := vmap["$in"]; has {
 			sqls = append(sqls, fmt.Sprintf(" %s.%s IN (?)", scope.QuotedTableName(), scope.Quote(name)))
