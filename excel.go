@@ -49,7 +49,7 @@ func ParseExcelFromFileHeader(fh *multipart.FileHeader, index int, sheetName ...
 var timeLocationUTC, _ = time.LoadLocation("UTC")
 var shotDateReg, _ = regexp.Compile(`^\d{2}-\d{2}-\d{2}$`)
 var dateDateReg, _ = regexp.Compile(`^\d{4}-\d{2}-\d{2}$`)
-var numberReg, _ = regexp.Compile(`^\d+$`)
+var numberReg, _ = regexp.Compile(`^[\d\.]+$`)
 
 // timeToUTCTime provides a function to convert time to UTC time.
 func timeToUTCTime(t time.Time) time.Time {
