@@ -205,7 +205,9 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc *Con
 		db = with[0]
 
 		if len(desc.AndSQLs) > 0 {
-			db = db.Where(strings.Join(desc.AndSQLs, " AND "), desc.AndAttrs...)
+			for i, l := range desc.AndSQLs {
+				db = db.Where(l, desc.AndAttrs[i])
+			}
 		}
 		if len(desc.OrSQLs) > 0 {
 			db = db.Where(strings.Join(desc.OrSQLs, " OR "), desc.OrAttrs...)
