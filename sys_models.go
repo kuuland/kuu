@@ -521,3 +521,13 @@ func (l *Param) RepairDBTypes() {
 		}
 	}
 }
+
+func (l *Param) AfterSave(tx *gorm.DB) error {
+	if _, has := fromParamKeys[l.Code]; has {
+		go func() {
+			time.Sleep(time.Second * 5)
+			C().LoadFromParams(l.Code)
+		}()
+	}
+	return nil
+}

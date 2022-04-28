@@ -11,6 +11,7 @@ var (
 	configData     []byte
 	configInst     *Config
 	parsePathCache sync.Map
+	fromParamKeys  = make(map[string]bool)
 )
 
 func parseKuuJSON(filePath ...string) (data []byte) {
@@ -175,5 +176,22 @@ func (c *Config) DefaultGetBool(path string, defaultValue bool) bool {
 		return defaultValue
 	} else {
 		return v
+	}
+}
+
+func (c *Config) LoadFromParams(kyes ...string) {
+	var params []Param
+	DB().Model(&Param{}).Where("code in (?)", kyes).Find(&params)
+	for _, param := range params {
+		fromParamKeys[param.Code] = true
+		INFO("Load Config From param: %s(%s)", param.Code, param.Name)
+		if param.Type == "json" {
+			var err error
+			c.data, err = jsonparser.Set(c.data, []byte(param.Value), "params", param.Code)
+			if err != nil {
+				ERROR("%s: 加载失败: %w", param.Code, err.Error())
+				continue
+			}
+		}
 	}
 }
