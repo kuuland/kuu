@@ -10,6 +10,15 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+func init() {
+	paramsUpdateKey := BuildKey("params", "update", "code")
+	DefaultCache.Subscribe([]string{paramsUpdateKey}, func(key string, value string) {
+		if key == paramsUpdateKey {
+			C().LoadFromParams(value)
+		}
+	})
+}
+
 // Model
 type Model struct {
 	ID          uint        `gorm:"primary_key"`
@@ -525,8 +534,10 @@ func (l *Param) RepairDBTypes() {
 func (l *Param) AfterSave(tx *gorm.DB) error {
 	if _, has := fromParamKeys[l.Code]; has {
 		go func() {
+			// 同时兼容单机和微服务模式
 			time.Sleep(time.Second * 5)
 			C().LoadFromParams(l.Code)
+			DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
 		}()
 	}
 	return nil
