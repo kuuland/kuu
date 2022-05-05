@@ -203,11 +203,13 @@ func ParseCond(cond interface{}, model interface{}, with ...*gorm.DB) (desc *Con
 
 	if len(with) > 0 && with[0] != nil {
 		db = with[0]
-
-		if len(desc.AndSQLs) > 0 {
+		// todo 当sql和attr数量不相等时，需要处理sql配对的attr为空的问题， 建议用map做一对一的配对。
+		if len(desc.AndSQLs) == len(desc.AndAttrs) {
 			for i, l := range desc.AndSQLs {
 				db = db.Where(l, desc.AndAttrs[i])
 			}
+		} else {
+			db = db.Where(strings.Join(desc.AndSQLs, " AND "), desc.AndAttrs...)
 		}
 		if len(desc.OrSQLs) > 0 {
 			db = db.Where(strings.Join(desc.OrSQLs, " OR "), desc.OrAttrs...)
