@@ -3,8 +3,8 @@ package kuu
 import (
 	"errors"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	uuid "github.com/satori/go.uuid"
+	"github.com/xuri/excelize/v2"
 	"net/url"
 	"strconv"
 	"strings"
