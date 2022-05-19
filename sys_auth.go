@@ -362,6 +362,9 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 
 // GetPrivilegesDesc
 func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
+	IgnoreAuth()
+	defer IgnoreAuth(true)
+
 	var (
 		sign *SignContext
 		uid  uint
