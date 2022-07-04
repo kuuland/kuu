@@ -277,7 +277,7 @@ func GetLoginableOrgs(c *Context, uid uint) ([]Org, error) {
 		return nil, err
 	}
 	if desc := GetPrivilegesDesc(sc); desc != nil {
-		if err := DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data).Error; err != nil {
+		if err := c.IgnoreAuth().DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data).Error; err != nil {
 			return nil, err
 		}
 	}
