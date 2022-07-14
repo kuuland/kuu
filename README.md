@@ -41,6 +41,7 @@ Modular Go Web Framework based on [GORM](https://github.com/jinzhu/gorm) and [Gi
     - [Goroutine local storage](#goroutine-local-storage)
     - [Whitelist](#whitelist)
     - [Cache](#cache)
+    - [Hooks](#hooks)
     - [Cron](#cron)
     - [Captcha](#captcha)
     - [i18n](#i18n)
@@ -144,6 +145,14 @@ func main() {
 	kuu.C().Get("prefix")              // output "/api"
 	kuu.C().GetBool("cors")            // output true
 	kuu.C().GetBool("gorm:migrate")    // output true
+    // load config from kuu.Param store on databases
+	// only work when the Param.type is json and the Param.value is json object
+    kuu.C().LoadFromParams("whitelist") // whitelist value is {"enable": true, "lable":"app", "items": ["item-1", "item-2"]}
+	// and the key startwith: params
+    kuu.C().GetBool("params.whilelist.enable") // output true
+	kuu.C().GetString("params.whilelist.label") // output app
+	var items []string
+	kuu.C().GetInterface("params.whilelist.items", &items)
 }
 ```
 
@@ -153,7 +162,8 @@ List of preset config:
 - `gorm:migrate` - Enable GORM's auto migration for Mod's Models.
 - `audit:callbacks` - Register audit callbacks, default is `true`.
 - `db` - DB configs.
-- `redis` - Redis configs.
+- `redis` - Redis configs. 
+  - use `kuu.GetRedisClient()` get full redis client
 - `cors` - Attaches the official [CORS](https://github.com/gin-contrib/cors) gin's middleware.
 - `gzip` - Attaches the gin middleware to enable [GZIP](https://github.com/gin-contrib/gzip) support.
 - `statics` - Static serves files from the given file system root or serve a single file.
@@ -1008,9 +1018,43 @@ kuu.AddWhitelist(regexp.MustCompile("/user"))
 
 > Notes: Whitelist also matches paths with global `prefix`. If you don't want this feature, please set `"whitelist:prefix":false`.
 
+### Hooks
+#### Rest api hooks
+- hooks keys format: `StructName:Operation`, operation list:
+  - BizBeforeFind
+  - BizAfterFind
+  - BizBeforeCreate
+  - BizAfterCreate
+  - BizBeforeUpdate
+  - BizAfterUpdate
+  - BizBeforeDelete
+  - BizAfterDelete
+
+```go
+kuu.RegisterBizHook("User:BizBeforeCreate", func (scope *kuu.Scope) error {
+    db := scope.DB // db instance
+    user, ok := scope.Value.(*User)
+	fmt.Println(user, ok)
+    return nil
+})
+```
+
+#### Gorm global hooks
+- is same as gorm hooks, the hooks key format: `StructName:Operation`, operation list:
+  - BeforeSave
+  - BeforeCreate
+  - BeforeUpdate
+  - AfterUpdate
+  - AfterSave
+  - AfterCreate
+```go
+kuu.RegisterGormHook("User:BeforeSave", func(scope *gorm.Scope) error {
+    return nil
+})
+```
+
 ### i18n
 
-#### Usage
 ```go
 kuu.L("acc_logout_failed", "Logout failed").Render()                             // => Logout failed
 kuu.L("fano_table_total", "Total {{total}} items", kuu.M{"total": 500}).Render() // => Total 500 items
