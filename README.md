@@ -1040,6 +1040,7 @@ kuu.RegisterBizHook("User:BizBeforeCreate", func (scope *kuu.Scope) error {
 ```
 
 #### Gorm global hooks
+>Mainly used to solve circular dependency problems
 - is same as gorm hooks, the hooks key format: `StructName:Operation`, operation list:
   - BeforeSave
   - BeforeCreate
