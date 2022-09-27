@@ -532,13 +532,11 @@ func (l *Param) RepairDBTypes() {
 }
 
 func (l *Param) AfterSave(tx *gorm.DB) error {
-	if _, has := fromParamKeys[l.Code]; has {
-		go func() {
-			// 同时兼容单机和微服务模式
-			time.Sleep(time.Second * 5)
-			C().LoadFromParams(l.Code)
-			DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
-		}()
-	}
+	go func() {
+		// 同时兼容单机和微服务模式
+		time.Sleep(time.Second * 5)
+		C().LoadFromParams(l.Code)
+		DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
+	}()
 	return nil
 }
