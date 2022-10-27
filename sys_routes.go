@@ -369,7 +369,13 @@ var DataDictRoute = RouteInfo{
 		var modname string
 		bookmap := map[bool]string{true: "是", false: "否"}
 		m := DefaultCache.HGetAll(BuildKey("datadict"))
-		for _, item := range m {
+		var keys []string
+		for k, _ := range m {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			item := m[key]
 			var meta Metadata
 			err := JSONParse(item, &meta)
 			if err != nil {
