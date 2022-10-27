@@ -142,17 +142,17 @@ $ cat kuu.json
 
 ```go
 func main() {
-	kuu.C().Get("prefix")              // output "/api"
-	kuu.C().GetBool("cors")            // output true
-	kuu.C().GetBool("gorm:migrate")    // output true
+    kuu.C().Get("prefix")              // output "/api"
+    kuu.C().GetBool("cors")            // output true
+    kuu.C().GetBool("gorm:migrate")    // output true
     // load config from kuu.Param store on databases
-	// only work when the Param.type is json and the Param.value is json object
+    // only work when the Param.type is json and the Param.value is json object
     kuu.C().LoadFromParams("whitelist") // whitelist value is {"enable": true, "lable":"app", "items": ["item-1", "item-2"]}
-	// and the key startwith: params
+    // and the key startwith: params
     kuu.C().GetBool("params.whilelist.enable") // output true
-	kuu.C().GetString("params.whilelist.label") // output app
-	var items []string
-	kuu.C().GetInterface("params.whilelist.items", &items)
+    kuu.C().GetString("params.whilelist.label") // output "app"
+    var items []string
+    kuu.C().GetInterface("params.whilelist.items", &items)
 }
 ```
 

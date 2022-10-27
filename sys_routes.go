@@ -368,7 +368,13 @@ var DataDictRoute = RouteInfo{
 		buff.WriteString(fmt.Sprintf("# %s数据字典\n\n", C().GetString("name")))
 		var modname string
 		bookmap := map[bool]string{true: "是", false: "否"}
-		for _, meta := range metadataList {
+		m := DefaultCache.HGetAll(BuildKey("datadict"))
+		for _, item := range m {
+			var meta Metadata
+			err := JSONParse(item, &meta)
+			if err != nil {
+				return c.STDErr(err)
+			}
 			if meta.ModCode == "" {
 				continue
 			}

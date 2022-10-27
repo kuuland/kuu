@@ -58,6 +58,7 @@ type Mod struct {
 	TablePrefix      null.String
 	IgnoreCrudRoutes bool
 	IgnoreModRoutes  bool
+	IgnoreDataDict   bool
 }
 
 // Import
@@ -161,6 +162,13 @@ func (app *Engine) Import(mods ...*Mod) {
 				metaTableName := DB().NewScope(model).TableName()
 				if metaTableName != "" {
 					tableNameMetaMap[metaTableName] = meta
+					if !mod.IgnoreDataDict {
+						DefaultCache.HSet(
+							BuildKey("datadict"),
+							fmt.Sprintf("%s:%s", meta.ModCode, meta.Name),
+							JSONStringify(meta, true),
+						)
+					}
 				}
 			}
 			if migrate {
