@@ -40,7 +40,7 @@ func (cs *captchaStore) Verify(id, answer string, clear bool) bool {
 	return v == answer
 }
 
-//NewCaptcha creates a captcha instance from driver and store
+// NewCaptcha creates a captcha instance from driver and store
 func NewCaptcha() *base64Captcha.Captcha {
 	driver := &base64Captcha.DriverDigit{
 		Height:   80,
@@ -65,6 +65,11 @@ func GenerateCaptcha() (id string, base64Str string) {
 // VerifyCaptcha Verify captcha value.
 func VerifyCaptcha(idKey, value string) bool {
 	return store.Verify(idKey, value, true)
+}
+
+// VerifyCaptchaWithClear Verify captcha value.
+func VerifyCaptchaWithClear(idKey, value string, clear bool) bool {
+	return store.Verify(idKey, value, clear)
 }
 
 // ParseCaptchaID
