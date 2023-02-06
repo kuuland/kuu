@@ -119,6 +119,11 @@ var UserMenusRoute = RouteInfo{
 		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
 			return c.STDErr(err, "user_menus_failed")
 		}
+		// 有sys_menu权限的直接返回所有菜单
+		if c.PrisDesc.HasPermission("sys_menu") {
+			sort.Sort(menus)
+			return c.STD(menus)
+		}
 		var (
 			codeMap   = make(map[string]Menu)
 			existsMap = make(map[uint]bool)
