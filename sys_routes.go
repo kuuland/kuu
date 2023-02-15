@@ -121,8 +121,8 @@ var UserMenusRoute = RouteInfo{
 		}
 		// 有sys_menu权限的直接返回所有菜单
 		if c.PrisDesc.HasPermission("sys_menu") {
-			sort.Sort(menus)
-			return c.STD(menus)
+			sort.Sort(total)
+			return c.STD(total)
 		}
 		var (
 			codeMap   = make(map[string]Menu)
