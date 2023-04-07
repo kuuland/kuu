@@ -13,7 +13,7 @@ import (
 func init() {
 	paramsUpdateKey := BuildKey("params", "update", "code")
 	DefaultCache.Subscribe([]string{paramsUpdateKey}, func(key string, value string) {
-		if key == paramsUpdateKey {
+		if _, has := fromParamKeys[value]; has {
 			C().LoadFromParams(value)
 		}
 	})
@@ -535,7 +535,11 @@ func (l *Param) AfterSave(tx *gorm.DB) error {
 	go func() {
 		// 同时兼容单机和微服务模式
 		time.Sleep(time.Second * 5)
-		C().LoadFromParams(l.Code)
+		// 主应用: 只重新加载已经load过的
+		if _, has := fromParamKeys[l.Code]; has {
+			C().LoadFromParams(l.Code)
+		}
+		// 通知其它应用
 		DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
 	}()
 	return nil

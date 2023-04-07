@@ -179,11 +179,14 @@ func (c *Config) DefaultGetBool(path string, defaultValue bool) bool {
 	}
 }
 
-func (c *Config) LoadFromParams(kyes ...string) {
+func (c *Config) LoadFromParams(keys ...string) {
+	// 缓存key用于监听当前应用需要的key
+	for _, key := range keys {
+		fromParamKeys[key] = true
+	}
 	var params []Param
-	DB().Model(&Param{}).Where("code in (?)", kyes).Find(&params)
+	DB().Model(&Param{}).Where("code in (?)", keys).Find(&params)
 	for _, param := range params {
-		fromParamKeys[param.Code] = true
 		INFO("Load Config From param: %s(%s)", param.Code, param.Name)
 		if param.Type == "json" {
 			var err error
