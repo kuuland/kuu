@@ -278,7 +278,7 @@ func GetLoginableOrgs(c *Context, uid uint) ([]Org, error) {
 		return nil, err
 	}
 	if desc := GetPrivilegesDesc(sc); desc != nil {
-		if err := c.IgnoreAuth().DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data).Error; err != nil {
+		if err := DB().Where("id in (?)", desc.LoginableOrgIDs).Find(&data).Error; err != nil {
 			return nil, err
 		}
 	}
@@ -287,7 +287,7 @@ func GetLoginableOrgs(c *Context, uid uint) ([]Org, error) {
 
 func GetActOrg(c *Context, actOrgID uint) (actOrg Org, err error) {
 	if actOrgID != 0 && c.PrisDesc.IsReadableOrgID(actOrgID) {
-		err = c.IgnoreAuth().DB().First(&actOrg, "id = ?", actOrgID).Error
+		err = DB().First(&actOrg, "id = ?", actOrgID).Error
 	} else {
 		var list []Org
 		if list, err = GetLoginableOrgs(c, c.SignInfo.UID); err != nil {

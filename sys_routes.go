@@ -27,7 +27,6 @@ var OrgLoginableRoute = RouteInfo{
 		"org_query_failed": "Query organization failed",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
 		data, err := GetLoginableOrgs(c, c.SignInfo.UID)
 		if err != nil {
 			return c.STDErr(err, "org_query_failed")
@@ -52,7 +51,7 @@ var OrgSwitchRoute = RouteInfo{
 			return c.STDErr(err, "org_switch_failed")
 		}
 
-		err := c.IgnoreAuth().DB().
+		err := DB().
 			Model(&User{ID: c.SignInfo.UID}).
 			Update(User{ActOrgID: body.ActOrgID}).Error
 
@@ -116,7 +115,7 @@ var UserMenusRoute = RouteInfo{
 		}
 		// 补全父级菜单
 		var total MenuList
-		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
+		if err := DB().Find(&total).Error; err != nil {
 			return c.STDErr(err, "user_menus_failed")
 		}
 		// 有sys_menu权限的直接返回所有菜单
@@ -923,7 +922,7 @@ var LangSwitchRoute = RouteInfo{
 			return c.STDErr(err, "lang_switch_failed")
 		}
 
-		err := c.IgnoreAuth().DB().
+		err := DB().
 			Model(&User{ID: c.SignInfo.UID}).
 			Update(User{Lang: body.Lang}).Error
 

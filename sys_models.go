@@ -204,9 +204,9 @@ type Org struct {
 }
 
 // BeforeCreate
-func (o *Org) BeforeCreate() {
+func (o *Org) BeforeCreate(scope *gorm.Scope) {
 	if o.Pid == 0 {
-		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() && desc.ActOrgID != 0 {
+		if desc := getDescFromDBScope(scope); desc != nil && desc.IsValid() {
 			o.Pid = desc.ActOrgID
 		} else if o.Code != "default" {
 			o.Pid = RootOrgID()

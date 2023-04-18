@@ -52,6 +52,8 @@ func NewBizScope(c *Context, value interface{}, db *gorm.DB) *Scope {
 	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()
 	}
+	prisdesc, _ := c.Get(GLSPrisDescKey)
+	db = db.Set(GLSPrisDescKey, prisdesc)
 	scope := &Scope{
 		Context:     c,
 		DB:          db,
@@ -136,8 +138,6 @@ func (scope *Scope) callMethod(methodName string, reflectValue reflect.Value) {
 		reflectValue = reflectValue.Addr()
 	}
 	if methodValue := reflectValue.MethodByName(methodName); methodValue.IsValid() {
-		prisdesc, _ := scope.Context.Get(GLSPrisDescKey)
-		scope.DB = scope.DB.Set(GLSPrisDescKey, prisdesc)
 		switch method := methodValue.Interface().(type) {
 		case func():
 			method()

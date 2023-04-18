@@ -356,16 +356,32 @@ func (c *Context) parseAcceptLanguage() string {
 }
 
 // WithTransaction
-func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
-	return WithTransaction(fn)
+func (c *Context) WithTransaction(fn func(*gorm.DB) error) (err error) {
+	db := DB()
+	prisdesc, _ := c.Get(GLSPrisDescKey)
+	db = db.Set(GLSPrisDescKey, prisdesc)
+	tx := db.Begin()
+	if tx.Error != nil {
+		err = tx.Error
+		return
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit().Error
+		}
+	}()
+	err = fn(tx)
+	return
 }
 
-// IgnoreAuth
-func (c *Context) IgnoreAuth(cancel ...bool) *Context {
-	c.RoutineCaches.IgnoreAuth(cancel...)
-	c.Set("kuu_ignore_auth", true)
-	return c
-}
+//// IgnoreAuth
+//func (c *Context) IgnoreAuth(cancel ...bool) *Context {
+//	c.RoutineCaches.IgnoreAuth(cancel...)
+//	c.Set("kuu_ignore_auth", true)
+//	return c
+//}
 
 // Scheme
 func (c *Context) Scheme() string {
