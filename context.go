@@ -223,7 +223,10 @@ func (c *Context) resolveLocaleMessage(args []interface{}, lang string) string {
 
 // DB
 func (c *Context) DB() *gorm.DB {
-	return DB()
+	prisdesc, _ := c.Get(GLSPrisDescKey)
+	db := DB()
+	db = db.Set(GLSPrisDescKey, prisdesc)
+	return db
 }
 
 // GetPagination
@@ -357,24 +360,10 @@ func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
 	return WithTransaction(fn)
 }
 
-// SetValue
-func (c *Context) SetRoutineCache(key string, value interface{}) {
-	SetRoutineCache(key, value)
-}
-
-// DelValue
-func (c *Context) DelRoutineCache(key string) {
-	DelRoutineCache(key)
-}
-
-// GetValue
-func (c *Context) GetRoutineCache(key string) interface{} {
-	return GetRoutineCache(key)
-}
-
 // IgnoreAuth
 func (c *Context) IgnoreAuth(cancel ...bool) *Context {
 	c.RoutineCaches.IgnoreAuth(cancel...)
+	c.Set("kuu_ignore_auth", true)
 	return c
 }
 

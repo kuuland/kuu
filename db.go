@@ -108,7 +108,7 @@ func DS(name string) *gorm.DB {
 		name = singleDSName
 	}
 	if v, ok := dataSourcesMap.Load(name); ok {
-		db := v.(*gorm.DB)
+		db := v.(*gorm.DB).New()
 		return db.
 			Set("gorm:association_autoupdate", false).
 			Set("gorm:association_autocreate", false)

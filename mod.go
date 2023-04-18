@@ -100,15 +100,22 @@ func (app *Engine) Import(mods ...*Mod) {
 			} else {
 				routePath = path.Join(routePrefix, route.Path)
 			}
+
 			if route.Method == "*" {
 				app.Any(routePath, route.HandlerFunc)
 				for _, method := range []string{"GET", "POST", "PUT", "PATCH", "HEAD", "OPTIONS", "DELETE", "CONNECT", "TRACE"} {
+					if route.InWhitelist {
+						AddWhitelist(fmt.Sprintf("%s %s", route.Method, route.Path))
+					}
 					key := fmt.Sprintf("%s %s", method, routePath)
 					routesMapMu.Lock()
 					routesMap[key] = route
 					routesMapMu.Unlock()
 				}
 			} else {
+				if route.InWhitelist {
+					AddWhitelist(fmt.Sprintf("%s %s", route.Method, routePath))
+				}
 				app.Handle(route.Method, routePath, route.HandlerFunc)
 				key := fmt.Sprintf("%s %s", route.Method, routePath)
 				routesMapMu.Lock()

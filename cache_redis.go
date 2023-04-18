@@ -44,20 +44,24 @@ func (c *CacheRedis) buildKeyAndExp(key string, expiration []time.Duration) (str
 
 // NewCacheRedis
 func NewCacheRedis() *CacheRedis {
+	return NewCacheRedisWithName("redis")
+}
+
+func NewCacheRedisWithName(name string) *CacheRedis {
 	GetAppName()
 	var (
 		c = &CacheRedis{}
 	)
 	// 解析配置
 	var opts redis.UniversalOptions
-	C().GetInterface("redis", &opts)
+	C().GetInterface(name, &opts)
 	// 初始化客户端
 	cmd := redis.NewUniversalClient(&opts)
 	if _, err := cmd.Ping(context.Background()).Result(); err != nil {
 		PANIC(err)
 	}
 	c.client = cmd
-	connectedPrint(strings.Title("redis"), strings.Join(opts.Addrs, ","))
+	connectedPrint(name, strings.Join(opts.Addrs, ","))
 	return c
 }
 

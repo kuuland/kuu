@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin/binding"
@@ -474,6 +475,7 @@ func Sys() *Mod {
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,
+			GetUserDesc,
 			ImportRoute,
 			ImportTemplateRoute,
 			AuthRoute,
@@ -497,5 +499,19 @@ func Sys() *Mod {
 			TriggerRepeatEvent,
 		},
 		OnInit: initSys,
+	}
+}
+
+func loadParamsToConfigServer() {
+	if C().Has("configRedisServer") {
+		// 启动应用时，加载所有的json参数到redis
+		paramsUpdateKey := BuildKey("params", "update", "code")
+		var params []Param
+		DB().Model(&Param{}).Where("type = ?", "json").Find(&params)
+		for _, param := range params {
+			DefaultConfigServer.HSet(context.Background(), configServerCacheKey, param.Code, JSONStringify(param, true))
+			// 通知子应用重载参数
+			DefaultConfigServer.Publish(context.Background(), paramsUpdateKey, param.Code)
+		}
 	}
 }

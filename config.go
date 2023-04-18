@@ -1,18 +1,44 @@
 package kuu
 
 import (
+	"context"
 	"github.com/buger/jsonparser"
+	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"os"
 	"sync"
 )
 
 var (
-	configData     []byte
-	configInst     *Config
-	parsePathCache sync.Map
-	fromParamKeys  = make(map[string]bool)
+	configData             []byte
+	configInst             *Config
+	parsePathCache         sync.Map
+	fromParamKeys          = make(map[string]bool)
+	configServerCacheKey   = BuildKey("config", "params")
+	DefaultConfigServerKey = "configRedisServer"
+	DefaultConfigServer    redis.UniversalClient
 )
+
+func init() {
+	if C().Has("configRedisServer") {
+		DefaultConfigServer = NewCacheRedisWithName(DefaultConfigServerKey).client
+		paramsUpdateKey := BuildKey("params", "update", "code")
+		// 订阅参数的修改
+		ps := DefaultConfigServer.Subscribe(context.Background(), paramsUpdateKey)
+		if _, err := ps.Receive(context.Background()); err != nil {
+			return
+		}
+		ch := ps.Channel()
+		go func(ch <-chan *redis.Message) {
+			for msg := range ch {
+				key := msg.Payload
+				if _, has := fromParamKeys[key]; has {
+					C().LoadFromParams(key)
+				}
+			}
+		}(ch)
+	}
+}
 
 func parseKuuJSON(filePath ...string) (data []byte) {
 	var configFile string
@@ -180,21 +206,33 @@ func (c *Config) DefaultGetBool(path string, defaultValue bool) bool {
 }
 
 func (c *Config) LoadFromParams(keys ...string) {
+	if !C().Has(DefaultConfigServerKey) {
+		ERROR("configRedisServer is not configured in kuu.json")
+		return
+	}
 	// 缓存key用于监听当前应用需要的key
 	for _, key := range keys {
 		fromParamKeys[key] = true
-	}
-	var params []Param
-	DB().Model(&Param{}).Where("code in (?)", keys).Find(&params)
-	for _, param := range params {
-		INFO("Load Config From param: %s(%s)", param.Code, param.Name)
-		if param.Type == "json" {
-			var err error
-			c.data, err = jsonparser.Set(c.data, []byte(param.Value), "params", param.Code)
-			if err != nil {
-				ERROR("%s: 加载失败: %w", param.Code, err.Error())
-				continue
-			}
+		// get from redis
+		paramvalue := DefaultConfigServer.HGet(context.Background(), configServerCacheKey, key).Val()
+		if paramvalue == "" {
+			ERROR("Load config failed: [%s] not found in redis config server", key)
+			continue
+		}
+		var err error
+		// parse from json
+		var param Param
+		err = JSONParse(paramvalue, &param)
+		if err != nil {
+			ERROR("Load config failed: [%s] %s", key, err.Error())
+			continue
+		}
+		INFO("Load Config From Config Server: %s(%s)", key, param.Name)
+		// load to config
+		c.data, err = jsonparser.Set(c.data, []byte(param.Value), "params", key)
+		if err != nil {
+			ERROR("Load config failed: [%s] %s", key, err.Error())
+			continue
 		}
 	}
 }

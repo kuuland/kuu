@@ -109,6 +109,7 @@ func beforeRun() {
 			}
 		}
 	}
+	loadParamsToConfigServer()
 	DefaultCron.Start()
 	RunAllRunAfterJobs()
 }
@@ -152,6 +153,22 @@ func (app *Engine) Run(addr ...string) {
 		Handler: app.Engine,
 	}
 	beforeRun()
+	go func() {
+		INFO("Listening and serving HTTP on %s", address)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			FATAL("listen: %s", err)
+		}
+	}()
+	shutdown(srv)
+}
+
+func (app *Engine) RunWithoutBeforeAction(addr ...string) {
+	Uptime = time.Now()
+	address := resolveAddress(addr)
+	srv := &http.Server{
+		Addr:    address,
+		Handler: app.Engine,
+	}
 	go func() {
 		INFO("Listening and serving HTTP on %s", address)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -209,6 +226,16 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 					SignInfo *SignContext
 					PrisDesc *PrivilegesDesc
 				}
+				if sign, ok := c.Get("SignInfo"); ok {
+					if signctx, ok := sign.(*SignContext); ok {
+						requestCache.SignInfo = signctx
+					}
+				}
+				if desc, ok := c.Get("PrisDesc"); ok {
+					if descpris, ok := desc.(*PrivilegesDesc); ok {
+						requestCache.PrisDesc = descpris
+					}
+				}
 				if s := GetCacheString(requestId); s != "" {
 					_ = JSONParse(s, &requestCache)
 				}
@@ -238,6 +265,11 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				if sc != nil && sc.IsValid() {
 					SetCacheString(fmt.Sprintf("login_state_%s", requestId), JSONStringify(requestCache), 30*time.Minute)
 				}
+				c.Set(GLSSignInfoKey, kc.SignInfo)
+				c.Set(GLSPrisDescKey, kc.PrisDesc)
+				c.Set(GLSRoutineCachesKey, kc.RoutineCaches)
+				c.Set(GLSRequestContextKey, kc)
+				c.Set(GLSRequestIDKey, requestId)
 				glsVals := make(gls.Values)
 				glsVals[GLSSignInfoKey] = kc.SignInfo
 				glsVals[GLSPrisDescKey] = kc.PrisDesc
@@ -483,7 +515,7 @@ func resolveAddress(addr []string) string {
 }
 
 func connectedPrint(name, args string) {
-	INFO("%-8s is connected: %s", name, args)
+	INFO("Redis: %s is connected: %s", name, args)
 }
 
 func (app *Engine) init() {

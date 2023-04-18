@@ -131,11 +131,22 @@ $ cat kuu.json
     "args": "host=127.0.0.1 port=5432 user=root dbname=kuu password=hello sslmode=disable"
   },
   "redis": {
-    "addr": "127.0.0.1:6379"
+    "addrs": [
+      "redis-service:6379"
+    ],
+    "password": "12345678",
+    "db": 0
   },
   "statics": {
     "/assets": "assets/",
     "/drone_yml": ".drone.yml"
+  },
+  "configRedisServer": {
+    "addrs": [
+      "redis-service:6379"
+    ],
+    "password": "12345678",
+    "db": 1
   }
 }
 ```
@@ -170,6 +181,7 @@ List of preset config:
 - `whitelist:prefix` - Let whitelist also matches paths with global prefix, default is `true`.
 - `ignoreDefaultRootRoute` - Do not mount the default root route, default is `false`.
 - `logs` - Log dir.
+- `configRedisServer`: Load config from redis server. Config store in kuu.Param
 
 > Notes: Static paths are automatically added to the [whitelist](#whitelist).
 

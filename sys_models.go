@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -11,12 +12,6 @@ import (
 )
 
 func init() {
-	paramsUpdateKey := BuildKey("params", "update", "code")
-	DefaultCache.Subscribe([]string{paramsUpdateKey}, func(key string, value string) {
-		if _, has := fromParamKeys[value]; has {
-			C().LoadFromParams(value)
-		}
-	})
 }
 
 // Model
@@ -533,14 +528,11 @@ func (l *Param) RepairDBTypes() {
 
 func (l *Param) AfterSave(tx *gorm.DB) error {
 	go func() {
-		// 同时兼容单机和微服务模式
-		time.Sleep(time.Second * 5)
-		// 主应用: 只重新加载已经load过的
-		if _, has := fromParamKeys[l.Code]; has {
-			C().LoadFromParams(l.Code)
+		if l.Type == "json" && C().Has(DefaultConfigServerKey) {
+			DefaultConfigServer.HSet(context.Background(), configServerCacheKey, l.Code, JSONStringify(l.Value, true))
+			// 通知应用重载配置
+			DefaultConfigServer.Publish(context.Background(), BuildKey("params", "update", "code"), l.Code)
 		}
-		// 通知其它应用
-		DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
 	}()
 	return nil
 }

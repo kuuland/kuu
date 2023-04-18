@@ -31,13 +31,8 @@ type Cache interface {
 }
 
 func init() {
-	if C().Has("redis") {
-		// 初始化redis
-		DefaultCache = NewCacheRedis()
-	} else {
-		// 初始化bolt
-		DefaultCache = NewCacheBolt()
-	}
+	// 初始化redis
+	DefaultCache = NewCacheRedis()
 	_ = DefaultCache.Subscribe([]string{intlMessagesChangedChannel}, func(c string, d string) {
 		ReloadIntlMessages()
 	})
