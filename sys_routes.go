@@ -1050,10 +1050,9 @@ var JobRunRoute = RouteInfo{
 
 // JobRunRoute
 var GetUserDesc = RouteInfo{
-	Name:        "获取当前用户的权限DESC",
-	Method:      http.MethodGet,
-	Path:        "/user_desc",
-	InWhitelist: true,
+	Name:   "获取当前用户的权限DESC",
+	Method: http.MethodGet,
+	Path:   "/user_desc",
 	IntlMessages: map[string]string{
 		"desc_invalid": "privileges desc invalid",
 	},
