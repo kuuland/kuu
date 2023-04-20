@@ -260,10 +260,8 @@ func createCallback(scope *gorm.Scope) {
 			}
 
 			// 有忽略标记时
-			if caches := GetRoutineCaches(); caches != nil {
-				if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-					return
-				}
+			if getAuthIgnoreFromDBScope(scope) {
+				return
 			}
 			auth := GetAuthProcessorDesc(scope, desc)
 			auth.OrgID = orgID

@@ -1047,19 +1047,19 @@ var JobRunRoute = RouteInfo{
 	},
 }
 
-// JobRunRoute
-var GetUserDesc = RouteInfo{
-	Name:        "获取当前用户的权限DESC",
-	Method:      http.MethodGet,
-	Path:        "/user_desc",
-	InWhitelist: true,
+// GetUserDescRoute
+var GetUserDescRoute = RouteInfo{
+	Name:   "获取当前用户的权限DESC",
+	Method: http.MethodGet,
+	Path:   "/user_desc",
 	IntlMessages: map[string]string{
 		"desc_invalid": "privileges desc invalid",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		if c.PrisDesc == nil {
+		if c.SignInfo == nil {
 			return c.STDErr(errors.New("desc_invalid"), "desc_invalid")
 		}
-		return c.STD(c.PrisDesc)
+		desc := GetPrivilegesDesc(c.SignInfo)
+		return c.STD(desc)
 	},
 }

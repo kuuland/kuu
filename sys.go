@@ -475,7 +475,7 @@ func Sys() *Mod {
 			UserRoleAssigns,
 			UserMenusRoute,
 			UploadRoute,
-			GetUserDesc,
+			GetUserDescRoute,
 			ImportRoute,
 			ImportTemplateRoute,
 			AuthRoute,

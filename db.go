@@ -1,18 +1,15 @@
 package kuu
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"github.com/jtolds/gls"
 )
 
 var (
 	dataSourcesMap sync.Map
-	mgr            = gls.NewContextManager()
 	singleDSName   = "kuu_default_db"
 )
 
@@ -43,11 +40,13 @@ func (logger dbLogger) Print(values ...interface{}) {
 func (logger dbLogger) Println(values ...interface{}) {
 	messages := gorm.LogFormatter(values...)
 	if len(messages) > 0 {
-		if r := GetRoutineRequestID(); r != "" {
-			tmp := []interface{}{fmt.Sprintf("%s=%s ", GLSRequestIDKey, r)}
-			tmp = append(tmp, messages...)
-			messages = tmp
-		}
+		// TODO 处理request id 的问题
+
+		//if r := GetRoutineRequestID(); r != "" {
+		//	tmp := []interface{}{fmt.Sprintf("%s=%s ", GLSRequestIDKey, r)}
+		//	tmp = append(tmp, messages...)
+		//	messages = tmp
+		//}
 		Logger.Info(messages...)
 	}
 }

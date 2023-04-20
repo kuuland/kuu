@@ -16,51 +16,70 @@ func init() {
 
 // Model
 type Model struct {
-	ID          uint        `gorm:"primary_key"`
-	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID       uint        `name:"所属组织ID（默认字段）"`
-	CreatedByID uint        `name:"创建人ID（默认字段）"`
-	UpdatedByID uint        `name:"修改人ID（默认字段）"`
-	DeletedByID uint        `name:"删除人ID（默认字段）"`
-	Remark      null.String `name:"备注" gorm:"text"`
-	Ts          time.Time   `name:"时间戳"`
-	Org         *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+	ID                 uint        `gorm:"primary_key"`
+	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt          *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	OrgID              uint        `name:"所属组织ID（默认字段）"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	Remark             null.String `name:"备注" gorm:"text"`
+	Ts                 time.Time   `name:"时间戳"`
+	Org                *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 }
 
 // ModelExDel
 type ModelExDel struct {
-	ID          uint        `gorm:"primary_key"`
-	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	OrgID       uint        `name:"所属组织ID（默认字段）"`
-	CreatedByID uint        `name:"创建人ID（默认字段）"`
-	UpdatedByID uint        `name:"修改人ID（默认字段）"`
-	Remark      null.String `name:"备注" gorm:"text"`
-	Ts          time.Time   `name:"时间戳"`
-	Org         *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	ID                 uint        `gorm:"primary_key"`
+	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	OrgID              uint        `name:"所属组织ID（默认字段）" kuu:"permi=val;key=val;"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	Remark             null.String `name:"备注" gorm:"text"`
+	Ts                 time.Time   `name:"时间戳"`
+	Org                *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
 }
 
 // ModelExOrg
 type ModelExOrg struct {
-	ID          uint        `gorm:"primary_key"`
-	CreatedAt   time.Time   `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	CreatedByID uint        `name:"创建人ID（默认字段）"`
-	UpdatedByID uint        `name:"修改人ID（默认字段）"`
-	DeletedByID uint        `name:"删除人ID（默认字段）"`
-	Remark      null.String `name:"备注" gorm:"text"`
-	Ts          time.Time   `name:"时间戳"`
-	CreatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+	ID                 uint        `gorm:"primary_key"`
+	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt          *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	Remark             null.String `name:"备注" gorm:"text"`
+	Ts                 time.Time   `name:"时间戳"`
+	CreatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 }
 
 // ExtendField
@@ -75,21 +94,27 @@ type ExtendField struct {
 // User
 type User struct {
 	// 引用Model将无法Preload，故复制字段
-	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID       uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注" gorm:"text"`
-	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+	ID                 uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
+	CreatedAt          time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
+	OrgID              uint       `name:"所属组织ID（默认字段）"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	Remark             string     `name:"备注" gorm:"text"`
+	Ts                 time.Time  `name:"时间戳"`
+	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Username    string       `name:"账号" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
@@ -176,21 +201,27 @@ func (u *User) AfterDelete() {
 // Org
 type Org struct {
 	// 引用Model将无法Preload，故复制字段
-	ID          uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID       uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注" gorm:"text"`
-	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+	ID                 uint       `gorm:"primary_key" rest:"*" displayName:"用户"`
+	CreatedAt          time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
+	OrgID              uint       `name:"所属组织ID（默认字段）"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	Remark             string     `name:"备注" gorm:"text"`
+	Ts                 time.Time  `name:"时间戳"`
+	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Code      string `name:"组织编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
@@ -273,21 +304,27 @@ type RoleAssign struct {
 // Role
 type Role struct {
 	// 引用Model将无法Preload，故复制字段
-	ID          uint       `gorm:"primary_key" rest:"*" displayName:"角色"`
-	CreatedAt   time.Time  `name:"创建时间，ISO字符串（默认字段）"`
-	UpdatedAt   time.Time  `name:"修改时间，ISO字符串（默认字段）"`
-	DeletedAt   *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	Dr          int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID       uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID uint       `name:"创建人ID（默认字段）"`
-	UpdatedByID uint       `name:"修改人ID（默认字段）"`
-	DeletedByID uint       `name:"删除人ID（默认字段）"`
-	Remark      string     `name:"备注" gorm:"text"`
-	Ts          time.Time  `name:"时间戳"`
-	Org         *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
-	CreatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
-	UpdatedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
-	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
+	ID                 uint       `gorm:"primary_key" rest:"*" displayName:"角色"`
+	CreatedAt          time.Time  `name:"创建时间，ISO字符串（默认字段）"`
+	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
+	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
+	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
+	OrgID              uint       `name:"所属组织ID（默认字段）"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	Remark             string     `name:"备注" gorm:"text"`
+	Ts                 time.Time  `name:"时间戳"`
+	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
+	CreatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
+	UpdatedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:updated_by_id"`
+	DeletedBy          *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
 	Code                string                `name:"角色编码" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
@@ -412,18 +449,16 @@ func (m *Menu) AfterDelete(tx *gorm.DB) error {
 }
 
 func (m *Menu) updatePresetRolePrivileges(tx *gorm.DB) error {
-	IgnoreAuth()
-	defer IgnoreAuth(true)
-
-	if err := tx.Model(&OperationPrivileges{}).Unscoped().Where(OperationPrivileges{RoleID: RootRoleID()}).Delete(OperationPrivileges{}).Error; err != nil {
+	db := tx.New().Set(GLSIgnoreAuthKey, true)
+	if err := db.Model(&OperationPrivileges{}).Unscoped().Where(OperationPrivileges{RoleID: RootRoleID()}).Delete(OperationPrivileges{}).Error; err != nil {
 		return err
 	}
 	var menus []Menu
-	if err := tx.Model(&Menu{}).Find(&menus).Error; err != nil {
+	if err := db.Set(GLSIgnoreAuthKey, true).Model(&Menu{}).Find(&menus).Error; err != nil {
 		return err
 	}
 	for _, menu := range menus {
-		if err := tx.Model(&OperationPrivileges{}).Create(&OperationPrivileges{
+		if err := db.Model(&OperationPrivileges{}).Create(&OperationPrivileges{
 			ModelExOrg: ModelExOrg{
 				CreatedByID: RootUID(),
 				UpdatedByID: RootUID(),
@@ -440,11 +475,9 @@ func (m *Menu) setParentCodes(scope *gorm.Scope) (string, error) {
 	var newParentCodes string
 	if m.ParentCode.String != "" {
 		var parent Menu
-		IgnoreAuth()
-		if err := scope.NewDB().Model(&Menu{}).Where(&Menu{Code: m.ParentCode.String}).First(&parent).Error; err != nil {
+		if err := scope.NewDB().Set(GLSIgnoreAuthKey, true).Model(&Menu{}).Where(&Menu{Code: m.ParentCode.String}).First(&parent).Error; err != nil {
 			return newParentCodes, err
 		}
-		IgnoreAuth(true)
 		newParentCodes = fmt.Sprintf("%s%s,", parent.ParentCodes.String, parent.Code)
 	} else {
 		newParentCodes = "root,"

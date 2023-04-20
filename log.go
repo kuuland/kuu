@@ -175,12 +175,6 @@ func logWithFields(extraFields logrus.Fields, callback func(fields logrus.Fields
 		}
 	}
 	if callback != nil {
-		if fields != nil {
-			sessID := GetRoutineRequestID()
-			if _, has := fields["request_id"]; !has && sessID != "" {
-				fields["request_id"] = sessID
-			}
-		}
 		callback(fields, format, args...)
 	}
 }
