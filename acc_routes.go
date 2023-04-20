@@ -105,7 +105,7 @@ var ValidRoute = RouteInfo{
 	HandlerFunc: func(c *Context) *STDReply {
 		// 查询用户
 		var user User
-		if err := c.IgnoreAuth().DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
+		if err := DB().Select("lang, act_org_id").First(&user, "id = ?", c.SignInfo.UID).Error; err != nil {
 			return c.STDErr(err, "acc_invalid_token")
 		}
 		// 处理Lang参数

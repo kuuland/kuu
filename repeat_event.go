@@ -88,7 +88,6 @@ var TriggerRepeatEvent = RouteInfo{
 	Method: "GET",
 	Path:   "/TriggerRepeatEvent",
 	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
 		name := c.Query("name")
 		q := DB().Model(&RepeatEvent{}).Where("status = 0 and next_time <= ?", time.Now())
 		if name != "" {

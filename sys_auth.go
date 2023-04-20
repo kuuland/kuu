@@ -231,6 +231,15 @@ func (por *DefaultAuthProcessor) AddWritableWheres(auth AuthProcessorDesc) (err 
 	return
 }
 
+func getAuthIgnoreFromDBScope(scope *gorm.Scope) bool {
+	if ignore, has := scope.Get(GLSIgnoreAuthKey); has {
+		if desc, ok := ignore.(bool); ok && desc {
+			return true
+		}
+	}
+	return false
+}
+
 // AddReadableWheres
 func (por *DefaultAuthProcessor) AddReadableWheres(auth AuthProcessorDesc) (err error) {
 	if auth.Meta == nil || !auth.PrisDesc.IsValid() {
@@ -255,31 +264,9 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 		return
 	}
 	meta := Meta(scope.Value)
-	caches := GetRoutineCaches()
-	if caches != nil {
-		// 有忽略标记时
-		if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-			return
-		}
-		// 查询用户菜单时
-		if meta.Name == "Menu" {
-			if desc.NotRootUser() {
-				codeField, hasCodeField := scope.FieldByName("Code")
-				createdByIDField, hasCreatedByIDField := scope.FieldByName("CreatedByID")
-				if hasCodeField && hasCreatedByIDField {
-					// 菜单数据权限控制与组织无关，且只有两种情况：
-					// 1.自己创建的，一定看得到
-					// 2.别人创建的，必须通过分配操作权限才能看到
-					scope.Search.Where(fmt.Sprintf("(%v.%v IN (?)) OR (%v.%v = ?)",
-						scope.QuotedTableName(),
-						scope.Quote(codeField.DBName),
-						scope.QuotedTableName(),
-						scope.Quote(createdByIDField.DBName),
-					), desc.Permissions, desc.UID)
-				}
-			}
-			return
-		}
+	// 有忽略标记时
+	if getAuthIgnoreFromDBScope(scope) {
+		return
 	}
 
 	subDocIDNames := meta.SubDocIDNames
@@ -306,12 +293,6 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 				scope.Quote(dbName),
 			))
 			attrs = append(attrs, orgIDs)
-
-			// 空组织
-			sqls = append(sqls, fmt.Sprintf("(%v.%v IS NULL)",
-				scope.QuotedTableName(),
-				scope.Quote(dbName),
-			))
 		}
 		if len(personalOrgIDMap) > 0 && personalOrgIDMap[desc.ActOrgID].ID != 0 {
 			if f, ok := scope.FieldByName("CreatedByID"); ok {
@@ -350,21 +331,11 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 			}
 		}
 	}
-	if meta.Name == "User" {
-		sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
-			scope.QuotedTableName(),
-			scope.Quote("id"),
-		))
-		attrs = append(attrs, desc.UID)
-	}
 	return
 }
 
 // GetPrivilegesDesc
 func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
-	IgnoreAuth()
-	defer IgnoreAuth(true)
-
 	var (
 		sign *SignContext
 		uid  uint

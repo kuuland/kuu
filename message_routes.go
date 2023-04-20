@@ -35,9 +35,6 @@ var MessagesLatestRoute = RouteInfo{
 		"messages_latest_failed": "Get latest messages failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
-		defer c.IgnoreAuth(true)
-
 		var query struct {
 			Limit        string `form:"limit"`
 			RecipientIDs string `form:"recipient_ids"`
@@ -77,7 +74,7 @@ var MessagesLatestRoute = RouteInfo{
 		if len(recipientIDs) > 0 {
 			reply.RecipientMap = make(map[uint]replyItem)
 			for _, itemId := range recipientIDs {
-				baseMessageDB := c.DB().Model(&Message{}).Where("sender_id = ? OR recipient_user_ids LIKE ?", itemId, "%"+fmt.Sprintf("%d", itemId)+"%")
+				baseMessageDB := DB().Model(&Message{}).Where("sender_id = ? OR recipient_user_ids LIKE ?", itemId, "%"+fmt.Sprintf("%d", itemId)+"%")
 				messsagesDB := GetMessageCommonDB(baseMessageDB, c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 1, limit)
 				if _, v, err := c.ParseCond(&Message{}, messsagesDB); err != nil {
 					return c.STDErr(err, "messages_latest_failed")
@@ -98,7 +95,7 @@ var MessagesLatestRoute = RouteInfo{
 				reply.RecipientMap[itemId] = item
 			}
 		} else {
-			messsagesDB := GetMessageCommonDB(c.DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 1, limit)
+			messsagesDB := GetMessageCommonDB(DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode, 1, limit)
 			if _, v, err := c.ParseCond(&Message{}, messsagesDB); err != nil {
 				return c.STDErr(err, "messages_latest_failed")
 			} else {
@@ -111,7 +108,7 @@ var MessagesLatestRoute = RouteInfo{
 			sort.Sort(messages)
 			reply.Messages = messages
 		}
-		count, err := FindUnreadMessagesCount(c.DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
+		count, err := FindUnreadMessagesCount(DB().Model(&Message{}), c.SignInfo.UID, c.PrisDesc.ReadableOrgIDs, c.PrisDesc.RolesCode)
 		if err != nil {
 			return c.STDErr(err, "messages_latest_failed")
 		}
@@ -128,9 +125,6 @@ var MessagesReadRoute = RouteInfo{
 		"messages_read_failed": "Update message status failed.",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
-		defer c.IgnoreAuth(true)
-
 		var body struct {
 			MessageIDs   []uint
 			RecipientIDs []uint
@@ -142,7 +136,7 @@ var MessagesReadRoute = RouteInfo{
 		if !body.All && len(body.MessageIDs) == 0 && len(body.RecipientIDs) == 0 {
 			return c.STDOK()
 		}
-		err := c.WithTransaction(func(tx *gorm.DB) error {
+		err := WithTransaction(func(tx *gorm.DB) error {
 			messageDB := tx.Model(&Message{})
 			if !body.All {
 				if len(body.MessageIDs) > 0 {

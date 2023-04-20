@@ -213,9 +213,17 @@ func execHooksCallback(partName string, scope *gorm.Scope) {
 	}
 }
 
+func getDescFromDBScope(scope *gorm.Scope) *PrivilegesDesc {
+	if idesc, has := scope.Get(GLSPrisDescKey); has && idesc != nil {
+		desc := idesc.(*PrivilegesDesc)
+		return desc
+	}
+	return nil
+}
+
 func createCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if desc := GetRoutinePrivilegesDesc(); desc != nil {
+		if desc := getDescFromDBScope(scope); desc != nil {
 			var (
 				orgID       uint
 				createdByID uint
@@ -252,10 +260,8 @@ func createCallback(scope *gorm.Scope) {
 			}
 
 			// 有忽略标记时
-			if caches := GetRoutineCaches(); caches != nil {
-				if _, ignoreAuth := caches[GLSIgnoreAuthKey]; ignoreAuth {
-					return
-				}
+			if getAuthIgnoreFromDBScope(scope) {
+				return
 			}
 			auth := GetAuthProcessorDesc(scope, desc)
 			auth.OrgID = orgID
@@ -277,7 +283,7 @@ func deleteCallback(scope *gorm.Scope) {
 
 		deletedAtField, hasDeletedAtField := scope.FieldByName("DeletedAt")
 		var desc *PrivilegesDesc
-		if desc = GetRoutinePrivilegesDesc(); desc.IsValid() {
+		if desc = getDescFromDBScope(scope); desc != nil && desc.IsValid() {
 			auth := GetAuthProcessorDesc(scope, desc)
 			if err := ActiveAuthProcessor.AddWritableWheres(auth); err != nil {
 				_ = scope.Err(err)
@@ -344,7 +350,7 @@ func modelChangeCallback(scope *gorm.Scope) {
 
 func updateCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
+		if desc := getDescFromDBScope(scope); desc != nil && desc.IsValid() {
 			// 添加可写权限控制
 			auth := GetAuthProcessorDesc(scope, desc)
 			if err := ActiveAuthProcessor.AddWritableWheres(auth); err != nil {
@@ -374,7 +380,7 @@ func afterSaveCallback(scope *gorm.Scope) {
 
 func queryCallback(scope *gorm.Scope) {
 	if !scope.HasError() {
-		if desc := GetRoutinePrivilegesDesc(); desc.IsValid() {
+		if desc := getDescFromDBScope(scope); desc != nil && desc.IsValid() {
 			auth := GetAuthProcessorDesc(scope, desc)
 			if err := ActiveAuthProcessor.AddReadableWheres(auth); err != nil {
 				_ = scope.Err(err)

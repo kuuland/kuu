@@ -35,11 +35,10 @@ func (s *STDReply) MarshalJSON() ([]byte, error) {
 // Context
 type Context struct {
 	*gin.Context
-	app           *Engine
-	SignInfo      *SignContext
-	PrisDesc      *PrivilegesDesc
-	RoutineCaches RoutineCaches
-	RouteInfo     *RouteInfo
+	app       *Engine
+	SignInfo  *SignContext
+	PrisDesc  *PrivilegesDesc
+	RouteInfo *RouteInfo
 }
 
 func (c *Context) RequestID() string {
@@ -222,10 +221,14 @@ func (c *Context) resolveLocaleMessage(args []interface{}, lang string) string {
 }
 
 // DB
-func (c *Context) DB() *gorm.DB {
+func (c *Context) DB(cancel ...bool) *gorm.DB {
 	prisdesc, _ := c.Get(GLSPrisDescKey)
 	db := DB()
 	db = db.Set(GLSPrisDescKey, prisdesc)
+	// 设置取消权限的标记
+	if len(cancel) > 0 && cancel[0] {
+		db = db.Set(GLSIgnoreAuthKey, true)
+	}
 	return db
 }
 
@@ -356,15 +359,24 @@ func (c *Context) parseAcceptLanguage() string {
 }
 
 // WithTransaction
-func (c *Context) WithTransaction(fn func(*gorm.DB) error) error {
-	return WithTransaction(fn)
-}
-
-// IgnoreAuth
-func (c *Context) IgnoreAuth(cancel ...bool) *Context {
-	c.RoutineCaches.IgnoreAuth(cancel...)
-	c.Set("kuu_ignore_auth", true)
-	return c
+func (c *Context) WithTransaction(fn func(*gorm.DB) error) (err error) {
+	db := DB()
+	prisdesc, _ := c.Get(GLSPrisDescKey)
+	db = db.Set(GLSPrisDescKey, prisdesc)
+	tx := db.Begin()
+	if tx.Error != nil {
+		err = tx.Error
+		return
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit().Error
+		}
+	}()
+	err = fn(tx)
+	return
 }
 
 // Scheme

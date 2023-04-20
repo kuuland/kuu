@@ -27,7 +27,6 @@ var OrgLoginableRoute = RouteInfo{
 		"org_query_failed": "Query organization failed",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		c.IgnoreAuth()
 		data, err := GetLoginableOrgs(c, c.SignInfo.UID)
 		if err != nil {
 			return c.STDErr(err, "org_query_failed")
@@ -52,7 +51,7 @@ var OrgSwitchRoute = RouteInfo{
 			return c.STDErr(err, "org_switch_failed")
 		}
 
-		err := c.IgnoreAuth().DB().
+		err := DB().
 			Model(&User{ID: c.SignInfo.UID}).
 			Update(User{ActOrgID: body.ActOrgID}).Error
 
@@ -116,7 +115,7 @@ var UserMenusRoute = RouteInfo{
 		}
 		// 补全父级菜单
 		var total MenuList
-		if err := c.IgnoreAuth().DB().Find(&total).Error; err != nil {
+		if err := DB().Find(&total).Error; err != nil {
 			return c.STDErr(err, "user_menus_failed")
 		}
 		// 有sys_menu权限的直接返回所有菜单
@@ -923,7 +922,7 @@ var LangSwitchRoute = RouteInfo{
 			return c.STDErr(err, "lang_switch_failed")
 		}
 
-		err := c.IgnoreAuth().DB().
+		err := DB().
 			Model(&User{ID: c.SignInfo.UID}).
 			Update(User{Lang: body.Lang}).Error
 
@@ -1048,8 +1047,8 @@ var JobRunRoute = RouteInfo{
 	},
 }
 
-// JobRunRoute
-var GetUserDesc = RouteInfo{
+// GetUserDescRoute
+var GetUserDescRoute = RouteInfo{
 	Name:   "获取当前用户的权限DESC",
 	Method: http.MethodGet,
 	Path:   "/user_desc",
@@ -1057,9 +1056,10 @@ var GetUserDesc = RouteInfo{
 		"desc_invalid": "privileges desc invalid",
 	},
 	HandlerFunc: func(c *Context) *STDReply {
-		if c.PrisDesc == nil {
+		if c.SignInfo == nil {
 			return c.STDErr(errors.New("desc_invalid"), "desc_invalid")
 		}
-		return c.STD(c.PrisDesc)
+		desc := GetPrivilegesDesc(c.SignInfo)
+		return c.STD(desc)
 	},
 }

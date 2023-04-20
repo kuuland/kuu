@@ -45,11 +45,12 @@ func (m *Message) BeforeCreate() {
 		m.Status = MessageStatusDraft
 	}
 	m.SentAt = time.Now()
-	if c := GetRoutineRequestContext(); c != nil {
-		m.SenderSourceIP = c.ClientIP()
-		m.SenderID = c.SignInfo.UID
-		m.SenderUsername = c.SignInfo.Username
-	}
+	// TODO 处理IP的问题
+	//if c := GetRoutineRequestContext(); c != nil {
+	//	m.SenderSourceIP = c.ClientIP()
+	//	m.SenderID = c.SignInfo.UID
+	//	m.SenderUsername = c.SignInfo.Username
+	//}
 	m.RecipientUserIDs = strings.TrimSpace(m.RecipientUserIDs)
 	m.RecipientRoleCodes = strings.TrimSpace(m.RecipientRoleCodes)
 	m.RecipientOrgIDs = strings.TrimSpace(m.RecipientOrgIDs)

@@ -16,7 +16,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/jtolds/gls"
 )
 
 var (
@@ -54,18 +53,6 @@ type Engine struct {
 	*gin.Engine
 }
 
-// RoutineCaches
-type RoutineCaches map[string]interface{}
-
-// IgnoreAuth
-func (v RoutineCaches) IgnoreAuth(cancel ...bool) {
-	if len(cancel) > 0 && cancel[0] == true {
-		delete(v, GLSIgnoreAuthKey)
-	} else {
-		v[GLSIgnoreAuthKey] = true
-	}
-}
-
 // Default
 func Default() (app *Engine) {
 	app = &Engine{Engine: gin.Default()}
@@ -86,16 +73,6 @@ func New() (app *Engine) {
 	app.RemoveExtraSlash = true
 	app.init()
 	return
-}
-
-// SetGLSValues
-func SetGLSValues(values gls.Values, call func()) {
-	mgr.SetValues(values, call)
-}
-
-// GetGLSValue
-func GetGLSValue(key interface{}) (value interface{}, ok bool) {
-	return mgr.GetValue(key)
 }
 
 func beforeRun() {
@@ -221,7 +198,6 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				}
 				routesMapMu.RUnlock()
 
-				kc.RoutineCaches = make(RoutineCaches)
 				var requestCache struct {
 					SignInfo *SignContext
 					PrisDesc *PrivilegesDesc
@@ -267,21 +243,9 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				}
 				c.Set(GLSSignInfoKey, kc.SignInfo)
 				c.Set(GLSPrisDescKey, kc.PrisDesc)
-				c.Set(GLSRoutineCachesKey, kc.RoutineCaches)
 				c.Set(GLSRequestContextKey, kc)
 				c.Set(GLSRequestIDKey, requestId)
-				glsVals := make(gls.Values)
-				glsVals[GLSSignInfoKey] = kc.SignInfo
-				glsVals[GLSPrisDescKey] = kc.PrisDesc
-				glsVals[GLSRoutineCachesKey] = kc.RoutineCaches
-				glsVals[GLSRequestContextKey] = kc
-				glsVals[GLSRequestIDKey] = requestId
-				SetGLSValues(glsVals, func() {
-					if kc.InWhitelist() {
-						IgnoreAuth()
-					}
-					v = handler(kc)
-				})
+				v = handler(kc)
 			}
 			if v != nil {
 				switch vv := v.Data.(type) {
@@ -368,78 +332,6 @@ func (app *Engine) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoute
 // Overrite r.Any
 func (app *Engine) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return app.Engine.Any(relativePath, app.convertHandlers(handlers)...)
-}
-
-// GetRoutinePrivilegesDesc
-func GetRoutinePrivilegesDesc() *PrivilegesDesc {
-	raw, _ := GetGLSValue(GLSPrisDescKey)
-	if !IsBlank(raw) {
-		desc := raw.(*PrivilegesDesc)
-		if desc.IsValid() {
-			return desc
-		}
-	}
-	return nil
-}
-
-// GetRoutineCaches
-func GetRoutineCaches() RoutineCaches {
-	raw, _ := GetGLSValue(GLSRoutineCachesKey)
-	if !IsBlank(raw) {
-		values := raw.(RoutineCaches)
-		return values
-	}
-	if raw != nil {
-		return raw.(RoutineCaches)
-	}
-	return nil
-}
-
-// SetRoutineCache
-func SetRoutineCache(key string, value interface{}) {
-	values := GetRoutineCaches()
-	values[key] = value
-}
-
-// GetRoutineCache
-func GetRoutineCache(key string) interface{} {
-	values := GetRoutineCaches()
-	return values[key]
-}
-
-// DelRoutineCache
-func DelRoutineCache(key string) {
-	values := GetRoutineCaches()
-	delete(values, key)
-}
-
-// GetRoutineRequestContext
-func GetRoutineRequestContext() *Context {
-	raw, _ := GetGLSValue(GLSRequestContextKey)
-	if !IsBlank(raw) {
-		c := raw.(*Context)
-		return c
-	}
-	return nil
-}
-
-// GetRoutineRequestID
-func GetRoutineRequestID() string {
-	raw, ok := GetGLSValue(GLSRequestIDKey)
-	if ok {
-		return raw.(string)
-	}
-	return ""
-}
-
-// IgnoreAuth
-func IgnoreAuth(cancel ...bool) (success bool) {
-	caches := GetRoutineCaches()
-	if caches != nil {
-		caches.IgnoreAuth(cancel...)
-		success = true
-	}
-	return
 }
 
 func (app *Engine) initMiddleware() {

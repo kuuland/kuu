@@ -33,8 +33,6 @@ type CreateOrgReply struct {
 }
 
 func CreateOrg(args *CreateOrgArgs) (reply *CreateOrgReply, err error) {
-	IgnoreAuth()
-	defer IgnoreAuth(true)
 
 	tx := args.Tx
 	if tx == nil {
