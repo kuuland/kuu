@@ -3,7 +3,9 @@ package kuu
 import (
 	"errors"
 	"fmt"
+	logrusWebhook "github.com/exexute/logrus-webhook"
 	"github.com/samber/lo"
+	"github.com/yukitsune/lokirus"
 	"os"
 	"reflect"
 	"runtime"
@@ -25,7 +27,6 @@ func init() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{})
-
 	if C().GetString("env") == "prod" {
 		IsProduction = true
 	}
@@ -35,7 +36,32 @@ func init() {
 	} else {
 		Logger.SetFormatter(&logrus.TextFormatter{})
 	}
-	LogDir = C().DefaultGetString("logs", "logs")
+	var loki = struct {
+		Endpoint string
+		Labels   lokirus.Labels
+		Auth     struct {
+			Username string
+			Password string
+		}
+	}{}
+	C().GetInterface("loki", &loki)
+	if loki.Endpoint != "" {
+		opts := lokirus.NewLokiHookOptions().
+			WithLevelMap(lokirus.LevelMap{logrus.PanicLevel: "critical"}).
+			WithFormatter(&logrus.JSONFormatter{}).
+			WithStaticLabels(loki.Labels)
+		hook := lokirus.NewLokiHookWithOpts(loki.Endpoint, opts)
+		Logger.AddHook(hook)
+	}
+	var slsconfig logrusWebhook.SlsConfig
+	C().GetInterface("aliyunsls", &slsconfig)
+	if slsconfig.EndPoint != "" {
+		slsHook, err := logrusWebhook.NewSlsHook(&slsconfig, logrus.DebugLevel)
+		if err == nil {
+			Logger.AddHook(slsHook)
+		}
+	}
+	LogDir = C().GetString("logs")
 	if LogDir != "" {
 		Logger.AddHook(&LogDailyFileHook{})
 	}
