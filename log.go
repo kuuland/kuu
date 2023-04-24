@@ -3,8 +3,11 @@ package kuu
 import (
 	"errors"
 	"fmt"
+	"github.com/samber/lo"
 	"os"
 	"reflect"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -163,10 +166,17 @@ func logWithFields(extraFields logrus.Fields, callback func(fields logrus.Fields
 	if err != nil {
 		return
 	}
+	if fields == nil {
+		fields = make(logrus.Fields)
+	}
+	if extraFields == nil {
+		extraFields = make(logrus.Fields)
+	}
+	funcname := getCaller()
+	if funcname != "" {
+		extraFields["method"] = funcname
+	}
 	if len(extraFields) > 0 {
-		if fields == nil {
-			fields = make(logrus.Fields)
-		}
 		for k, v := range extraFields {
 			if vv, exists := fields[k]; exists {
 				fields[fmt.Sprintf("fields.%s", k)] = vv
@@ -174,7 +184,68 @@ func logWithFields(extraFields logrus.Fields, callback func(fields logrus.Fields
 			fields[k] = v
 		}
 	}
+
 	if callback != nil {
 		callback(fields, format, args...)
 	}
+}
+
+func getCaller() string {
+	var callers []*runtime.Func
+	var index = 2
+	for true {
+		pc, _, _, ok := runtime.Caller(index)
+		if ok {
+			funcname := runtime.FuncForPC(pc)
+			if !strings.HasPrefix(funcname.Name(), "github.com/kuuland/kuu") {
+				break
+			}
+			callers = append(callers, funcname)
+		}
+		index += 1
+	}
+
+	var method string
+	var ci = 3
+	if len(callers) == 1 {
+		ci = 3
+	}
+	var checks = [][]string{
+		{"PRINTWithFields", "PRINT"},
+		{"DEBUGWithFields", "DEBUG"},
+		{"WARNWithFields", "WARN"},
+		{"INFOWithFields", "INFO"},
+		{"ERRORWithFields", "ERROR"},
+		{"FATALWithFields", "FATAL"},
+		{"PANICWithFields", "PANIC"},
+	}
+	if len(callers) == 2 {
+		for _, check := range checks {
+			if check[0] == _getMethodByCaller(callers[0]) && check[1] == _getMethodByCaller(callers[1]) {
+				ci = 4
+				break
+			}
+		}
+	}
+	if len(callers) == 3 {
+		ci = 5
+	}
+	pc, _, line, ok := runtime.Caller(ci)
+	if ok {
+		funcname := runtime.FuncForPC(pc)
+		method = fmt.Sprintf("%s:L%d", funcname.Name(), line)
+	}
+	if strings.HasPrefix(method, "github.com/kuuland/kuu") {
+		method = ""
+	}
+	if strings.HasPrefix(method, "runtime.") {
+		method = ""
+	}
+	return method
+}
+
+func _getMethodByCaller(fn *runtime.Func) string {
+	splits := strings.Split(fn.Name(), ".")
+	method, _ := lo.Last(splits)
+	return method
 }
