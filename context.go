@@ -162,7 +162,9 @@ func (c *Context) stdErr(data interface{}, code int, args []interface{}) *STDRep
 		Message: message,
 	}
 	if v, ok := data.(error); ok {
-		c.ERROR(v)
+		if v.Error() != message {
+			c.ERROR(v)
+		}
 		c.ERROR(message)
 	}
 	return &body
