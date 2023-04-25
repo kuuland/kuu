@@ -3,7 +3,6 @@ package kuu
 import (
 	"errors"
 	"fmt"
-	logrusWebhook "github.com/exexute/logrus-webhook"
 	"github.com/samber/lo"
 	"github.com/yukitsune/lokirus"
 	"os"
@@ -48,18 +47,16 @@ func init() {
 	if loki.Endpoint != "" {
 		opts := lokirus.NewLokiHookOptions().
 			WithLevelMap(lokirus.LevelMap{logrus.PanicLevel: "critical"}).
-			WithFormatter(&logrus.JSONFormatter{}).
-			WithStaticLabels(loki.Labels)
+			WithFormatter(&logrus.TextFormatter{})
+		if len(loki.Labels) > 0 {
+			opts = opts.WithStaticLabels(loki.Labels)
+		}
+		if loki.Auth.Username != "" {
+			opts = opts.WithBasicAuth(loki.Auth.Username, loki.Auth.Password)
+		}
 		hook := lokirus.NewLokiHookWithOpts(loki.Endpoint, opts)
 		Logger.AddHook(hook)
-	}
-	var slsconfig logrusWebhook.SlsConfig
-	C().GetInterface("aliyunsls", &slsconfig)
-	if slsconfig.EndPoint != "" {
-		slsHook, err := logrusWebhook.NewSlsHook(&slsconfig, logrus.DebugLevel)
-		if err == nil {
-			Logger.AddHook(slsHook)
-		}
+
 	}
 	LogDir = C().GetString("logs")
 	if LogDir != "" {
