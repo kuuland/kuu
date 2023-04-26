@@ -30,6 +30,8 @@ func init() {
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID                      uint
+	UserName                 string
+	UserAlias                string
 	OrgID                    uint
 	Permissions              []string
 	PermissionMap            map[string]int64
@@ -283,25 +285,35 @@ func GetDataScopeWheres(scope *gorm.Scope, desc *PrivilegesDesc, orgIDs []uint, 
 		}
 	} else {
 		// 基于组织的数据权限
-		if orgIDField, has := scope.FieldByName("OrgID"); has && len(orgIDs) > 0 {
-			dbName := orgIDField.DBName
-			if meta.Name == "Org" {
-				dbName = "id"
+		for _, field := range meta.Fields {
+			if field.TagSetting["REF_META"] == "org_id" && field.TagSetting["AUTH_SCOPE"] == "AUTH_SCOPE" {
+				if orgIDField, has := scope.FieldByName(field.Code); has && len(orgIDs) > 0 {
+					dbName := orgIDField.DBName
+					if meta.Name == "Org" {
+						dbName = "id"
+					}
+					sqls = append(sqls, fmt.Sprintf("(%v.%v IN (?))",
+						scope.QuotedTableName(),
+						scope.Quote(dbName),
+					))
+					attrs = append(attrs, orgIDs)
+				}
 			}
-			sqls = append(sqls, fmt.Sprintf("(%v.%v IN (?))",
-				scope.QuotedTableName(),
-				scope.Quote(dbName),
-			))
-			attrs = append(attrs, orgIDs)
 		}
+
 		if len(personalOrgIDMap) > 0 && personalOrgIDMap[desc.ActOrgID].ID != 0 {
-			if f, ok := scope.FieldByName("CreatedByID"); ok {
-				sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
-					scope.QuotedTableName(),
-					scope.Quote(f.DBName),
-				))
-				attrs = append(attrs, desc.UID)
+			for _, field := range meta.Fields {
+				if field.TagSetting["REF_META"] == "user_id" && field.TagSetting["AUTH_SCOPE"] == "AUTH_SCOPE" {
+					if f, ok := scope.FieldByName(field.Code); ok {
+						sqls = append(sqls, fmt.Sprintf("(%v.%v = ?)",
+							scope.QuotedTableName(),
+							scope.Quote(f.DBName),
+						))
+						attrs = append(attrs, desc.UID)
+					}
+				}
 			}
+
 			if len(meta.UIDNames) > 0 {
 				for _, name := range meta.UIDNames {
 					if f, ok := scope.FieldByName(name); ok {
@@ -362,6 +374,8 @@ func GetPrivilegesDesc(signOrContextOrUID interface{}) (desc *PrivilegesDesc) {
 	}
 	desc = &PrivilegesDesc{
 		UID:           uid,
+		UserName:      user.Username,
+		UserAlias:     user.Name,
 		OrgID:         user.OrgID,
 		PermissionMap: make(map[string]int64),
 		Valid:         true,

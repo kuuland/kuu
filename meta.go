@@ -48,6 +48,7 @@ type MetadataField struct {
 	IsArray      bool
 	Value        interface{}       `json:"-" gorm:"-"`
 	Tag          reflect.StructTag `json:"-" gorm:"-"`
+	TagSetting   map[string]string `json:"-" gorm:"-"`
 }
 
 // NewValue
@@ -118,6 +119,7 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		Name:        reflectTypeName,
 		FullName:    path.Join(reflectType.PkgPath(), reflectTypeName),
 		reflectType: reflectType,
+		TagSettings: map[string]string{},
 	}
 	modelScope := DB().NewScope(value)
 	m.NativeName = modelScope.TableName()
@@ -188,7 +190,10 @@ func parseMetadata(value interface{}) (m *Metadata) {
 		}
 		tagSettings := parseTagSetting(fieldStruct.Tag, "kuu")
 		if len(tagSettings) > 0 {
-			m.TagSettings = tagSettings
+			field.TagSetting = tagSettings
+			for key, value := range tagSettings {
+				m.TagSettings[key] = value
+			}
 			if _, exists := tagSettings["PASSWORD"]; exists {
 				field.IsPassword = true
 			}

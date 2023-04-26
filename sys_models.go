@@ -11,25 +11,24 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-func init() {
-}
-
 // Model
 type Model struct {
 	ID                 uint        `gorm:"primary_key"`
 	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt          *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	OrgID              uint        `name:"所属组织ID（默认字段）"`
-	CreatedByID        uint        `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	DeletedByID        uint        `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	OrgID              uint        `name:"所属组织ID（默认字段）" kuu:"ref_meta:org_id;auth_scope"`
+	OrgCode            string      `name:"所属组织编码（默认字段）" kuu:"ref_meta:org_code"`
+	OrgName            string      `name:"所属组织名称（默认字段）" kuu:"ref_meta:org_name"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             null.String `name:"备注" gorm:"text"`
 	Ts                 time.Time   `name:"时间戳"`
 	Org                *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
@@ -43,16 +42,18 @@ type ModelExDel struct {
 	ID                 uint        `gorm:"primary_key"`
 	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
-	OrgID              uint        `name:"所属组织ID（默认字段）" kuu:"permi=val;key=val;"`
-	CreatedByID        uint        `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	DeletedByID        uint        `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	OrgID              uint        `name:"所属组织ID（默认字段）" kuu:"ref_meta:org_id;auth_scope"`
+	OrgCode            string      `name:"所属组织编码（默认字段）" kuu:"ref_meta:org_code"`
+	OrgName            string      `name:"所属组织名称（默认字段）" kuu:"ref_meta:org_name"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             null.String `name:"备注" gorm:"text"`
 	Ts                 time.Time   `name:"时间戳"`
 	Org                *Org        `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
@@ -66,15 +67,15 @@ type ModelExOrg struct {
 	CreatedAt          time.Time   `name:"创建时间，ISO字符串（默认字段）"`
 	UpdatedAt          time.Time   `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt          *time.Time  `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
-	CreatedByID        uint        `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint        `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string      `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string      `name:"创建人名称（默认字段）"`
-	DeletedByID        uint        `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string      `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string      `name:"创建人名称（默认字段）"`
+	CreatedByID        uint        `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint        `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint        `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string      `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string      `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             null.String `name:"备注" gorm:"text"`
 	Ts                 time.Time   `name:"时间戳"`
 	CreatedBy          *User       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:created_by_id"`
@@ -99,16 +100,18 @@ type User struct {
 	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID              uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID        uint       `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	DeletedByID        uint       `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	OrgID              uint       `name:"所属组织ID（默认字段）" kuu:"ref_meta:org_id;auth_scope"`
+	OrgCode            string     `name:"所属组织编码（默认字段）" kuu:"ref_meta:org_code"`
+	OrgName            string     `name:"所属组织名称（默认字段）" kuu:"ref_meta:org_name"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             string     `name:"备注" gorm:"text"`
 	Ts                 time.Time  `name:"时间戳"`
 	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
@@ -206,16 +209,18 @@ type Org struct {
 	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID              uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID        uint       `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	DeletedByID        uint       `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	OrgID              uint       `name:"所属组织ID（默认字段）" kuu:"ref_meta:org_id;auth_scope"`
+	OrgCode            string     `name:"所属组织编码（默认字段）" kuu:"ref_meta:org_code"`
+	OrgName            string     `name:"所属组织名称（默认字段）" kuu:"ref_meta:org_name"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             string     `name:"备注" gorm:"text"`
 	Ts                 time.Time  `name:"时间戳"`
 	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
@@ -309,16 +314,18 @@ type Role struct {
 	UpdatedAt          time.Time  `name:"修改时间，ISO字符串（默认字段）"`
 	DeletedAt          *time.Time `name:"删除时间，ISO字符串（默认字段）" sql:"index"`
 	Dr                 int64      `name:"删除标记（0表示未删除，非0表示删除时间戳）" gorm:"DEFAULT:0;UNIQUE_INDEX:kuu_unique"`
-	OrgID              uint       `name:"所属组织ID（默认字段）"`
-	CreatedByID        uint       `name:"创建人ID（默认字段）"`
-	CreatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	CreatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	UpdatedByID        uint       `name:"修改人ID（默认字段）"`
-	UpdatedByUserName  string     `name:"创建人帐号（默认字段）"`
-	UpdatedByUserAlias string     `name:"创建人名称（默认字段）"`
-	DeletedByID        uint       `name:"删除人ID（默认字段）"`
-	DeletedByUserName  string     `name:"创建人帐号（默认字段）"`
-	DeletedByUserAlias string     `name:"创建人名称（默认字段）"`
+	OrgID              uint       `name:"所属组织ID（默认字段）" kuu:"ref_meta:org_id;auth_scope"`
+	OrgCode            string     `name:"所属组织编码（默认字段）" kuu:"ref_meta:org_code"`
+	OrgName            string     `name:"所属组织名称（默认字段）" kuu:"ref_meta:org_name"`
+	CreatedByID        uint       `name:"创建人ID（默认字段）" kuu:"ref_meta:user_id;auth_scope"`
+	CreatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	CreatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	UpdatedByID        uint       `name:"修改人ID（默认字段）" kuu:"ref_meta:user_id"`
+	UpdatedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	UpdatedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
+	DeletedByID        uint       `name:"删除人ID（默认字段）" kuu:"ref_meta:user_id"`
+	DeletedByUserName  string     `name:"创建人帐号（默认字段）" kuu:"ref_meta:user_name"`
+	DeletedByUserAlias string     `name:"创建人名称（默认字段）" kuu:"ref_meta:user_alias"`
 	Remark             string     `name:"备注" gorm:"text"`
 	Ts                 time.Time  `name:"时间戳"`
 	Org                *Org       `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:org_id"`
@@ -564,7 +571,7 @@ func (l *Param) AfterSave(tx *gorm.DB) error {
 		if l.Type == "json" && C().Has(DefaultConfigServerKey) {
 			DefaultConfigServer.HSet(context.Background(), configServerCacheKey, l.Code, JSONStringify(l.Value, true))
 			// 通知应用重载配置
-			DefaultConfigServer.Publish(context.Background(), BuildKey("params", "update", "code"), l.Code)
+			DefaultConfigServer.Publish(context.Background(), configParamsUpdateKey, l.Code)
 		}
 	}()
 	return nil

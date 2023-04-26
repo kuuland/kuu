@@ -14,7 +14,8 @@ var (
 	configInst             *Config
 	parsePathCache         sync.Map
 	fromParamKeys          = make(map[string]bool)
-	configServerCacheKey   = BuildKey("config", "params")
+	configServerCacheKey   = "kuu_config_params"
+	configParamsUpdateKey  = "kuu_config_params_update"
 	DefaultConfigServerKey = "configRedisServer"
 	DefaultConfigServer    redis.UniversalClient
 )
@@ -22,9 +23,8 @@ var (
 func init() {
 	if C().Has("configRedisServer") {
 		DefaultConfigServer = NewCacheRedisWithName(DefaultConfigServerKey).client
-		paramsUpdateKey := BuildKey("params", "update", "code")
 		// 订阅参数的修改
-		ps := DefaultConfigServer.Subscribe(context.Background(), paramsUpdateKey)
+		ps := DefaultConfigServer.Subscribe(context.Background(), configParamsUpdateKey)
 		if _, err := ps.Receive(context.Background()); err != nil {
 			return
 		}
@@ -216,7 +216,7 @@ func (c *Config) LoadFromParams(keys ...string) {
 		// get from redis
 		paramvalue := DefaultConfigServer.HGet(context.Background(), configServerCacheKey, key).Val()
 		if paramvalue == "" {
-			ERROR("Load config failed: [%s] not found in redis config server", key)
+			WARN("Load config failed: [%s] not found in redis config server", key)
 			continue
 		}
 		var err error
