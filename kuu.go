@@ -188,17 +188,16 @@ func (app *Engine) convertHandlers(chain HandlersChain, isMiddleware ...bool) (h
 				}
 				v *STDReply
 			)
+			inputURL := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
+			routesMapMu.RLock()
+			if v, has := routesMap[inputURL]; has {
+				kc.RouteInfo = &v
+			}
+			routesMapMu.RUnlock()
 			requestId := kc.RequestID()
 			if middleware {
 				v = handler(kc)
 			} else {
-				inputURL := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
-				routesMapMu.RLock()
-				if v, has := routesMap[inputURL]; has {
-					kc.RouteInfo = &v
-				}
-				routesMapMu.RUnlock()
-
 				var requestCache struct {
 					SignInfo *SignContext
 					PrisDesc *PrivilegesDesc
