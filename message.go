@@ -8,15 +8,9 @@ import (
 )
 
 const (
-	MessageStatusDraft = 100
-	MessageStatusSent  = 200
+	MessageStatusDraft = "100"
+	MessageStatusSent  = "200"
 )
-
-func init() {
-	Enum("MessageStatus", "消息状态").
-		Add(MessageStatusDraft, "草稿").
-		Add(MessageStatusSent, "已发送")
-}
 
 type Message struct {
 	Model `rest:"*" displayName:"系统消息"`
@@ -25,7 +19,7 @@ type Message struct {
 	Content     null.String `name:"消息内容" gorm:"not null"`
 	Attachments []File      `name:"消息附件" gorm:"polymorphic:Owner;polymorphic_value:Message.Attachments"`
 
-	Status int `name:"消息状态" enum:"MessageStatus"`
+	Status string `name:"消息状态" enum:"MessageStatus"`
 
 	SenderID       uint      `name:"发送人ID"`
 	SenderUsername string    `name:"发送人账号"`
@@ -41,7 +35,7 @@ type Message struct {
 
 // BeforeCreate
 func (m *Message) BeforeCreate() {
-	if m.Status == 0 {
+	if m.Status == "" {
 		m.Status = MessageStatusDraft
 	}
 	m.SentAt = time.Now()

@@ -26,13 +26,6 @@ const (
 	ImportStatusFailed    = "failed"
 )
 
-func init() {
-	Enum("ImportStatus", "导入状态").
-		Add(ImportStatusImporting, "Importing").
-		Add(ImportStatusSuccess, "Success").
-		Add(ImportStatusFailed, "Failed")
-}
-
 type ImportContext struct {
 	Token      string
 	SignType   string

@@ -87,6 +87,7 @@ func beforeRun() {
 		}
 	}
 	loadParamsToConfigServer()
+	loadEnumToConfigServer()
 	DefaultCron.Start()
 	RunAllRunAfterJobs()
 }

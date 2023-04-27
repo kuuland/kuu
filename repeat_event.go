@@ -14,13 +14,6 @@ var (
 
 type RepeatEventProcesser func(*REContext, map[string]interface{}) error
 
-func init() {
-	Enum("RepeatEventStatus").
-		Add("-1", "已失败").
-		Add("0", "未完成").
-		Add("1", "已完成")
-}
-
 type REContext struct {
 	Event   RepeatEvent
 	Current int

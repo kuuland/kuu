@@ -95,6 +95,14 @@ func C(newConfig ...map[string]interface{}) *Config {
 	return configInst
 }
 
+func checkConfigServer() bool {
+	if !C().Has("configRedisServer") {
+		ERROR("configRedisServer is not configured in kuu.json")
+		return false
+	}
+	return true
+}
+
 func (c *Config) Get(path string) (val []byte, exists bool) {
 	keys := ParseJSONPath(path)
 	if v, _, _, err := jsonparser.Get(c.data, keys...); err == nil {
@@ -206,8 +214,7 @@ func (c *Config) DefaultGetBool(path string, defaultValue bool) bool {
 }
 
 func (c *Config) LoadFromParams(keys ...string) {
-	if !C().Has(DefaultConfigServerKey) {
-		ERROR("configRedisServer is not configured in kuu.json")
+	if !checkConfigServer() {
 		return
 	}
 	// 缓存key用于监听当前应用需要的key

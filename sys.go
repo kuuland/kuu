@@ -95,6 +95,10 @@ func initSys() error {
 		if err := createRootPrivileges(tx); err != nil {
 			return err
 		}
+		// 初始化枚举
+		if err := createEnum(tx); err != nil {
+			return err
+		}
 		// 保存初始化标记
 		param := Param{
 			Code:      initCode,
@@ -105,6 +109,90 @@ func initSys() error {
 		return tx.Create(&param).Error
 	})
 	return err
+}
+
+func createEnum(tx *gorm.DB) error {
+	var enums = []Enum{
+		{
+			Code: "ImportStatus",
+			Name: "导入状态",
+			Items: []EnumItem{
+				{
+					Label: "Importing",
+					Alias: "Importing",
+					Value: ImportStatusImporting,
+				},
+				{
+					Label: "Success",
+					Alias: "Success",
+					Value: ImportStatusSuccess,
+				}, {
+					Label: "Failed",
+					Alias: "Failed",
+					Value: ImportStatusFailed,
+				},
+			},
+		},
+		{
+			Code: "MessageStatus",
+			Name: "消息状态",
+			Items: []EnumItem{
+				{
+					Label: "草稿",
+					Alias: "草稿",
+					Value: MessageStatusDraft,
+				},
+				{
+					Label: "已发送",
+					Alias: "已发送",
+					Value: MessageStatusSent,
+				},
+			},
+		},
+		{
+			Code: "RepeatEventStatus",
+			Name: "消息状态",
+			Items: []EnumItem{
+				{
+					Label: "已失败",
+					Alias: "已失败",
+					Value: "-1",
+				}, {
+					Label: "未完成",
+					Alias: "未完成",
+					Value: "0",
+				}, {
+					Label: "已完成",
+					Alias: "已完成",
+					Value: "1",
+				},
+			},
+		}, {
+			Code: "DataScope",
+			Name: "数据范围定义",
+			Items: []EnumItem{
+				{
+					Label: "个人范围",
+					Alias: "个人范围",
+					Value: DataScopePersonal,
+				}, {
+					Label: "当前组织",
+					Alias: "当前组织",
+					Value: DataScopeCurrent,
+				}, {
+					Label: "当前及以下组织",
+					Alias: "当前及以下组织",
+					Value: DataScopeCurrentFollowing,
+				},
+			},
+		},
+	}
+	for _, item := range enums {
+		if err := tx.Create(&item).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func createRootUser(tx *gorm.DB) error {
@@ -468,6 +556,8 @@ func Sys() *Mod {
 			&Message{},
 			&MessageReceipt{},
 			&RepeatEvent{},
+			&Enum{},
+			&EnumItem{},
 		},
 		Routes: RoutesInfo{
 			OrgLoginableRoute,

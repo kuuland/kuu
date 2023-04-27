@@ -20,13 +20,6 @@ const (
 // ActiveAuthProcessor
 var ActiveAuthProcessor = DefaultAuthProcessor{}
 
-func init() {
-	Enum("DataScope", "数据范围定义").
-		Add(DataScopePersonal, "个人范围").
-		Add(DataScopeCurrent, "当前组织").
-		Add(DataScopeCurrentFollowing, "当前及以下组织")
-}
-
 // PrivilegesDesc
 type PrivilegesDesc struct {
 	UID                      uint

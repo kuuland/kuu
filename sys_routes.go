@@ -320,7 +320,7 @@ var EnumRoute = RouteInfo{
 		name := c.Query("name")
 
 		em := EnumMap()
-		var list []*EnumDesc
+		var list []*Enum
 		if name != "" {
 			for _, name := range strings.Split(name, ",") {
 				if v, ok := em[name]; ok && v != nil {
@@ -335,10 +335,10 @@ var EnumRoute = RouteInfo{
 		} else {
 			var buffer bytes.Buffer
 			for _, desc := range list {
-				if desc.ClassName != "" {
-					buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.ClassCode, desc.ClassName))
+				if desc.Name != "" {
+					buffer.WriteString(fmt.Sprintf("%s(%s) {\n", desc.Code, desc.Name))
 				} else {
-					buffer.WriteString(fmt.Sprintf("%s {\n", desc.ClassCode))
+					buffer.WriteString(fmt.Sprintf("%s {\n", desc.Code))
 				}
 				index := 0
 				for value, label := range desc.Values {
