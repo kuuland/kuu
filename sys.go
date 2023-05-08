@@ -546,6 +546,7 @@ func Sys() *Mod {
 			&ImportRecord{},
 			&User{},
 			&Org{},
+			&Dept{},
 			&RoleAssign{},
 			&Role{},
 			&OperationPrivileges{},
