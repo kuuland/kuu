@@ -52,7 +52,6 @@ func CreateOrg(args *CreateOrgArgs) (reply *CreateOrgReply, err error) {
 		}
 	}
 	org := Org{
-		OrgID:       parentOrg.ID,
 		CreatedByID: RootUID(),
 		UpdatedByID: RootUID(),
 		Code:        args.OrgCode,

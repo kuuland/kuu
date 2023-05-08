@@ -1,6 +1,7 @@
 package kuu
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -358,6 +359,10 @@ func (c *Context) parseAcceptLanguage() string {
 		}
 	}
 	return s
+}
+
+func (c *Context) WithPrisDescCtx() context.Context {
+	return context.WithValue(c.Context, "desc", c.PrisDesc)
 }
 
 // WithTransaction

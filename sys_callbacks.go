@@ -2,6 +2,7 @@ package kuu
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
@@ -228,18 +229,17 @@ func createCallback(scope *gorm.Scope) {
 				orgID       uint
 				createdByID uint
 			)
+			// set default value
+			ctx := context.WithValue(context.Background(), "desc", desc)
+			ctx = context.WithValue(ctx, "scope", scope)
+			_ = SetDefault(ctx, "__kuu_default_create", scope.Value)
+
 			if meta := getMetadata(scope); meta != nil {
 				for _, fieldmeta := range meta.Fields {
 					if key, has := fieldmeta.TagSetting["REF_META"]; has {
 						switch key {
 						case "org_id":
 							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank && desc.ActOrgID != 0 {
-									if err := scope.SetColumn(field.DBName, desc.ActOrgID); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置组织ID失败：%s", err.Error()))
-										return
-									}
-								}
 								if _, has := fieldmeta.TagSetting["AUTH_SCOPE"]; has {
 									if v, ok := field.Field.Interface().(uint); ok {
 										orgID = v
@@ -252,58 +252,17 @@ func createCallback(scope *gorm.Scope) {
 									}
 								}
 							}
-						case "org_code":
-							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank && desc.ActOrgCode != "" {
-									if err := scope.SetColumn(field.DBName, desc.ActOrgCode); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置组织编码失败：%s", err.Error()))
-										return
-									}
-								}
-							}
-						case "org_name":
-							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank && desc.ActOrgName != "" {
-									if err := scope.SetColumn(field.DBName, desc.ActOrgName); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置组织编码失败：%s", err.Error()))
-										return
-									}
-								}
-							}
 						case "user_id":
 							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank {
-									if err := scope.SetColumn(field.DBName, desc.UID); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置创建人ID失败：%s", err.Error()))
-										return
-									}
-								}
 								if fieldmeta.TagSetting["AUTH_SCOPE"] == "AUTH_SCOPE" {
 									createdByID = field.Field.Interface().(uint)
-								}
-							}
-						case "user_name":
-							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank {
-									if err := scope.SetColumn(field.DBName, desc.UserName); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置创建人登陆名失败：%s", err.Error()))
-										return
-									}
-								}
-							}
-						case "user_alias":
-							if field, ok := scope.FieldByName(fieldmeta.Code); ok {
-								if field.IsBlank {
-									if err := scope.SetColumn(field.DBName, desc.UserAlias); err != nil {
-										_ = scope.Err(fmt.Errorf("自动设置创建人登陆名失败：%s", err.Error()))
-										return
-									}
 								}
 							}
 						}
 					}
 				}
 			}
+
 			// 有忽略标记时
 			if getAuthIgnoreFromDBScope(scope) {
 				return

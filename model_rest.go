@@ -475,6 +475,8 @@ func restUpdateHandler(reflectType reflect.Type) HandlerFunc {
 				if err := Copy(params.Doc, doc); err != nil {
 					return err
 				}
+				meta := Meta(doc)
+				_ = SetDefault(c.WithPrisDescCtx(), fmt.Sprintf("%s:Update", meta.Name), doc)
 				bizScope := NewBizScope(c, val, tx)
 				bizScope.UpdateParams = &params
 				bizScope.UpdateCond = val
@@ -768,6 +770,8 @@ func restDeleteHandler(reflectType reflect.Type) HandlerFunc {
 			}
 			_, tx = ParseCond(params.Cond, modelValue, tx)
 			execDelete := func(value interface{}) error {
+				meta := Meta(value)
+				_ = SetDefault(c.WithPrisDescCtx(), fmt.Sprintf("%s:Delete", meta.Name), value)
 				bisScope := NewBizScope(c, value, tx).callCallbacks(BizDeleteKind)
 				if bisScope.HasError() {
 					return bisScope.DB.Error
@@ -847,7 +851,10 @@ func restCreateHandler(reflectType reflect.Type) HandlerFunc {
 				}
 				docs = append(docs, doc)
 			}
+
 			for i, doc := range docs {
+				meta := Meta(doc)
+				_ = SetDefault(c.WithPrisDescCtx(), fmt.Sprintf("%s:Create", meta.Name), doc)
 				bizScope := NewBizScope(c, doc, tx).callCallbacks(BizCreateKind)
 				if bizScope.HasError() {
 					return bizScope.DB.Error

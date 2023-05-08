@@ -116,6 +116,14 @@ func DS(name string) *gorm.DB {
 	return nil
 }
 
+func DBWithPrisDesc(desc *PrivilegesDesc, ignoreAuth ...bool) *gorm.DB {
+	db := DB().Set(GLSPrisDescKey, desc)
+	if len(ignoreAuth) > 0 && ignoreAuth[0] {
+		db = db.Set(GLSIgnoreAuthKey, true)
+	}
+	return db
+}
+
 // WithTransaction
 func WithTransaction(fn func(*gorm.DB) error) (err error) {
 	tx := DB().Begin()
