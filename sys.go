@@ -204,6 +204,7 @@ func createRootUser(tx *gorm.DB) error {
 		Name:        "Default",
 		Password:    MD5("kuu"),
 		IsBuiltIn:   null.NewBool(true, true),
+		IsLocal:     null.NewBool(true, true),
 	}
 	rootUser = &root
 	return tx.Create(rootUser).Error

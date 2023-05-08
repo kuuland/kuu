@@ -121,6 +121,7 @@ type User struct {
 	Disable     null.Bool    `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   null.Bool    `name:"是否内置"`
+	IsLocal     null.Bool    `name:"是否本地认证"`
 	SubDocIDs   string       `name:"扩展档案ID映射（令牌类型为键、ID为值的JSON字符串，如{\"ADMIN\":3,\"WECHAT:COMPANY\":2}）"`
 	Lang        string       `name:"最近使用语言"`
 	DenyLogin   null.Bool    `name:"禁止登录"`
