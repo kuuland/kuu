@@ -10,13 +10,13 @@ import (
 
 var (
 	enumMap            = make(map[string]*Enum)
-	enumSyncChannelKey = "kuu_enum_sync_channel_key" // 主应用同步给集群
-	enumKey            = "kuu_enums"
+	enumSyncChannelKey = buildConfigKey("configserver", "enum", "sync", "channel", "key") // 主应用同步给集群
+	enumKey            = buildConfigKey("configserver", "enums")
 	enumLocalKeys      []string
 )
 
 func init() {
-	if !C().Has("configRedisServer") {
+	if !C().Has(DefaultConfigServerKey) {
 		return
 	}
 	// 获取集群的enums

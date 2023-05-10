@@ -112,12 +112,14 @@ type User struct {
 	Password    string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
 	EmpID       string       `name:"员工号"`
 	Position    string       `name:"职位"`
+	HrTitle     string       `name:"HrTitle"`
 	Name        string       `name:"姓名"`
 	Alias       string       `name:"别名"`
 	Avatar      string       `name:"头像"`
 	Sex         int          `name:"性别"`
 	Mobile      string       `name:"手机号"`
 	Email       string       `name:"邮箱地址"`
+	Address     string       `name:"地址"`
 	Disable     null.Bool    `name:"是否禁用"`
 	RoleAssigns []RoleAssign `name:"已分配角色"`
 	IsBuiltIn   null.Bool    `name:"是否内置"`

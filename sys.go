@@ -595,7 +595,7 @@ func Sys() *Mod {
 }
 
 func loadParamsToConfigServer() {
-	if C().Has("configRedisServer") {
+	if C().Has(DefaultConfigServerKey) {
 		// 启动应用时，加载所有的json参数到redis
 		var params []Param
 		DB().Model(&Param{}).Where("type = ?", "json").Find(&params)

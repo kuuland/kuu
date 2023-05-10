@@ -2,10 +2,12 @@ package kuu
 
 import (
 	"context"
+	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -14,14 +16,14 @@ var (
 	configInst             *Config
 	parsePathCache         sync.Map
 	fromParamKeys          = make(map[string]bool)
-	configServerCacheKey   = "kuu_config_params"
-	configParamsUpdateKey  = "kuu_config_params_update"
-	DefaultConfigServerKey = "configRedisServer"
+	configServerCacheKey   = buildConfigKey("configserver", "params")
+	configParamsUpdateKey  = buildConfigKey("configserver", "params", "update")
+	DefaultConfigServerKey = "configServer"
 	DefaultConfigServer    redis.UniversalClient
 )
 
 func init() {
-	if C().Has("configRedisServer") {
+	if C().Has(DefaultConfigServerKey) {
 		DefaultConfigServer = NewCacheRedisWithName(DefaultConfigServerKey).client
 		// 订阅参数的修改
 		ps := DefaultConfigServer.Subscribe(context.Background(), configParamsUpdateKey)
@@ -38,6 +40,11 @@ func init() {
 			}
 		}(ch)
 	}
+}
+
+func buildConfigKey(keys ...string) string {
+	prefix := C().GetString(fmt.Sprintf("%s.prefix", DefaultConfigServerKey))
+	return fmt.Sprintf("%s_%s", prefix, strings.Join(keys, "_"))
 }
 
 func parseKuuJSON(filePath ...string) (data []byte) {
@@ -96,8 +103,8 @@ func C(newConfig ...map[string]interface{}) *Config {
 }
 
 func checkConfigServer() bool {
-	if !C().Has("configRedisServer") {
-		ERROR("configRedisServer is not configured in kuu.json")
+	if !C().Has(DefaultConfigServerKey) {
+		ERROR("configServer is not configured in kuu.json")
 		return false
 	}
 	return true

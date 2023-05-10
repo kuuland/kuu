@@ -141,7 +141,7 @@ $ cat kuu.json
     "/assets": "assets/",
     "/drone_yml": ".drone.yml"
   },
-  "configRedisServer": {
+  "configServer": {
     "addrs": [
       "redis-service:6379"
     ],
