@@ -411,6 +411,13 @@ func IgnoreAuth(cancel ...bool) (success bool) {
 }
 
 func (app *Engine) initMiddleware() {
+	if len(ginHandlerLiist) != 0 {
+		app.UseGin(ginHandlerLiist...)
+	}
+	if len(handlerLiist) != 0 {
+		app.Use(handlerLiist...)
+	}
+	
 	app.Use(func(c *Context) *STDReply {
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -442,12 +449,7 @@ func (app *Engine) initMiddleware() {
 			}
 		}
 	}
-	if len(ginHandlerLiist) != 0 {
-		app.UseGin(ginHandlerLiist...)
-	}
-	if len(handlerLiist) != 0 {
-		app.Use(handlerLiist...)
-	}
+	
 }
 
 func (app *Engine) initStatics() {
