@@ -15,6 +15,7 @@ type SignHistory struct {
 	SecretData string `name:"密钥"`
 	Token      string `name:"令牌" gorm:"NOT NULL;INDEX:kuu_token;size:767"`
 	Method     string `name:"登录/登出"`
+	IP         string `name:"ip"`
 }
 
 // SignSecret
