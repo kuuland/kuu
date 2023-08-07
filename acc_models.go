@@ -11,12 +11,10 @@ import (
 type SignHistory struct {
 	gorm.Model `rest:"*" displayName:"登录历史"`
 	UID        uint   `name:"用户ID"`
-	U          *User   `name:"User"`
 	SecretID   uint   `name:"密钥ID"`
 	SecretData string `name:"密钥"`
 	Token      string `name:"令牌" gorm:"NOT NULL;INDEX:kuu_token;size:767"`
 	Method     string `name:"登录/登出"`
-	IP         string `name:"ip"`
 }
 
 // SignSecret
