@@ -189,6 +189,7 @@ func (c *Config) LoadFromParams(keys ...string) {
 	for _, param := range params {
 		INFO("Load Config From param: %s(%s)", param.Code, param.Name)
 		if param.Type == "json" {
+			DefaultCache.HSet(BuildKey("config", "params"), param.Code, param.Value)
 			var err error
 			c.data, err = jsonparser.Set(c.data, []byte(param.Value), "params", param.Code)
 			if err != nil {
