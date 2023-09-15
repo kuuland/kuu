@@ -11,12 +11,6 @@ import (
 )
 
 func init() {
-	var params []Param
-	DB().Model(&Param{}).Where("type = ?", "json").Find(&params)
-	for _, param := range params {
-		DefaultCache.HSet(BuildKey("config", "params"), param.Code, param.Value)
-		DefaultCache.Publish(BuildKey("params", "update", "code"), param.Code)
-	}
 	paramsUpdateKey := BuildKey("params", "update", "code")
 	DefaultCache.Subscribe([]string{paramsUpdateKey}, func(key string, value string) {
 		if _, has := fromParamKeys[value]; has {
@@ -549,4 +543,13 @@ func (l *Param) AfterSave(tx *gorm.DB) error {
 		DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
 	}()
 	return nil
+}
+
+func LoadParmsFroSubApp() {
+	var params []Param
+	DB().Model(&Param{}).Where("type = ?", "json").Find(&params)
+	for _, param := range params {
+		DefaultCache.HSet(BuildKey("config", "params"), param.Code, param.Value)
+		DefaultCache.Publish(BuildKey("params", "update", "code"), param.Code)
+	}
 }
