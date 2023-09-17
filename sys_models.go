@@ -539,6 +539,7 @@ func (l *Param) AfterSave(tx *gorm.DB) error {
 		if _, has := fromParamKeys[l.Code]; has {
 			C().LoadFromParams(l.Code)
 		}
+		DefaultCache.HSet(BuildKey("config", "params"), l.Code, l.Value)
 		// 通知其它应用
 		DefaultCache.Publish(BuildKey("params", "update", "code"), l.Code)
 	}()
