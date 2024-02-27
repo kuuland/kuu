@@ -100,7 +100,7 @@ var RoleUserAssigns = RouteInfo{
 		}
 		id := ParseID(raw)
 		var userids []uint
-		DB().Model(&RoleAssign{}).Where("role_id = ?", id).Pluck("UserID", &userids)
+		DB().Model(&RoleAssign{}).Where("role_id = ?", id).Pluck("user_id", &userids)
 		var users []User
 		DB().Model(&User{}).Where("id in (?)", userids).Find(&users)
 		var result []map[string]any
