@@ -85,6 +85,40 @@ var UserRoleAssigns = RouteInfo{
 	},
 }
 
+// UserRoleAssigns
+var RoleUserAssigns = RouteInfo{
+	Name:   "查询角色关联用户",
+	Method: "GET",
+	Path:   "/role/user_assigns/:roleid",
+	IntlMessages: map[string]string{
+		"role_users_assigns_failed": "Role assigns users query failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		raw := c.Param("roleid")
+		if raw == "" {
+			return c.STDErr(errors.New("roleid is required"), "role_users_assigns_failed")
+		}
+		id := ParseID(raw)
+		var userids []uint
+		DB().Model(&RoleAssign{}).Where("role_id = ?", id).Pluck("UserID", &userids)
+		var users []User
+		DB().Model(&User{}).Where("id in (?)", userids).Find(&users)
+		var result []map[string]any
+		for _, user := range users {
+			item := map[string]any{
+				"ID":        user.ID,
+				"Name":      user.Name,
+				"Username":  user.Username,
+				"Mobile":    user.Mobile,
+				"Disable":   user.Disable,
+				"CreatedAt": user.CreatedAt,
+			}
+			result = append(result, item)
+		}
+		return c.STD(result)
+	},
+}
+
 type MenuList []Menu
 
 func (ml MenuList) Len() int {

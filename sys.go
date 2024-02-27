@@ -472,6 +472,7 @@ func Sys() *Mod {
 			OrgLoginableRoute,
 			OrgSwitchRoute,
 			UserRoleAssigns,
+			RoleUserAssigns,
 			UserMenusRoute,
 			UploadRoute,
 			ImportRoute,
