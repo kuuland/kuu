@@ -97,20 +97,21 @@ type User struct {
 	DeletedBy   *User      `gorm:"association_autoupdate:false;association_autocreate:false;foreignkey:id;association_foreignkey:deleted_by_id"`
 
 	ExtendField
-	Username    string       `name:"账号" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
-	Password    string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
-	Name        string       `name:"姓名"`
-	Avatar      string       `name:"头像"`
-	Sex         int          `name:"性别"`
-	Mobile      string       `name:"手机号"`
-	Email       string       `name:"邮箱地址"`
-	Disable     null.Bool    `name:"是否禁用"`
-	RoleAssigns []RoleAssign `name:"已分配角色"`
-	IsBuiltIn   null.Bool    `name:"是否内置"`
-	SubDocIDs   string       `name:"扩展档案ID映射（令牌类型为键、ID为值的JSON字符串，如{\"ADMIN\":3,\"WECHAT:COMPANY\":2}）"`
-	Lang        string       `name:"最近使用语言"`
-	DenyLogin   null.Bool    `name:"禁止登录"`
-	ActOrgID    uint         `name:"当前组织"`
+	Username               string       `name:"账号" gorm:"not null;UNIQUE_INDEX:kuu_unique"`
+	Password               string       `name:"密码" gorm:"not null" json:",omitempty" kuu:"password"`
+	Name                   string       `name:"姓名"`
+	Avatar                 string       `name:"头像"`
+	Sex                    int          `name:"性别"`
+	Mobile                 string       `name:"手机号"`
+	Email                  string       `name:"邮箱地址"`
+	Disable                null.Bool    `name:"是否禁用"`
+	RoleAssigns            []RoleAssign `name:"已分配角色"`
+	IsBuiltIn              null.Bool    `name:"是否内置"`
+	SubDocIDs              string       `name:"扩展档案ID映射（令牌类型为键、ID为值的JSON字符串，如{\"ADMIN\":3,\"WECHAT:COMPANY\":2}）"`
+	Lang                   string       `name:"最近使用语言"`
+	DenyLogin              null.Bool    `name:"禁止登录"`
+	ActOrgID               uint         `name:"当前组织"`
+	LastChangePasswordTime *time.Time   `name:"最后修改密码时间"`
 }
 
 // GetSubDocIDs

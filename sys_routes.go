@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ghodss/yaml"
-	"gopkg.in/guregu/null.v3"
 	"net/http"
 	"path"
 	"reflect"
@@ -14,6 +12,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ghodss/yaml"
+	"github.com/gin-gonic/gin/binding"
+	"gopkg.in/guregu/null.v3"
 )
 
 var valueCacheMap sync.Map
@@ -85,7 +87,22 @@ var UserRoleAssigns = RouteInfo{
 	},
 }
 
-// UserRoleAssigns
+// RoleUserAssigns
+var RoleUserAssignsList = RouteInfo{
+	Name:   "查询角色关联用户",
+	Method: "GET",
+	Path:   "/role/user_assigns_list",
+	IntlMessages: map[string]string{
+		"role_users_assigns_failed": "Role assigns users query failed",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		var roles []Role
+		DB().Model(&Role{}).Find(&roles)
+		return c.STDOK()
+	},
+}
+
+// RoleUserAssigns
 var RoleUserAssigns = RouteInfo{
 	Name:   "查询角色关联用户",
 	Method: "GET",
@@ -273,6 +290,46 @@ var AuthRoute = RouteInfo{
 		}
 
 		return c.STD(ret)
+	},
+}
+
+var ChangePassword = RouteInfo{
+	Name:   "修改密码",
+	Method: "POST",
+	Path:   "/changepasswd",
+	IntlMessages: map[string]string{
+		"parse_body_failed": "解析请求参数失败",
+		"oldpasswd_error":   "旧密码错误",
+		"newpasswd_error":   "新密码错误",
+	},
+	HandlerFunc: func(c *Context) *STDReply {
+		var body = struct {
+			OldPasswd string `binding:"required"`
+			NewPasswd string `binding:"required"`
+		}{}
+		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+			return c.STDErr(err, "parse_body_failed")
+		}
+		var user User
+		DB().Model(&User{}).Where("id = ?", c.PrisDesc.UID).First(&user)
+		if user.ID == 0 {
+			return c.STDErr(errors.New("用户不存在"), "parse_body_failed")
+		}
+		body.OldPasswd = strings.ToLower(body.OldPasswd)
+		if err := CompareHashAndPassword(user.Password, body.OldPasswd); err != nil {
+			return c.STDErr(err, "oldpasswd_error")
+		}
+		passwd, err := GenerateFromPassword(strings.ToLower(body.NewPasswd))
+		if err != nil {
+			return c.STDErr(err, "newpasswd_error")
+		}
+		DB().Model(&User{}).
+			Where("id = ?", c.PrisDesc.UID).
+			Updates(map[string]any{
+				"Password":               passwd,
+				"LastChangePasswordTime": time.Now(),
+			})
+		return c.STDOK()
 	},
 }
 

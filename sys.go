@@ -477,6 +477,7 @@ func Sys() *Mod {
 			UploadRoute,
 			ImportRoute,
 			ImportTemplateRoute,
+			ChangePassword,
 			AuthRoute,
 			MetaRoute,
 			DataDictRoute,
