@@ -69,6 +69,17 @@ func C(newConfig ...map[string]interface{}) *Config {
 	return configInst
 }
 
+func ReloadC(jsonStr string) *Config {
+	if len(jsonStr) > 0 {
+		src := make(map[string]interface{})
+		_ = json.Unmarshal(configData, &src)
+		//src = mergeConfig(src, newConfig[0])
+		configData, _ = json.Marshal(src)
+		configInst.data = configData
+	}
+	return configInst
+}
+
 func (c *Config) Get(path string) (val []byte, exists bool) {
 	keys := ParseJSONPath(path)
 	if v, _, _, err := jsonparser.Get(c.data, keys...); err == nil {

@@ -80,23 +80,6 @@ func Default() (app *Engine) {
 	return
 }
 
-func DefaultConfig(newConfig ...map[string]interface{}) (app *Engine) {
-	app = &Engine{Engine: gin.Default()}
-
-	// 加载新的配置文件内容
-	C(newConfig...)
-
-	app.RemoveExtraSlash = true
-	app.UseGin(gin.Logger(), Recovery)
-	if !C().DefaultGetBool("ignoreDefaultRootRoute", false) {
-		app.GET("/", func(c *Context) *STDReply {
-			return c.STD(fmt.Sprintf("%s is up.", GetAppName()), "kuu_up", "{{time}}", D{"time": Uptime.Format("2006-01-02 15:04:05")})
-		})
-	}
-	app.init()
-	return
-}
-
 // New
 func New() (app *Engine) {
 	app = &Engine{Engine: gin.New()}
