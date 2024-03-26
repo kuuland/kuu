@@ -39,7 +39,7 @@ func Register(dialector gorm.Dialector, config ...*Config) error {
 		},
 		Name: defaultDataSourceName,
 	}
-	if v := os.Getenv("MOD_DB_LOGGER"); v == "1" {
+	if v := os.Getenv("KUU_DB_LOGGER"); v == "1" {
 		conf.GORMConfig.Logger = logger.Default.LogMode(logger.Info)
 	}
 	if len(config) > 0 && config[0] != nil {

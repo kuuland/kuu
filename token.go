@@ -7,8 +7,8 @@ import (
 )
 
 var tokenKeys = []string{
-	"MOD-TOKEN",
-	"MOD-API-KEY",
+	"KUU-TOKEN",
+	"KUU-API-KEY",
 }
 
 func init() {

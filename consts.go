@@ -1,15 +1,15 @@
 package kuu
 
 const (
-	ConfigEnv                  = "MOD_ENV"
-	ConfigAPIPrefix            = "MOD_API_PREFIX"
-	ConfigTokenKey             = "MOD_TOKEN"
-	ConfigCacheGlobalKeyPrefix = "MOD_CACHE_PREFIX"
-	ConfigCacheTokenKeyPrefix  = "MOD_CACHE_TOKEN_PREFIX"
-	ConfigStatic               = "MOD_STATIC"
+	ConfigEnv                  = "KUU_ENV"
+	ConfigAPIPrefix            = "KUU_API_PREFIX"
+	ConfigTokenKey             = "KUU_TOKEN"
+	ConfigCacheGlobalKeyPrefix = "KUU_CACHE_PREFIX"
+	ConfigCacheTokenKeyPrefix  = "KUU_CACHE_TOKEN_PREFIX"
+	ConfigStatic               = "KUU_STATIC"
 )
 
 const (
-	ContextValueKey      = "MOD_CONTEXT"
-	ContextValueTokenKey = "MOD_TOKEN"
+	ContextValueKey      = "KUU_CONTEXT"
+	ContextValueTokenKey = "KUU_TOKEN"
 )
