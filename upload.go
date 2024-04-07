@@ -3,14 +3,47 @@ package kuu
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
+
+	uuid "github.com/satori/go.uuid"
 )
+
+func isExecutable(data []byte) bool {
+	elfMagicNumbers := []string{"7F", "45", "4C", "46"}
+
+	for i, s := range data[:8] {
+		if fmt.Sprintf("%X", s) != elfMagicNumbers[i%len(elfMagicNumbers)] {
+			return false
+		}
+	}
+	return true
+}
+
+func isText(data []byte) bool {
+	contentType := http.DetectContentType(data)
+	if contentType == "text/plain" || contentType == "text/html" {
+		if detectXSS(string(data)) {
+			return true
+		}
+	}
+	return false
+}
+
+func detectXSS(input string) bool {
+	var match = false
+	xssRegex := regexp.MustCompile("<script.*?>|</script.*?>|<iframe.*?>|</iframe.*?>")
+	match = xssRegex.MatchString(input)
+	if strings.Contains(strings.ToLower(input), "javascript") {
+		match = true
+	}
+	return match
+}
 
 func saveFile(file *multipart.FileHeader, dst string) error {
 	src, err := file.Open()
@@ -51,7 +84,20 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 			ERROR(err)
 		}
 	}()
-	body, err := ioutil.ReadAll(src)
+	body, err := io.ReadAll(src)
+	if err != nil {
+		return f, err
+	}
+
+	if isExecutable(body) {
+		return f, fmt.Errorf("file is executable")
+	}
+	if isText(body) {
+		if detectXSS(string(body)) {
+			return f, fmt.Errorf("xss detected")
+		}
+	}
+
 	md5Sum := fmt.Sprintf("%x", md5.Sum(body))
 
 	// 保存文件
