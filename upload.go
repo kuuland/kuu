@@ -36,8 +36,13 @@ func isText(data []byte) bool {
 }
 
 func detectXSS(input string) bool {
+	var match = false
 	xssRegex := regexp.MustCompile("<script.*?>|</script.*?>|<iframe.*?>|</iframe.*?>")
-	return xssRegex.MatchString(input)
+	match = xssRegex.MatchString(input)
+	if strings.Contains(strings.ToLower(input), "javascript") {
+		match = true
+	}
+	return match
 }
 
 func saveFile(file *multipart.FileHeader, dst string) error {
