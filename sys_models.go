@@ -345,6 +345,7 @@ type Menu struct {
 	Closeable     null.Bool   `name:"是否可关闭"`
 	LocaleKey     null.String `name:"国际化语言键"`
 	IsVirtual     null.Bool   `name:"是否虚菜单"`
+	AuthPattern   null.String `name:"权限表达式"` // json数组
 }
 
 // BeforeSave
