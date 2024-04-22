@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"reflect"
 	"sort"
@@ -129,6 +130,9 @@ var RoleUserAssigns = RouteInfo{
 				"Mobile":    user.Mobile,
 				"Disable":   user.Disable,
 				"CreatedAt": user.CreatedAt,
+			}
+			if os.Getenv("HIDDEN_MOBILE") == "true" {
+				item["Mobile"] = hideMobile(user.Mobile)
 			}
 			result = append(result, item)
 		}
