@@ -27,7 +27,7 @@ func isExecutable(data []byte) bool {
 
 func isText(data []byte) bool {
 	contentType := http.DetectContentType(data)
-	if contentType == "text/plain" || contentType == "text/html" {
+	if strings.Contains(contentType, "text/plain") || strings.Contains(contentType, "text/html") {
 		if detectXSS(string(data)) {
 			return true
 		}
