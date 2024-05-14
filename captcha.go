@@ -23,8 +23,9 @@ func init() {
 
 type captchaStore struct{}
 
-func (cs *captchaStore) Set(id string, value string) {
+func (cs *captchaStore) Set(id string, value string) error {
 	DefaultCache.SetString(id, value)
+	return nil
 }
 
 func (cs *captchaStore) Get(id string, clear bool) string {

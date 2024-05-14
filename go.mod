@@ -17,7 +17,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/jtolds/gls v4.20.0+incompatible
-	github.com/mojocn/base64Captcha v1.3.1
+	github.com/mojocn/base64Captcha v1.3.5
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
