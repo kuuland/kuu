@@ -2,8 +2,11 @@ package kuu
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -51,6 +54,50 @@ func NewCacheRedis() *CacheRedis {
 	// 解析配置
 	var opts redis.UniversalOptions
 	C().GetInterface("redis", &opts)
+
+	redisTls := C().GetString("redis.caPath")
+	if len(redisTls) > 0 {
+		caCert, err := os.ReadFile(redisTls)
+		if err != nil {
+			fmt.Println("Error loading CA certificate:", err)
+			PANIC(err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+
+		tlsConfig := &tls.Config{
+			RootCAs:            caCertPool,
+			InsecureSkipVerify: true, // Not actually skipping, we check the cert in VerifyPeerCertificate
+			VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+				certs := make([]*x509.Certificate, len(rawCerts))
+				for i, asn1Data := range rawCerts {
+					cert, err := x509.ParseCertificate(asn1Data)
+					if err != nil {
+						panic(err)
+					}
+					certs[i] = cert
+				}
+
+				opts := x509.VerifyOptions{
+					Roots:         caCertPool,
+					DNSName:       "", // <- skip hostname verification
+					Intermediates: x509.NewCertPool(),
+				}
+
+				for i, cert := range certs {
+					if i == 0 {
+						continue
+					}
+					opts.Intermediates.AddCert(cert)
+				}
+				_, err := certs[0].Verify(opts)
+				return err
+			},
+		}
+		opts.TLSConfig = tlsConfig
+	}
+
 	// 初始化客户端
 	cmd := redis.NewUniversalClient(&opts)
 	if _, err := cmd.Ping(context.Background()).Result(); err != nil {
