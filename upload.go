@@ -28,9 +28,7 @@ func isExecutable(data []byte) bool {
 func isText(data []byte) bool {
 	contentType := http.DetectContentType(data)
 	if strings.Contains(contentType, "text/plain") || strings.Contains(contentType, "text/html") {
-		if detectXSS(string(data)) {
-			return true
-		}
+		return true
 	}
 	return false
 }
@@ -89,10 +87,10 @@ func SaveUploadedFile(fh *multipart.FileHeader, save2db bool, extraData ...*File
 		return f, err
 	}
 
-	if isExecutable(body) {
+	if C().DefaultGetBool("upload.EnableExe", false) && isExecutable(body) {
 		return f, fmt.Errorf("file is executable")
 	}
-	if isText(body) {
+	if C().DefaultGetBool("upload.EnableXSS", false) && isText(body) {
 		if detectXSS(string(body)) {
 			return f, fmt.Errorf("xss detected")
 		}
