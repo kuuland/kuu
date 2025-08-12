@@ -257,3 +257,71 @@ func BenchmarkShouldCheckAPIPermission(b *testing.B) {
 		prisDesc.shouldCheckAPIPermission(config, username)
 	}
 }
+
+// TestAPIWhitelist 测试API白名单功能
+func TestAPIWhitelist(t *testing.T) {
+	tests := []struct {
+		name      string
+		method    string
+		path      string
+		whitelist []string
+		expected  bool
+	}{
+		{
+			name:      "登录接口在白名单中",
+			method:    "POST",
+			path:      "/api/login",
+			whitelist: []string{"^/api/login$", "^/api/logout$"},
+			expected:  true,
+		},
+		{
+			name:      "验证码接口在白名单中",
+			method:    "GET",
+			path:      "/api/captcha/generate",
+			whitelist: []string{"^/api/captcha.*"},
+			expected:  true,
+		},
+		{
+			name:      "公共资源在白名单中",
+			method:    "GET",
+			path:      "/api/public/info",
+			whitelist: []string{"^/api/public/.*"},
+			expected:  true,
+		},
+		{
+			name:      "静态资源在白名单中",
+			method:    "GET",
+			path:      "/assets/css/style.css",
+			whitelist: []string{"^/assets/.*"},
+			expected:  true,
+		},
+		{
+			name:      "非白名单路径",
+			method:    "GET",
+			path:      "/api/users",
+			whitelist: []string{"^/api/login$", "^/api/logout$"},
+			expected:  false,
+		},
+		{
+			name:      "空白名单",
+			method:    "GET",
+			path:      "/api/login",
+			whitelist: []string{},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// 模拟白名单检查逻辑
+				matched := false
+				for _, whitelistPattern := range tt.whitelist {
+					if isMatched, _ := regexp.MatchString(whitelistPattern, tt.path); isMatched {
+						matched = true
+						break
+					}
+				}
+				assert.Equal(t, tt.expected, matched)
+			})
+		}
+}

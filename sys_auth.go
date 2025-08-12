@@ -138,6 +138,7 @@ type APIPermissionConfig struct {
 	ExcludeUsers []string `json:"excludeUsers"` // 不需要进行API权限验证的用户名列表
 	IncludeAll   bool     `json:"includeAll"`   // 是否对所有用户进行API权限验证
 	ExcludeAll   bool     `json:"excludeAll"`   // 是否对所有用户都不进行API权限验证
+	Whitelist    []string `json:"whitelist"`    // 白名单，允许所有用户访问的URL模式
 }
 
 // getAPIPermissionConfig 获取API权限配置
@@ -212,6 +213,13 @@ func (desc *PrivilegesDesc) HasAPIPermission(method, path string) bool {
 
 	if !needCheck {
 		return true // 不需要验证，默认允许
+	}
+
+	// 检查白名单，如果请求路径在白名单中，直接允许访问
+	for _, whitelistPattern := range apiPermissionConfig.Whitelist {
+		if matched, _ := regexp.MatchString(whitelistPattern, path); matched {
+			return true
+		}
 	}
 
 	// 获取用户有权限的菜单列表
