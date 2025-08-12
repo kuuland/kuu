@@ -32,6 +32,11 @@ var presetIntlMessages = map[string]map[string]string{
 		"zh-Hans": "登出失败",
 		"zh-Hant": "登出失敗",
 	},
+	"api_permission_denied": {
+		"en":      "API access denied",
+		"zh-Hans": "API访问被拒绝",
+		"zh-Hant": "API訪問被拒絕",
+	},
 	"acc_password_failed": {
 		"en":      "Incorrect username or password.",
 		"zh-Hans": "账号密码不一致",

@@ -3,6 +3,7 @@ package kuu
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -116,12 +117,145 @@ func (desc *PrivilegesDesc) HasPermission(permission string) bool {
 }
 
 func (desc *PrivilegesDesc) HasRole(code string) bool {
-	for _, s := range desc.RolesCode {
-		if code == s {
+	for _, item := range desc.RolesCode {
+		if item == code {
 			return true
 		}
 	}
 	return false
+}
+
+// APIPermissionItem API权限项
+type APIPermissionItem struct {
+	Method  []string `json:"method"`  // HTTP方法数组，如["GET", "POST"]
+	Pattern string   `json:"pattern"` // URL匹配模式
+}
+
+// APIPermissionConfig API权限配置结构
+type APIPermissionConfig struct {
+	Enabled      bool     `json:"enabled"`       // 是否启用API权限验证
+	IncludeUsers []string `json:"includeUsers"`  // 必须进行API权限验证的用户名列表
+	ExcludeUsers []string `json:"excludeUsers"`  // 不需要进行API权限验证的用户名列表
+	IncludeAll   bool     `json:"includeAll"`    // 是否对所有用户进行API权限验证
+	ExcludeAll   bool     `json:"excludeAll"`    // 是否对所有用户都不进行API权限验证
+}
+
+// getAPIPermissionConfig 获取API权限配置
+func (desc *PrivilegesDesc) getAPIPermissionConfig() APIPermissionConfig {
+	// 获取API权限配置
+	apiPermissionConfigStr := C().GetString("ApiPermissionConfig")
+	if apiPermissionConfigStr != "" {
+		var config APIPermissionConfig
+		if err := json.Unmarshal([]byte(apiPermissionConfigStr), &config); err == nil {
+			return config
+		}
+	}
+
+	// 默认配置：不启用API权限验证
+	return APIPermissionConfig{Enabled: false}
+}
+
+// shouldCheckAPIPermission 判断是否需要对用户进行API权限验证
+func (desc *PrivilegesDesc) shouldCheckAPIPermission(config APIPermissionConfig, username string) bool {
+	// 如果功能未启用，不需要验证
+	if !config.Enabled {
+		return false
+	}
+
+	// 如果ExcludeAll为true，所有用户都不需要验证
+	if config.ExcludeAll {
+		return false
+	}
+
+	// 如果用户在排除列表中，不需要验证
+	for _, excludeUser := range config.ExcludeUsers {
+		if excludeUser == username {
+			return false
+		}
+	}
+
+	// 如果IncludeAll为true，所有用户都需要验证（除了已经被排除的）
+	if config.IncludeAll {
+		return true
+	}
+
+	// 检查用户是否在包含列表中
+	for _, includeUser := range config.IncludeUsers {
+		if includeUser == username {
+			return true
+		}
+	}
+
+	// 默认不需要验证
+	return false
+}
+
+// HasAPIPermission 检查用户是否有API访问权限
+func (desc *PrivilegesDesc) HasAPIPermission(method, path string) bool {
+	// 如果是root用户，直接允许
+	if desc.UID == RootUID() {
+		return true
+	}
+
+	// 获取API权限配置
+	apiPermissionConfig := desc.getAPIPermissionConfig()
+	
+	// 如果未启用API权限验证，直接允许
+	if !apiPermissionConfig.Enabled {
+		return true
+	}
+
+	// 获取当前用户的用户名
+	var currentUser User
+	if err := DB().Select("username").Where("id = ?", desc.UID).First(&currentUser).Error; err != nil {
+		return true // 查询用户失败，默认允许
+	}
+
+	// 检查是否需要进行API权限验证
+	needCheck := desc.shouldCheckAPIPermission(apiPermissionConfig, currentUser.Username)
+
+	if !needCheck {
+		return true // 不需要验证，默认允许
+	}
+
+	// 获取用户有权限的菜单列表
+	var menus []Menu
+	IgnoreAuth()
+	defer IgnoreAuth(true)
+
+	if err := DB().Where("code IN (?)", desc.Permissions).Find(&menus).Error; err != nil {
+		return false
+	}
+
+	// 检查每个菜单的API权限配置
+	for _, menu := range menus {
+		if menu.APIPattern.Valid && menu.APIPattern.String != "" {
+			var apiItems []APIPermissionItem
+			if err := json.Unmarshal([]byte(menu.APIPattern.String), &apiItems); err != nil {
+				continue
+			}
+
+			for _, item := range apiItems {
+				// 检查HTTP方法是否匹配
+				methodMatch := false
+				for _, allowedMethod := range item.Method {
+					if strings.ToUpper(allowedMethod) == strings.ToUpper(method) {
+						methodMatch = true
+						break
+					}
+				}
+
+				if methodMatch {
+					// 检查URL模式是否匹配
+					if matched, _ := regexp.MatchString(item.Pattern, path); matched {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false // 没有找到匹配的权限，拒绝访问
 }
 
 // AuthProcessor

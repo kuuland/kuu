@@ -346,6 +346,7 @@ type Menu struct {
 	LocaleKey     null.String `name:"国际化语言键"`
 	IsVirtual     null.Bool   `name:"是否虚菜单"`
 	AuthPattern   null.String `name:"权限表达式"` // json数组
+	APIPattern    null.String `name:"API权限表达式"` // json数组，每个item包含Method和Pattern
 }
 
 // BeforeSave

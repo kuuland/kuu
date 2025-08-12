@@ -11,6 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis/v8 v8.0.0-beta.7.0.20200728132603-3fbf7df0144b
 	github.com/go-session/gin-session v3.1.0+incompatible
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/imdario/mergo v0.3.11
 	github.com/jinzhu/gorm v1.9.16

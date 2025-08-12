@@ -14,6 +14,12 @@ func AuthMiddleware(c *Context) *STDReply {
 			if !c.validSignType(sign) {
 				return c.AbortErrWithCode(err, 556, "acc_incorrect_token", "Incorrect token type")
 			}
+
+			// API权限检查
+			if c.PrisDesc != nil && !c.PrisDesc.HasAPIPermission(c.Request.Method, c.Request.URL.Path) {
+				return c.AbortErrWithCode(nil, 557, "api_permission_denied", "API access denied")
+			}
+
 			c.Next()
 		} else {
 			return c.AbortErrWithCode(err, 555, "acc_incorrect_token", "Incorrect token type")
