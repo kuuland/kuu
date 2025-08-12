@@ -23,8 +23,9 @@ func init() {
 
 type captchaStore struct{}
 
-func (cs *captchaStore) Set(id string, value string) {
+func (cs *captchaStore) Set(id string, value string) error {
 	DefaultCache.SetString(id, value)
+	return nil
 }
 
 func (cs *captchaStore) Get(id string, clear bool) string {
@@ -55,7 +56,7 @@ func NewCaptcha() *base64Captcha.Captcha {
 // GenerateCaptcha create a digit captcha.
 func GenerateCaptcha() (id string, base64Str string) {
 	c := NewCaptcha()
-	id, base64Str, err := c.Generate()
+	id, base64Str, _, err := c.Generate()
 	if err != nil {
 		ERROR(err)
 	}
