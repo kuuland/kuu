@@ -133,26 +133,22 @@ type APIPermissionItem struct {
 
 // APIPermissionConfig API权限配置结构
 type APIPermissionConfig struct {
-	Enabled      bool     `json:"enabled"`       // 是否启用API权限验证
-	IncludeUsers []string `json:"includeUsers"`  // 必须进行API权限验证的用户名列表
-	ExcludeUsers []string `json:"excludeUsers"`  // 不需要进行API权限验证的用户名列表
-	IncludeAll   bool     `json:"includeAll"`    // 是否对所有用户进行API权限验证
-	ExcludeAll   bool     `json:"excludeAll"`    // 是否对所有用户都不进行API权限验证
+	Enabled      bool     `json:"enabled"`      // 是否启用API权限验证
+	IncludeUsers []string `json:"includeUsers"` // 必须进行API权限验证的用户名列表
+	ExcludeUsers []string `json:"excludeUsers"` // 不需要进行API权限验证的用户名列表
+	IncludeAll   bool     `json:"includeAll"`   // 是否对所有用户进行API权限验证
+	ExcludeAll   bool     `json:"excludeAll"`   // 是否对所有用户都不进行API权限验证
 }
 
 // getAPIPermissionConfig 获取API权限配置
 func (desc *PrivilegesDesc) getAPIPermissionConfig() APIPermissionConfig {
 	// 获取API权限配置
-	apiPermissionConfigStr := C().GetString("ApiPermissionConfig")
-	if apiPermissionConfigStr != "" {
-		var config APIPermissionConfig
-		if err := json.Unmarshal([]byte(apiPermissionConfigStr), &config); err == nil {
-			return config
-		}
-	}
+	var apiPermissionConfig APIPermissionConfig
+
+	C().GetInterface("ApiPermissionConfig", &apiPermissionConfig)
 
 	// 默认配置：不启用API权限验证
-	return APIPermissionConfig{Enabled: false}
+	return apiPermissionConfig
 }
 
 // shouldCheckAPIPermission 判断是否需要对用户进行API权限验证
@@ -199,7 +195,7 @@ func (desc *PrivilegesDesc) HasAPIPermission(method, path string) bool {
 
 	// 获取API权限配置
 	apiPermissionConfig := desc.getAPIPermissionConfig()
-	
+
 	// 如果未启用API权限验证，直接允许
 	if !apiPermissionConfig.Enabled {
 		return true

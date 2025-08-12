@@ -15,8 +15,17 @@ func AuthMiddleware(c *Context) *STDReply {
 				return c.AbortErrWithCode(err, 556, "acc_incorrect_token", "Incorrect token type")
 			}
 
+			var prisDesc *PrivilegesDesc
+
+			// 在中间件模式下手动设置权限描述信息
+			if c.PrisDesc == nil && sign != nil {
+				prisDesc = GetPrivilegesDesc(sign)
+			} else if c.PrisDesc != nil {
+				prisDesc = c.PrisDesc
+			}
+
 			// API权限检查
-			if c.PrisDesc != nil && !c.PrisDesc.HasAPIPermission(c.Request.Method, c.Request.URL.Path) {
+			if prisDesc != nil && !prisDesc.HasAPIPermission(c.Request.Method, c.Request.URL.Path) {
 				return c.AbortErrWithCode(nil, 557, "api_permission_denied", "API access denied")
 			}
 
