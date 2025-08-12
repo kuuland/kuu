@@ -239,7 +239,7 @@ func (desc *PrivilegesDesc) HasAPIPermission(method, path string) bool {
 				// 检查HTTP方法是否匹配
 				methodMatch := false
 				for _, allowedMethod := range item.Method {
-					if strings.ToUpper(allowedMethod) == strings.ToUpper(method) {
+					if allowedMethod == "*" || strings.ToUpper(allowedMethod) == strings.ToUpper(method) {
 						methodMatch = true
 						break
 					}

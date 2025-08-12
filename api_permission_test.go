@@ -3,6 +3,7 @@ package kuu
 import (
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"github.com/stretchr/testify/assert"
 )
@@ -175,21 +176,26 @@ func TestHasAPIPermission(t *testing.T) {
 func TestAPIPatternMatching(t *testing.T) {
 	// 测试用例
 	testCases := []struct {
-		name     string
-		method   string
-		path     string
-		pattern  string
-		methods  []string
-		expected bool
-	}{
-		{"GET匹配users路径", "GET", "/api/users", "/api/users.*", []string{"GET", "POST"}, true},
-		{"POST匹配users子路径", "POST", "/api/users/123", "/api/users.*", []string{"GET", "POST"}, true},
-		{"DELETE方法不匹配", "DELETE", "/api/users/123", "/api/users.*", []string{"GET", "POST"}, false},
-		{"DELETE匹配数字ID", "DELETE", "/api/users/123", "/api/users/[0-9]+", []string{"DELETE"}, true},
-		{"DELETE不匹配字母ID", "DELETE", "/api/users/abc", "/api/users/[0-9]+", []string{"DELETE"}, false},
-		{"GET匹配files路径", "GET", "/api/files/download", "/api/files.*", []string{"GET"}, true},
-		{"POST方法不匹配files", "POST", "/api/files/upload", "/api/files.*", []string{"GET"}, false},
-	}
+			name     string
+			method   string
+			path     string
+			pattern  string
+			methods  []string
+			expected bool
+		}{
+			{"GET匹配users路径", "GET", "/api/users", "/api/users.*", []string{"GET", "POST"}, true},
+			{"POST匹配users子路径", "POST", "/api/users/123", "/api/users.*", []string{"GET", "POST"}, true},
+			{"DELETE方法不匹配", "DELETE", "/api/users/123", "/api/users.*", []string{"GET", "POST"}, false},
+			{"DELETE匹配数字ID", "DELETE", "/api/users/123", "/api/users/[0-9]+", []string{"DELETE"}, true},
+			{"DELETE不匹配字母ID", "DELETE", "/api/users/abc", "/api/users/[0-9]+", []string{"DELETE"}, false},
+			{"GET匹配files路径", "GET", "/api/files/download", "/api/files.*", []string{"GET"}, true},
+			{"POST方法不匹配files", "POST", "/api/files/upload", "/api/files.*", []string{"GET"}, false},
+			{"*方法匹配GET请求", "GET", "/api/admin/users", "/api/admin.*", []string{"*"}, true},
+			{"*方法匹配POST请求", "POST", "/api/admin/users", "/api/admin.*", []string{"*"}, true},
+			{"*方法匹配DELETE请求", "DELETE", "/api/admin/users/123", "/api/admin.*", []string{"*"}, true},
+			{"*方法匹配PUT请求", "PUT", "/api/admin/settings", "/api/admin.*", []string{"*"}, true},
+			{"*方法与其他方法混合", "PATCH", "/api/mixed/data", "/api/mixed.*", []string{"GET", "*", "POST"}, true},
+		}
 	
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -199,10 +205,10 @@ func TestAPIPatternMatching(t *testing.T) {
 				Pattern: tc.pattern,
 			}
 			
-			// 检查方法匹配
+			// 检查方法匹配（与HasAPIPermission方法保持一致）
 			methodMatch := false
-			for _, method := range item.Method {
-				if method == tc.method {
+			for _, allowedMethod := range item.Method {
+				if allowedMethod == "*" || strings.ToUpper(allowedMethod) == strings.ToUpper(tc.method) {
 					methodMatch = true
 					break
 				}
